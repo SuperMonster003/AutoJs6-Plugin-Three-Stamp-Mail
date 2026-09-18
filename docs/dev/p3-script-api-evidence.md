@@ -1,4 +1,4 @@
-# P3 script API evidence (P3.1 connection and global object, P3.2 send and receive)
+# P3 script API evidence (P3.1 connection and global object, P3.2 send and receive, follow-up smokes)
 
 Evidence for roadmap P3.1 (the `mail` global, `MailClient`, `MailError`, argument
 normalization, the connect smoke script) collected on 2026-09-18, and for P3.2 (the send and
@@ -129,12 +129,64 @@ and passed the leak check.
 | Redmi 22120RN86C | qq | async (`ui`) | 15/15 | 1454 ms | 30.7 s (2, client) | 699 ms | 738 ms (1 progress call) | 684 ms | 1789 ms (trash) | 1493 ms | 814 of 840, not blocked | server |
 | Redmi 22120RN86C | 163 | sync | 15/15 | 1372 ms | 351 ms (1, client) | 317 ms | 306 ms | 286 ms | 1926 ms (created folder) | 1617 ms | - | appended (preset before the fix) |
 | Redmi 22120RN86C | 163 | async (`ui`) | 15/15 | 1898 ms | 491 ms (1, client) | 437 ms | 420 ms (1 progress call) | 394 ms | 2387 ms (created folder) | 2002 ms | 215 of 227, not blocked | appended (preset before the fix) |
-| Redmi 22120RN86C | gmail | sync | 1/15 | - | - | - | - | - | - | - | - | `AUTH_FAILED` at `connect` (340 ms): the stored OAuth Playground access token has expired; rerun with a fresh `GMAIL_ACCESS_TOKEN_A` |
+| Redmi 22120RN86C | gmail | sync (expired token) | 1/15 | - | - | - | - | - | - | - | - | `AUTH_FAILED` at `connect` (340 ms) until the maintainer refreshed `GMAIL_ACCESS_TOKEN_A` |
+| Redmi 22120RN86C | gmail | sync | 15/15 | 4698 ms | 2.8 s (1, server) | 3634 ms | 3248 ms | 3470 ms | 8274 ms (created folder) | 6239 ms | - | server |
+| Redmi 22120RN86C | gmail | async (`ui`) | 15/15 | 4605 ms | 3.1 s (1, server) | 3027 ms | 3377 ms (1 progress call) | 3101 ms | 5817 ms (created folder) | 5808 ms | 975 of 1004, not blocked | server |
 
-Other numbers: `connect` 71 to 396 ms, `createFolder` 506 to 1324 ms, `folders` 84 to 260 ms,
-`markRead` 241 to 645 ms, `folderStatus` 197 to 416 ms, `deleteFolder` 143 to 290 ms; the raw
-`.eml` was 3.9 to 5.1 KB; the downloaded attachment landed as `smoke-<ts> (1).txt` because the
-source file of the same name still sat in the working directory (`MailFileNames.unique`).
+Other numbers: `connect` 71 to 672 ms, `createFolder` 506 to 4677 ms (Gmail slowest), `folders`
+84 to 1068 ms, `markRead` 241 to 3004 ms, `folderStatus` 197 to 4508 ms, `deleteFolder` 143 to
+2547 ms; the raw `.eml` was 3.8 to 5.1 KB; the downloaded attachment landed as
+`smoke-<ts> (1).txt` because the source file of the same name still sat in the working
+directory (`MailFileNames.unique`). Gmail's server-side SEARCH found the just-delivered message
+on the first poll (`fallback: server`). A first Gmail run on a Sony XQ-DQ72 (API 33) was
+skipped by the test because that device had no mail plugin installed; the plugin is installed
+there now.
+
+## Follow-up smoke scripts (2026-09-19)
+
+Three more scripts under `docs/smoke` close items that were open since P2 and P3.1; all run
+through the same `--script` path of the runner.
+
+`token-provider.js` (Gmail, Redmi 22120RN86C): `mail.connect({provider, address, tokenProvider})`
+without `accessToken`; the provider returns a bogus token first and the real one afterwards.
+`connect` asks the provider once (164 ms), the first `fetch` fails with `AUTH_FAILED` on the
+plugin side, the host client asks the provider again and retries once, and the call succeeds
+(8329 ms in total); `test()` (2491 ms, IMAP 556 ms, SMTP ok) and a second `fetch` (2903 ms) reuse
+the refreshed token without asking again (2 provider calls in total); a provider returning a
+number is `AUTH_FAILED` at `connect`. `test()` alone cannot trigger the refresh because it reports
+endpoint failures in its result instead of throwing.
+
+`pop3.js` (`receive: 'pop3'`): `test` (POP3 endpoint ok with capabilities), `folders` (`INBOX`
+only), `fetch` 3 envelopes (UIDL string uids, newest first), `get` of the newest, `search` by its
+subject (`fallback: client`, `limit: 1`), `raw`, `download` when it has an attachment, and
+`markRead` / `createFolder` / `move` as `UNSUPPORTED_OPERATION`, `fetch` of another folder as
+`FOLDER_NOT_FOUND`; nothing is deleted.
+
+| Device | Provider | Steps | `test` (POP3 probe) | `folders` | `fetch` 3 | `get` | `search` | `raw` | `download` | INBOX |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Redmi 22120RN86C | 163 (`pop.163.com`) | 8/8 | 1333 ms (561 ms) | 298 ms | 1254 ms | 1037 ms | 2660 ms | 1085 ms | - (no attachment) | 17 messages |
+| Redmi 22120RN86C | qq (`pop.qq.com`) | 9/9 | 1517 ms (687 ms) | 301 ms | 2461 ms | 2058 ms | 1494 ms | 2109 ms | 1836 ms | 285 messages |
+| Redmi 22120RN86C | gmail (`pop.gmail.com`) | 2/8 | 4163 ms (2226 ms, XOAUTH2 login ok) | `IO_FAILED` | - | - | - | - | - | POP access disabled for the account |
+
+The first QQ run timed out in `search` (30 s): with `limit: 5` the client filter scans up to
+200 messages (`TOP` costs about 0.17 s each on QQ, 285 messages in the box) because only one
+message matches; `limit: 1` stops at the first hit. The Gmail failure came from the server:
+after a successful XOAUTH2 login it answers `STAT` with `[SYS/PERM] Your account is not enabled
+for POP access` (plugin debug trace, `.python/run_real_account.py GMAIL_A <serial> --receive
+pop3 --debug`); the mapper now reports it as `UNSUPPORTED_OPERATION` naming the cause (plugin
+build 18). Verifying Gmail POP3 needs "Enable POP for all mail" in the Gmail settings of the
+test account.
+
+`hold-session.js` (QQ, AVD_API_24) is the plugin side of a host death across processes: the
+script keeps an IMAP session busy (one envelope fetch every 10 s) while `adb shell am force-stop
+org.autojs.autojs6` kills the host from the PC. Before the kill the plugin process (pid 20171,
+uid 10253) held one ESTABLISHED connection to `imap.qq.com:993`; 2 s after the kill that
+connection was in TIME_WAIT (closed by the plugin side, `/proc/net/tcp6`), the plugin process
+was still alive with the same pid 30 s later and no other connection appeared, so the death
+recipient of `MailSessionBinder` closed the mail session (`shutdown("host-died")`) without the
+host asking. The Gradle run reports the instrumentation as killed, which is the expected
+outcome of this probe.
+
 
 ## Lessons
 
@@ -175,6 +227,12 @@ source file of the same name still sat in the working directory (`MailFileNames.
 - (P3.2) A `"ui";` script runs in an Activity whose engine the execution does not expose, so the
   device test reads the report from a file the script writes (`MAIL_SMOKE.reportPath`) instead
   of a runtime property; the `MAIL_SMOKE` prelude is inserted after the directive line.
+- (follow-up) A plugin-repository instrumentation run (`.python/run_real_account.py`) uninstalls
+  the plugin from the device when it ends (AGP default), so a host smoke started afterwards on
+  the same device is skipped with "the mail plugin is not installed"; reinstall the plugin APK
+  first.
+- (follow-up) POP3 `search` on a big QQ box needs a small `limit`: the client filter scans until
+  `limit` messages matched or 200 were seen, at about 0.17 s per `TOP`.
 
 ## Reproducing
 
@@ -187,6 +245,9 @@ python .python/run_host_script_smoke.py QQ_A <serial>
 python .python/run_host_script_smoke.py QQ_A <serial> --script docs/smoke/send-receive.js
 python .python/run_host_script_smoke.py NETEASE_A <serial> --script docs/smoke/send-receive-async.js
 python .python/run_host_script_smoke.py GMAIL_A <serial> --script docs/smoke/send-receive.js
+python .python/run_host_script_smoke.py GMAIL_A <serial> --script docs/smoke/token-provider.js
+python .python/run_host_script_smoke.py NETEASE_A <serial> --script docs/smoke/pop3.js
+python .python/run_host_script_smoke.py QQ_A <serial> --script docs/smoke/hold-session.js   # then: adb -s <serial> shell am force-stop org.autojs.autojs6
 ```
 
 The host must already be installed on the device with the current debug build (`adb install -r`
