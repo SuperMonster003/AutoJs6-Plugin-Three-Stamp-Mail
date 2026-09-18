@@ -18,6 +18,7 @@
 * `機能` Binder セッション制御 (ロードマップ P2.5): セッションを開けるのと保存済みアカウントを一覧できるのは, インストール済みで本プラグインと同じ鍵で署名された AutoJs6 ホストだけ (それ以外は `SecurityException`, MCP Server プラグインと同じ規則); リクエストとレスポンスのエンベロープは `MAX_ENVELOPE_BYTES` 以内, エラーメッセージは `MAX_ERROR_MESSAGE_BYTES` 以内; 各セッションは呼び出しを順に実行し, 実行中の呼び出しの後ろに最大 `MAX_QUEUED_CALLS` 件をキューに入れ, それ以上は `LIMIT_EXCEEDED` で拒否; `cancel` はキュー内の呼び出しに即座に応答し, 実行中の呼び出しはソケットを閉じて中断するため, 応答しないサーバーで読み取りタイムアウトまで待つことはなくなった; `close` は保留中の全呼び出しに `SESSION_CLOSED` を返す; `getStatus` は `queued` と `active` を報告; 操作表は各操作が対応する受信プロトコルを示し, POP3 アカウントは引数の解析前に拒否される; capabilities は `append` と `clientSearchFallback` を宣言
 * `機能` 10 言語の README, プラグインセンターの説明, 更新履歴
 * `修正` プロバイダープリセット (ロードマップ P3.2): 163 Mail と 126 Mail は SMTP で送信したすべてのメールをサーバー側で保存するため, 両者の `autoSavesSent` を true にし, 既定の `saveToSent` が `已发送` に 2 通目のコピーを追加しないようにしました (実際の 163 アカウントで確認: `saveToSent: false` で送信したメールが数分後に送信済みフォルダーに現れました)
+* `改善` エラーマッピング: アカウントの POP アクセスが無効なためログイン後にメールボックスを拒否する POP3 サーバー (Gmail は STAT に `[SYS/PERM] Your account is not enabled for POP access` と応答) に対して, 再試行可能な `IO_FAILED` "I/O failed" ではなく原因を示すメッセージ付きの `UNSUPPORTED_OPERATION` を返すようにしました
 * `依存関係` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) と Angus Activation 2.0.3, Jakarta Activation API 2.1.4
 * `依存関係` JVM メールコアテスト用に GreenMail 2.1.13 を追加 (テストスコープのみ)
 * `依存関係` 共有プラグインコントラクトとして `common-plugin-api.aar` (AutoJs6 モジュール `plugin-api/common-plugin-api`, ホストビルド 6.8.0 / 5282, MPL 2.0) を追加し, `locks/host-api-aars.lock` でハッシュを固定

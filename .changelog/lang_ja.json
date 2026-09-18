@@ -23,6 +23,9 @@
       "fix": [
         "プロバイダープリセット (ロードマップ P3.2): 163 Mail と 126 Mail は SMTP で送信したすべてのメールをサーバー側で保存するため, 両者の `autoSavesSent` を true にし, 既定の `saveToSent` が `已发送` に 2 通目のコピーを追加しないようにしました (実際の 163 アカウントで確認: `saveToSent: false` で送信したメールが数分後に送信済みフォルダーに現れました)"
       ],
+      "improvement": [
+        "エラーマッピング: アカウントの POP アクセスが無効なためログイン後にメールボックスを拒否する POP3 サーバー (Gmail は STAT に `[SYS/PERM] Your account is not enabled for POP access` と応答) に対して, 再試行可能な `IO_FAILED` \"I/O failed\" ではなく原因を示すメッセージ付きの `UNSUPPORTED_OPERATION` を返すようにしました"
+      ],
       "dependency": [
         "Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) と Angus Activation 2.0.3, Jakarta Activation API 2.1.4",
         "JVM メールコアテスト用に GreenMail 2.1.13 を追加 (テストスコープのみ)",

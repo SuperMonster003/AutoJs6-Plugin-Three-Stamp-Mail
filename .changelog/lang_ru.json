@@ -23,6 +23,9 @@
       "fix": [
         "Предустановки провайдеров (дорожная карта P3.2): 163 Mail и 126 Mail сохраняют на сервере копию каждого письма, отправленного через SMTP, поэтому `autoSavesSent` для обоих теперь true, и `saveToSent` по умолчанию больше не добавляет вторую копию в `已发送` (проверено на реальной учетной записи 163: письмо, отправленное с `saveToSent: false`, появилось в папке отправленных через несколько минут)"
       ],
+      "improvement": [
+        "Сопоставление ошибок: POP3-сервер, который после входа отказывает в доступе к ящику из-за отключенного POP-доступа учетной записи (Gmail отвечает на STAT `[SYS/PERM] Your account is not enabled for POP access`), теперь дает `UNSUPPORTED_OPERATION` с сообщением о причине вместо повторяемого `IO_FAILED` \"I/O failed\""
+      ],
       "dependency": [
         "Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) вместе с Angus Activation 2.0.3 и Jakarta Activation API 2.1.4",
         "Добавлен GreenMail 2.1.13 для JVM-тестов почтового ядра (только тестовая область)",

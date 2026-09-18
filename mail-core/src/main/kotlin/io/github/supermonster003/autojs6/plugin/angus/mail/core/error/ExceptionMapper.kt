@@ -29,6 +29,9 @@ import java.nio.channels.ClosedByInterruptException
 import java.security.cert.CertificateException
 import javax.net.ssl.SSLException
 
+/** Gmail's reply to STAT when POP is disabled for the account: `[SYS/PERM] Your account is not enabled for POP access`. */
+private const val POP_ACCESS_DISABLED = "not enabled for POP"
+
 /**
  * Turns whatever Jakarta Mail, the JDK, or the mail core itself throws into a [MailException]
  * with a contract error code (roadmap D18). Messages and details pass through the [Redactor], so a
@@ -100,6 +103,11 @@ class ExceptionMapper(private val redactor: Redactor) {
         }
         if (chain.any { it is SocketException || it is EOFException }) {
             return Classified(MailErrorCode.CONNECT_FAILED, "the connection to the server was lost")
+        }
+        // Gmail answers STAT with "[SYS/PERM] Your account is not enabled for POP access" after a successful login;
+        // Angus surfaces it as a plain IOException, which would otherwise read as a retryable "I/O failed".
+        if (chain.any { it is IOException && it.message?.contains(POP_ACCESS_DISABLED, ignoreCase = true) == true }) {
+            return Classified(MailErrorCode.UNSUPPORTED_OPERATION, "POP access is not enabled for this account at the provider", retryable = false)
         }
         if (chain.any { it is IOException }) return Classified(MailErrorCode.IO_FAILED, "I/O failed")
         if (chain.any { it is MessagingException }) return Classified(MailErrorCode.SERVER_ERROR, "the mail server reported an error", retryable = false)

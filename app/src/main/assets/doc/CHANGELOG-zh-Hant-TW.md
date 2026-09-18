@@ -18,6 +18,7 @@
 * `新增` Binder 工作階段控制 (路線圖 P2.5): 只有已安裝且與本外掛程式同簽章的 AutoJs6 宿主能開啟工作階段或列出已儲存帳戶 (否則 `SecurityException`, 規則與 MCP Server 外掛程式一致); 請求與回應信封不超過 `MAX_ENVELOPE_BYTES`, 錯誤訊息不超過 `MAX_ERROR_MESSAGE_BYTES`; 每個工作階段依序執行呼叫, 執行中的呼叫之後最多排隊 `MAX_QUEUED_CALLS` 個, 再多則 `LIMIT_EXCEEDED`; `cancel` 立即回應排隊中的呼叫, 並透過關閉通訊端中斷執行中的呼叫, 伺服器無回應時不再等到讀取逾時; `close` 讓全部待處理呼叫回應 `SESSION_CLOSED`; `getStatus` 回報 `queued` 與 `active`; 操作表標明每個操作支援的收信協定, POP3 帳戶在解析參數前即被拒絕; 能力集宣告 `append` 與 `clientSearchFallback`
 * `新增` 10 種語言的 README, 外掛程式中心說明與更新日誌
 * `修復` 服務商預設 (路線圖 P3.2): 163 信箱與 126 信箱會在伺服器端保存每封經 SMTP 發出的郵件, 兩者的 `autoSavesSent` 改為 true, 預設 `saveToSent` 不再向 `已发送` 追加第二份副本 (真實 163 帳戶核實: `saveToSent: false` 發出的郵件數分鐘後出現在已發送資料夾)
+* `優化` 錯誤對應: POP3 伺服器在登入後因帳戶未開啟 POP 存取而拒絕信箱 (Gmail 對 STAT 回應 `[SYS/PERM] Your account is not enabled for POP access`) 時, 現在得到說明原因的 `UNSUPPORTED_OPERATION`, 而不是可重試的 `IO_FAILED` "I/O failed"
 * `相依性` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) 及 Angus Activation 2.0.3 與 Jakarta Activation API 2.1.4
 * `相依性` 附加 GreenMail 2.1.13 用於 JVM 郵件核心測試 (僅測試範圍)
 * `相依性` 附加 `common-plugin-api.aar` (AutoJs6 模組 `plugin-api/common-plugin-api`, 宿主組建 6.8.0 / 5282, MPL 2.0) 作為共用外掛程式契約, 並在 `locks/host-api-aars.lock` 中鎖定雜湊

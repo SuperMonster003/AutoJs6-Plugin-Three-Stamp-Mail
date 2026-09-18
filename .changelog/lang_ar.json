@@ -23,6 +23,9 @@
       "fix": [
         "إعدادات مزودي الخدمة المسبقة (خارطة الطريق P3.2): يحتفظ 163 Mail و126 Mail بنسخة على الخادم من كل رسالة مرسلة عبر SMTP، لذا أصبح `autoSavesSent` بقيمة true لكليهما ولم يعد `saveToSent` الافتراضي يضيف نسخة ثانية إلى `已发送` (تم التحقق بحساب 163 حقيقي: ظهرت رسالة مرسلة مع `saveToSent: false` في مجلد المرسل بعد بضع دقائق)"
       ],
+      "improvement": [
+        "تعيين الاخطاء: خادم POP3 يرفض صندوق البريد بعد تسجيل الدخول لان وصول POP معطل للحساب (يرد Gmail على STAT بـ `[SYS/PERM] Your account is not enabled for POP access`) يعطي الان `UNSUPPORTED_OPERATION` مع رسالة تذكر السبب بدلا من `IO_FAILED` \"I/O failed\" القابل لاعادة المحاولة"
+      ],
       "dependency": [
         "Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) مع Angus Activation 2.0.3 و Jakarta Activation API 2.1.4",
         "إضافة GreenMail 2.1.13 لاختبارات نواة البريد على JVM (نطاق الاختبار فقط)",
