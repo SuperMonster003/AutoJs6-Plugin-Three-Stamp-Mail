@@ -689,8 +689,8 @@ mail.searchAsync({ subject: '发票', since: '2026-09-01' }).then(list => consol
 | `outlook` | outlook.office365.com:993 ssl | outlook.office365.com:995 ssl | smtp-mail.outlook.com:587 starttls | 仅 XOAUTH2 (IMAP 已禁基本认证) | Outlook.com 个人账户 |
 | `office365` | outlook.office365.com:993 ssl | outlook.office365.com:995 ssl | smtp.office365.com:587 starttls | XOAUTH2 (SMTP 基本认证 2026-12 起默认禁用) | 租户策略可能禁用 |
 | `qq` | imap.qq.com:993 ssl | pop.qq.com:995 ssl | smtp.qq.com:465 ssl | 授权码 | 已发送文件夹 `Sent Messages`; 非 ASCII SEARCH 不稳定; POP3 的 UIDL 为 30 字符不透明串, `TOP` / `LIST` 每封各约 0.17 s |
-| `163` | imap.163.com:993 ssl | pop.163.com:995 ssl | smtp.163.com:465 ssl | 授权码 | 每条 IMAP 连接需 `ID` 命令; 不自动保存已发送 (`已发送`); `UID EXPUNGE` 答 BAD; STATUS 不给 UIDNEXT; yeah.net 用 imap / smtp.yeah.net, 其余同 |
-| `126` | imap.126.com:993 ssl | pop.126.com:995 ssl | smtp.126.com:465 ssl | 授权码 | 同 163 |
+| `163` | imap.163.com:993 ssl | pop.163.com:995 ssl | smtp.163.com:465 ssl | 授权码 | 每条 IMAP 连接需 `ID` 命令; 服务器自动保存已发送到 `已发送` (2026-09-19 真实账户核实: `saveToSent: false` 发出的邮件数分钟后出现在该文件夹, 此前预设误标为不自动保存, 导致每封双份); SEARCH SUBJECT / FROM 对刚投递的邮件答 OK 但 0 命中 (`since` 正常), 脚本用 `fallback: 'always'`; `UID EXPUNGE` 答 BAD; STATUS 不给 UIDNEXT; yeah.net 用 imap / smtp.yeah.net, 其余同 |
+| `126` | imap.126.com:993 ssl | pop.126.com:995 ssl | smtp.126.com:465 ssl | 授权码 | 同 163 (含自动保存已发送, 按同一 NetEase 策略推定, 无 126 测试账户) |
 | `icloud` | imap.mail.me.com:993 ssl | - | smtp.mail.me.com:587 starttls | App-Specific Password | 无 POP3 |
 | `yahoo` | imap.mail.yahoo.com:993 ssl | pop.mail.yahoo.com:995 ssl | smtp.mail.yahoo.com:465 ssl | App Password | |
 | `sina` | imap.sina.com:993 ssl | pop.sina.com:995 ssl | smtp.sina.com:465 ssl | 授权码 | |

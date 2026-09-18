@@ -70,11 +70,11 @@
       "smtp": {"host": "smtp.163.com", "port": 465, "tls": "ssl"},
       "auth": ["password"],
       "authHint": "Authorization code from the 163 Mail settings (POP3/SMTP/IMAP page), not the account password",
-      "autoSavesSent": false,
+      "autoSavesSent": true,
       "sentFolder": "已发送",
       "requiresClientId": true,
       "docsUrl": "https://help.mail.163.com/",
-      "notes": "The IMAP server answers Unsafe Login to SELECT and EXAMINE on every connection that has not sent the ID command; the plugin identifies each connection it opens."
+      "notes": "The IMAP server answers Unsafe Login to SELECT and EXAMINE on every connection that has not sent the ID command; the plugin identifies each connection it opens. The server keeps a copy of every message sent through SMTP in the sent folder (it appears with a delay of up to a few minutes), and SEARCH by SUBJECT or FROM answers OK without hits for just-delivered mail."
     },
     {
       "id": "126",
@@ -85,11 +85,11 @@
       "smtp": {"host": "smtp.126.com", "port": 465, "tls": "ssl"},
       "auth": ["password"],
       "authHint": "Authorization code from the 126 Mail settings (POP3/SMTP/IMAP page), not the account password",
-      "autoSavesSent": false,
+      "autoSavesSent": true,
       "sentFolder": "已发送",
       "requiresClientId": true,
       "docsUrl": "https://help.mail.126.com/",
-      "notes": "Same servers policy as 163 Mail: every IMAP connection has to send the ID command before SELECT or EXAMINE; the plugin identifies each connection it opens."
+      "notes": "Same servers policy as 163 Mail: every IMAP connection has to send the ID command before SELECT or EXAMINE; the plugin identifies each connection it opens, and the server is expected to keep its own copy of sent mail like 163 Mail does."
     },
     {
       "id": "icloud",

@@ -20,6 +20,9 @@
         "Contrôle des sessions Binder (feuille de route P2.5) : seul l'hôte AutoJs6 installé et signé avec la même clé que ce plugin peut ouvrir des sessions ou lister les comptes enregistrés (`SecurityException` sinon, la même règle que le plugin MCP Server) ; les enveloppes de requête et de réponse sont limitées à `MAX_ENVELOPE_BYTES` et les messages d'erreur à `MAX_ERROR_MESSAGE_BYTES` ; chaque session exécute ses appels dans l'ordre et en met jusqu'à `MAX_QUEUED_CALLS` en attente derrière celui en cours, le suivant étant refusé avec `LIMIT_EXCEEDED` ; `cancel` répond aussitôt à un appel en attente et interrompt l'appel en cours en fermant ses sockets, si bien qu'un serveur muet ne coûte plus le délai de lecture ; `close` répond `SESSION_CLOSED` à tous les appels en suspens ; `getStatus` rapporte `queued` et `active` ; la table des opérations indique les protocoles de réception de chaque opération, les comptes POP3 sont donc refusés avant l'analyse des arguments ; les capacités annoncent `append` et `clientSearchFallback`",
         "README, instructions du centre de plugins et journal des modifications en 10 langues"
       ],
+      "fix": [
+        "Preselections de fournisseurs (feuille de route P3.2) : 163 Mail et 126 Mail conservent sur le serveur une copie de chaque message envoye par SMTP, `autoSavesSent` vaut donc desormais true pour les deux et le `saveToSent` par defaut n'ajoute plus une seconde copie dans `已发送` (verifie avec un vrai compte 163 : un message envoye avec `saveToSent: false` est apparu dans le dossier des envoyes quelques minutes plus tard)"
+      ],
       "dependency": [
         "Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) avec Angus Activation 2.0.3 et Jakarta Activation API 2.1.4",
         "Ajout de GreenMail 2.1.13 pour les tests JVM du coeur de messagerie (portee de test uniquement)",
