@@ -3,15 +3,18 @@ package io.github.supermonster003.autojs6.plugin.angus.mail.binder
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorCode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.toJson
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.AttachmentSource
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.OutgoingMessageParser
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.session.MailSession
 import org.autojs.plugin.mail.api.MailContract
 
 /**
  * The op table of one session (roadmap P2.5 `RequestRouter`, started in P2.1 with the session
- * operations): each handler receives the `args` object as a JSON string and returns the `result`
- * as a JSON document. Ops of the contract without a handler answer `UNSUPPORTED_OPERATION`; names
- * outside the contract answer `INVALID_ARGUMENT`. The table is static so the JVM snapshot test
- * can compare it with `MailContract.OPS` without a session.
+ * operations): each handler receives the `args` object as a JSON string plus the attachment
+ * sources of the call and returns the `result` as a JSON document. Ops of the contract without a
+ * handler answer `UNSUPPORTED_OPERATION`; names outside the contract answer `INVALID_ARGUMENT`.
+ * The table is static so the JVM snapshot test can compare it with `MailContract.OPS` without a
+ * session.
  */
 internal class RequestRouter(private val session: MailSession) {
 
@@ -24,7 +27,7 @@ internal class RequestRouter(private val session: MailSession) {
 
     fun interface Handler {
         /** Runs the operation on the session executor thread; throws [MailException] or anything the mapper understands. */
-        fun handle(session: MailSession, argsJson: String): String
+        fun handle(session: MailSession, argsJson: String, sources: List<AttachmentSource>): String
     }
 
     fun route(op: String?): Route = when {
@@ -33,15 +36,19 @@ internal class RequestRouter(private val session: MailSession) {
         else -> HANDLERS[op]?.let { Route.Handled(it) } ?: Route.Unsupported
     }
 
-    /** Runs [op] and returns the result document; failures come back as [MailException]. */
-    fun execute(op: String?, argsJson: String): String {
+    /**
+     * Runs [op] and returns the result document; failures come back as [MailException]. The
+     * attachment sources are resolved only for a handled op, after routing, so a descriptor
+     * problem never hides an unknown or unsupported op.
+     */
+    fun execute(op: String?, argsJson: String, sources: () -> List<AttachmentSource> = { emptyList() }): String {
         val handler = when (val route = route(op)) {
             is Route.Handled -> route.handler
             Route.Unsupported -> throw MailException.unsupported("$op is not implemented yet")
             Route.Unknown -> throw MailException.invalidArgument(if (op == null) "request carries no op" else "unknown op: $op")
         }
         return try {
-            handler.handle(session, argsJson)
+            handler.handle(session, argsJson, sources())
         } catch (e: MailException) {
             throw e
         } catch (e: Throwable) {
@@ -51,10 +58,21 @@ internal class RequestRouter(private val session: MailSession) {
 
     companion object {
         val HANDLERS: Map<String, Handler> = linkedMapOf(
-            MailContract.OP_SESSION_TEST to Handler { session, _ -> session.test().toJson() },
+            MailContract.OP_SESSION_TEST to Handler { session, _, _ -> session.test().toJson() },
             // The Binder closes the session after this result went out (contract B.3 ordering).
-            MailContract.OP_SESSION_CLOSE to Handler { _, _ -> "true" },
+            MailContract.OP_SESSION_CLOSE to Handler { _, _, _ -> "true" },
+            MailContract.OP_MAIL_SEND to Handler { session, args, sources ->
+                val send = OutgoingMessageParser.parseSendArgs(args, sources)
+                session.send(send.message, send.saveToSent).toJson()
+            },
+            MailContract.OP_MESSAGES_APPEND to Handler { session, args, sources ->
+                val append = OutgoingMessageParser.parseAppendArgs(args, sources)
+                session.append(append.folder, append.message, append.flags).toJson()
+            },
         )
+
+        /** Ops whose `call` may carry descriptors: attachment sources (send, append) or the sink of a download. */
+        fun takesDescriptors(op: String?): Boolean = op != null && (op in MailContract.OPS_WITH_SOURCES || op in MailContract.OPS_WITH_SINK)
 
         val SUPPORTED_OPS: Set<String> get() = HANDLERS.keys
 

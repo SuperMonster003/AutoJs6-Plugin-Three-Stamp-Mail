@@ -10,9 +10,13 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorC
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.Redactor
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.AccountDocument
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.AppendResult
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.EndpointReport
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.SendResult
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.SessionTestResult
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.toDocument
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.OutgoingMessage
+import jakarta.mail.Flags
 import java.io.Closeable
 
 /**
@@ -109,6 +113,82 @@ class MailSession(
             elapsedMs = clock() - started,
         )
     }
+
+    /**
+     * `mail.send` (roadmap P2.2): sends through SMTP, then files a copy in the sent folder when
+     * [saveToSent] is true, or when it is null and the provider preset says the server does not
+     * do it by itself. The copy needs an IMAP receive endpoint; a failure to file it does not undo
+     * the send and is reported in the result instead of thrown.
+     */
+    fun send(message: OutgoingMessage, saveToSent: Boolean? = null): SendResult {
+        ensureOpen()
+        val started = clock()
+        val sent = smtp { it.send(message) }
+        // A provider that files its own copy never gets a second one: Gmail would show a duplicate
+        // and QQ refuses the APPEND outright ("NO Mail has saved by smtp!", verified 2026-09-18).
+        val serverKeepsCopy = account.provider?.autoSavesSent == true
+        val wantsCopy = when (saveToSent) {
+            true -> !serverKeepsCopy
+            false -> false
+            null -> account.provider?.autoSavesSent == false
+        }
+        val canCopy = account.receive == MailProtocol.IMAP && account.imap != null
+        var savedToSent = false
+        var sentFolder: String? = null
+        var saveError: MailException? = null
+        if (wantsCopy && canCopy) {
+            try {
+                imap { mailbox ->
+                    sentFolder = resolveSentFolder(mailbox)
+                    val folder = sentFolder
+                    if (folder != null) {
+                        mailbox.append(folder, sent.mime, Flags(Flags.Flag.SEEN))
+                        savedToSent = true
+                    }
+                }
+            } catch (e: MailException) {
+                saveError = e
+            }
+        }
+        return SendResult(
+            messageId = sent.messageId,
+            accepted = sent.accepted,
+            savedToSent = savedToSent,
+            sentCopy = when {
+                savedToSent -> SendResult.SENT_COPY_APPENDED
+                saveError != null -> SendResult.SENT_COPY_FAILED
+                serverKeepsCopy -> SendResult.SENT_COPY_SERVER
+                else -> SendResult.SENT_COPY_NONE
+            },
+            sentFolder = sentFolder,
+            saveError = saveError?.toDocument(),
+            elapsedMs = clock() - started,
+        )
+    }
+
+    /** `messages.append`: stores a composed message in [folder] (drafts, archived copies). */
+    fun append(folder: String, message: OutgoingMessage, flags: Flags): AppendResult {
+        ensureOpen()
+        val uid = imap { mailbox ->
+            val mime = smtpComposer().compose(message)
+            mailbox.append(folder, mime, flags)
+        }
+        return AppendResult(folder, uid)
+    }
+
+    /**
+     * The sent folder: the preset's name when that folder exists, else the `\Sent` special-use
+     * folder, else the first existing conventional name; null when nothing matches (the plugin
+     * never creates folders on its own).
+     */
+    fun resolveSentFolder(mailbox: ImapMailbox): String? {
+        account.provider?.sentFolder?.let { preset -> if (mailbox.folderExists(preset)) return preset }
+        mailbox.findSpecialUse("\\Sent")?.let { return it }
+        return ImapMailbox.SENT_FOLDER_CANDIDATES.firstOrNull { mailbox.folderExists(it) }
+    }
+
+    /** A sender used for composing only; it never connects. */
+    private fun smtpComposer(): SmtpSender = SmtpSender(account, secret, trace)
 
     private fun probe(protocol: MailProtocol, endpoint: MailEndpoint, capabilities: () -> List<String>): EndpointReport {
         val started = clock()

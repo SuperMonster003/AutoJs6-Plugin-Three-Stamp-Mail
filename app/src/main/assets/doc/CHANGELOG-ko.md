@@ -12,6 +12,7 @@
 * `기능` 플러그인 식별자 `angus-mail` (엔진 `mail`), INFO 서비스, Wake Activity, 그리고 `org.autojs.plugin.MAIL` 서비스; 해당 `IMailPlugin` Binder 는 플러그인 정보, 기능, 공급자 및 저장된 계정 목록과 세션 봉투에 응답 (개별 작업은 P2 에서 구현)
 * `기능` Eclipse Angus Mail 기반 메일 코어: SSL 또는 STARTTLS를 쓰는 IMAP / POP3 / SMTP 세션 속성, 비밀번호와 XOAUTH2 인증, SMTP 전송과 IMAP 받은 편지함 나열을 로컬 GreenMail 서버에서 검증
 * `기능` 메일 코어 계정 계층 (로드맵 P2.1): Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina, Aliyun 프로바이더 프리셋, 프로토콜별 타임아웃, `tls.trustAll`, IMAP `ID` 명령, 마스킹된 `debug` 트레이스를 갖춘 계정 옵션; 세션은 지연 연결하고 유휴 연결을 끊으며 끊김 후 재연결; `session.test` 는 Binder 를 통해 엔드포인트별 기능과 왕복 시간을 반환
+* `기능` 발신 (로드맵 P2.2): `mail.send` 는 to / cc / bcc / replyTo, 텍스트와 HTML 본문 (`multipart/alternative`), 호스트가 전달한 디스크립터에서 읽는 첨부 파일과 인라인 이미지 (`multipart/mixed` / `multipart/related`), 사용자 정의 헤더, 우선순위, `inReplyTo` / `references` 와 날짜를 지원; 수신자, 첨부, 헤더 상한과 헤더 인젝션 거부; `saveToSent` 는 프로바이더가 자동 저장하지 않을 때만 IMAP 으로 사본을 추가; `messages.append` 는 초안을 저장하고 UID 를 반환; 실제 기기에서 QQ 메일과 Gmail 로 검증
 * `기능` 10개 언어의 README, 플러그인 센터 안내, 변경 로그
 * `의존성` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`)와 Angus Activation 2.0.3, Jakarta Activation API 2.1.4
 * `의존성` JVM 메일 코어 테스트용 GreenMail 2.1.13 추가 (테스트 범위만)

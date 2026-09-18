@@ -3,37 +3,21 @@ package io.github.supermonster003.autojs6.plugin.angus.mail.core.session
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccount
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailSecret
-import jakarta.activation.DataHandler
-import jakarta.activation.FileDataSource
-import jakarta.mail.Message
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.MessageComposer
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.OutgoingMessage
 import jakarta.mail.MessagingException
-import jakarta.mail.Session
-import jakarta.mail.internet.InternetAddress
-import jakarta.mail.internet.MimeBodyPart
 import jakarta.mail.internet.MimeMessage
-import jakarta.mail.internet.MimeMultipart
 import org.eclipse.angus.mail.smtp.SMTPTransport
 import java.io.Closeable
-import java.io.File
-import java.util.Date
 
-/** Minimal outgoing message; roadmap P2.2 extends it with cc / bcc / inline images / headers / priority. */
-data class OutgoingMessage(
-    val to: List<String>,
-    val subject: String,
-    val text: String,
-    val html: String? = null,
-    val attachments: List<File> = emptyList(),
-    val from: String? = null,
-) {
-    init {
-        require(to.isNotEmpty()) { "at least one recipient is required" }
-    }
-}
+/** What [SmtpSender.send] returns: the message as it went out, for the `saveToSent` copy. */
+class SentMessage(val mime: MimeMessage, val messageId: String, val accepted: List<String>)
 
 /**
  * Sends messages through the account's SMTP endpoint over one transport that stays connected
- * between calls; the session's [ConnectionGuard] owns its lifetime and idle expiry.
+ * between calls; the session's [ConnectionGuard] owns its lifetime and idle expiry. Delivery is
+ * all-or-nothing: Jakarta's `sendpartial` stays off, so a rejected recipient aborts the
+ * transaction before `DATA` and the failure carries the rejected and unsent addresses.
  */
 class SmtpSender(
     private val account: MailAccount,
@@ -62,16 +46,17 @@ class SmtpSender(
 
     /** Builds the MIME message without sending it, so tests can parse the exact bytes that would go out. */
     fun compose(message: OutgoingMessage): MimeMessage =
-        compose(MailSessionFactory.session(account, MailProtocol.SMTP, secret), message)
+        MessageComposer.compose(MailSessionFactory.session(account, MailProtocol.SMTP, secret), account, message)
 
-    /** Sends [message] and returns its `Message-ID`. */
-    fun send(message: OutgoingMessage): String {
+    /** Sends [message] to every recipient (To, Cc and Bcc) and returns the outgoing message with its `Message-ID`. */
+    fun send(message: OutgoingMessage): SentMessage {
         val mime = compose(message)
+        val recipients = mime.allRecipients
         val live = connect().transport!!
-        trace.timed(MailProtocol.SMTP.id, "send to=${mime.allRecipients.size}") {
-            live.sendMessage(mime, mime.allRecipients)
+        trace.timed(MailProtocol.SMTP.id, "send recipients=${recipients.size} attachments=${message.attachments.size}") {
+            live.sendMessage(mime, recipients)
         }
-        return mime.messageID
+        return SentMessage(mime, mime.messageID, message.recipients.map { it.address })
     }
 
     override fun close() {
@@ -81,44 +66,6 @@ class SmtpSender(
             live.close()
         } catch (_: MessagingException) {
         }
-    }
-
-    private fun compose(session: Session, message: OutgoingMessage): MimeMessage {
-        val mime = MimeMessage(session)
-        mime.setFrom(message.from?.let { InternetAddress(it) } ?: InternetAddress(account.address, account.displayName, "UTF-8"))
-        mime.setRecipients(Message.RecipientType.TO, message.to.map { InternetAddress(it) }.toTypedArray())
-        mime.setSubject(message.subject, "UTF-8")
-        mime.sentDate = Date()
-
-        if (message.attachments.isEmpty() && message.html == null) {
-            mime.setText(message.text, "UTF-8")
-        } else {
-            val body = if (message.html == null) {
-                MimeBodyPart().apply { setText(message.text, "UTF-8") }
-            } else {
-                MimeBodyPart().apply {
-                    setContent(MimeMultipart("alternative").apply {
-                        addBodyPart(MimeBodyPart().apply { setText(message.text, "UTF-8") })
-                        addBodyPart(MimeBodyPart().apply { setContent(message.html, "text/html; charset=UTF-8") })
-                    })
-                }
-            }
-            mime.setContent(MimeMultipart("mixed").apply {
-                addBodyPart(body)
-                message.attachments.forEach { file ->
-                    addBodyPart(MimeBodyPart().apply {
-                        dataHandler = DataHandler(FileDataSource(file))
-                        fileName = file.name
-                        disposition = MimeBodyPart.ATTACHMENT
-                        // Byte-exact attachments: a text part sent as 7bit loses the line break that
-                        // precedes the closing MIME boundary and is subject to line-ending rewrites.
-                        setHeader("Content-Transfer-Encoding", "base64")
-                    })
-                }
-            })
-        }
-        mime.saveChanges()
-        return mime
     }
 
     companion object {

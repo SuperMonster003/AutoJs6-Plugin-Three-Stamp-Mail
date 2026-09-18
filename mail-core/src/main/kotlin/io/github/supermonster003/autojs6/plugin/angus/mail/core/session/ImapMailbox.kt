@@ -5,16 +5,19 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProt
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailSecret
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.MessageSummary
 import jakarta.mail.FetchProfile
+import jakarta.mail.Flags
 import jakarta.mail.Folder
 import jakarta.mail.MessagingException
 import jakarta.mail.UIDFolder
+import jakarta.mail.internet.MimeMessage
 import org.eclipse.angus.mail.imap.IMAPFolder
 import org.eclipse.angus.mail.imap.IMAPStore
 import java.io.Closeable
 
 /**
  * One connected IMAP store. P2.1 surface: capabilities, the `ID` handshake, folder access, and
- * the inbox listing of the P0 spike; roadmap P2.3 adds the full operation set on top.
+ * the inbox listing of the P0 spike; P2.2 adds `APPEND` and the sent-folder lookup; roadmap P2.3
+ * adds the full operation set on top.
  */
 class ImapMailbox private constructor(
     private val store: IMAPStore,
@@ -56,6 +59,37 @@ class ImapMailbox private constructor(
         }
     }
 
+    fun folderExists(name: String): Boolean = trace.timed(MailProtocol.IMAP.id, "exists $name") { store.getFolder(name).exists() }
+
+    /**
+     * The first folder that carries the special-use attribute [attribute] (RFC 6154, e.g. `\Sent`)
+     * in the server's `LIST` reply, or null. Servers without SPECIAL-USE return no attributes.
+     */
+    fun findSpecialUse(attribute: String): String? = trace.timed(MailProtocol.IMAP.id, "list special-use $attribute") {
+        store.defaultFolder.list("*")
+            .filterIsInstance<IMAPFolder>()
+            .firstOrNull { folder -> runCatching { folder.attributes.any { it.equals(attribute, ignoreCase = true) } }.getOrDefault(false) }
+            ?.fullName
+    }
+
+    /**
+     * Appends [mime] to [folder] with [flags] and returns its UID when the server supports
+     * `UIDPLUS`, otherwise null. The folder must exist; a missing one surfaces as `FOLDER_NOT_FOUND`.
+     */
+    fun append(folder: String, mime: MimeMessage, flags: Flags): Long? {
+        mime.setFlags(flags, true)
+        return withFolder(folder, Folder.READ_WRITE) { target ->
+            trace.timed(MailProtocol.IMAP.id, "append $folder") {
+                if (store.hasCapability("UIDPLUS")) {
+                    target.appendUIDMessages(arrayOf(mime)).firstOrNull()?.uid?.takeIf { it >= 0 }
+                } else {
+                    target.appendMessages(arrayOf(mime))
+                    null
+                }
+            }
+        }
+    }
+
     /**
      * Sends the `ID` command (RFC 2971) with [clientId]. Servers that do not advertise `ID` are
      * skipped; a server that rejects the command does not fail the connection either, because the
@@ -89,6 +123,9 @@ class ImapMailbox private constructor(
             "ESEARCH", "SORT", "THREAD=REFERENCES", "WITHIN", "LITERAL+", "LITERAL-", "BINARY",
             "COMPRESS=DEFLATE", "UTF8=ACCEPT", "AUTH=PLAIN", "AUTH=XOAUTH2",
         )
+
+        /** Names tried for the sent folder when neither the preset nor a special-use attribute names it. */
+        val SENT_FOLDER_CANDIDATES: List<String> = listOf("Sent", "Sent Messages", "Sent Items", "INBOX.Sent", "INBOX/Sent", "已发送")
 
         fun connect(account: MailAccount, secret: MailSecret, trace: ProtocolTrace = ProtocolTrace.disabled()): ImapMailbox {
             val store = MailSessionFactory.connectStore(account, MailProtocol.IMAP, secret, trace) as IMAPStore

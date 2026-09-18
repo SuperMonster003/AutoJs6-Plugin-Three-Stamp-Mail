@@ -10,6 +10,7 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailEndp
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailSecret
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailTimeouts
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.TlsMode
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.OutgoingMessage
 import jakarta.mail.AuthenticationFailedException
 import jakarta.mail.Folder
 import jakarta.mail.MessagingException
@@ -60,14 +61,14 @@ class GreenMailRoundTripTest {
         val attachment = temporaryFolder.newFile("report.csv").apply { writeText("id,total\n1,42\n") }
         val messageId = SmtpSender(alice(TlsMode.NONE), MailSecret(ALICE_PASSWORD)).use { sender ->
             sender.send(
-                OutgoingMessage(
+                OutgoingMessage.simple(
                     to = listOf(BOB),
                     subject = SUBJECT,
                     text = "See the attachment",
                     html = "<p>See the <b>attachment</b></p>",
                     attachments = listOf(attachment),
                 ),
-            )
+            ).messageId
         }
         assertTrue(messageId.startsWith("<") && messageId.endsWith(">"))
         assertTrue(greenMail.waitForIncomingEmail(5_000, 1))
@@ -118,7 +119,7 @@ class GreenMailRoundTripTest {
 
     @Test
     fun implicitTlsEndpointsWorkWithTrustAll() {
-        SmtpSender(alice(TlsMode.SSL), MailSecret(ALICE_PASSWORD)).use { it.send(OutgoingMessage(listOf(BOB), SUBJECT, "over TLS")) }
+        SmtpSender(alice(TlsMode.SSL), MailSecret(ALICE_PASSWORD)).use { it.send(OutgoingMessage.simple(listOf(BOB), SUBJECT, "over TLS")) }
         assertTrue(greenMail.waitForIncomingEmail(5_000, 1))
         ImapMailbox.connect(bob(TlsMode.SSL), MailSecret(BOB_PASSWORD)).use { assertEquals(SUBJECT, it.listInbox(1).single().subject) }
         Pop3Mailbox.connect(bob(TlsMode.SSL), MailSecret(BOB_PASSWORD)).use { assertEquals(SUBJECT, it.listInbox(1).single().subject) }
@@ -130,7 +131,7 @@ class GreenMailRoundTripTest {
         // hostile server: an account that requires STARTTLS must refuse to continue in the clear.
         // Successful STARTTLS sessions are verified against real providers (port 587 / 143 / 110).
         assertStarttlsRefused("SMTP") {
-            SmtpSender(alice(TlsMode.STARTTLS), MailSecret(ALICE_PASSWORD)).use { it.send(OutgoingMessage(listOf(BOB), SUBJECT, "over STARTTLS")) }
+            SmtpSender(alice(TlsMode.STARTTLS), MailSecret(ALICE_PASSWORD)).use { it.send(OutgoingMessage.simple(listOf(BOB), SUBJECT, "over STARTTLS")) }
         }
         assertStarttlsRefused("IMAP") { ImapMailbox.connect(bob(TlsMode.STARTTLS), MailSecret(BOB_PASSWORD)).close() }
         assertStarttlsRefused("POP3") { Pop3Mailbox.connect(bob(TlsMode.STARTTLS), MailSecret(BOB_PASSWORD)).close() }
@@ -157,7 +158,7 @@ class GreenMailRoundTripTest {
             assertFalse(expected.message.orEmpty().contains("not-the-password"))
         }
         try {
-            SmtpSender(alice(TlsMode.NONE), MailSecret("not-the-password")).use { it.send(OutgoingMessage(listOf(BOB), SUBJECT, "x")) }
+            SmtpSender(alice(TlsMode.NONE), MailSecret("not-the-password")).use { it.send(OutgoingMessage.simple(listOf(BOB), SUBJECT, "x")) }
             fail("SMTP login with a wrong password must fail")
         } catch (expected: AuthenticationFailedException) {
             assertFalse(expected.message.orEmpty().contains("not-the-password"))
@@ -171,7 +172,7 @@ class GreenMailRoundTripTest {
         greenMail.setUser(CAROL, CAROL_LOGIN, token)
         val carol = account(CAROL, CAROL_LOGIN, TlsMode.NONE).copy(auth = AuthMethod.XOAUTH2)
 
-        SmtpSender(carol, MailSecret(token)).use { it.send(OutgoingMessage(listOf(CAROL), SUBJECT, "to myself over XOAUTH2")) }
+        SmtpSender(carol, MailSecret(token)).use { it.send(OutgoingMessage.simple(listOf(CAROL), SUBJECT, "to myself over XOAUTH2")) }
         assertTrue(greenMail.waitForIncomingEmail(5_000, 1))
         ImapMailbox.connect(carol, MailSecret(token)).use { assertEquals(SUBJECT, it.listInbox(1).single().subject) }
         Pop3Mailbox.connect(carol, MailSecret(token)).use { assertEquals(SUBJECT, it.listInbox(1).single().subject) }

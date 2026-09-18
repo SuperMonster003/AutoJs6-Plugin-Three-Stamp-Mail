@@ -5,6 +5,7 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailEndp
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailSecret
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.TlsMode
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.OutgoingMessage
 import jakarta.activation.CommandMap
 import jakarta.mail.internet.MimeBodyPart
 import jakarta.mail.internet.MimeMessage
@@ -40,7 +41,7 @@ class MailcapRegistryTest {
         val account = MailAccount("me@example.com", smtp = MailEndpoint("smtp.example.com", 465, TlsMode.SSL))
         val attachment = temporaryFolder.newFile("附件.txt").apply { writeText("attachment body") }
         val composed = SmtpSender(account, MailSecret("unused")).compose(
-            OutgoingMessage(listOf("you@example.com"), "Round trip", "text body", "<p>html body</p>", listOf(attachment)),
+            OutgoingMessage.simple(listOf("you@example.com"), "Round trip", "text body", "<p>html body</p>", listOf(attachment)),
         )
         val bytes = ByteArrayOutputStream().also { composed.writeTo(it) }.toByteArray()
 

@@ -3,6 +3,7 @@ package io.github.supermonster003.autojs6.plugin.angus.mail
 import io.github.supermonster003.autojs6.plugin.angus.mail.binder.RequestRouter
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccount
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailEndpoint
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailSecret
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.TlsMode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorCode
@@ -10,6 +11,7 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailExcept
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.session.MailSession
 import org.autojs.plugin.mail.api.MailContract
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -26,7 +28,10 @@ class RequestRouterTest {
 
     @Test
     fun everyHandledOpBelongsToTheContract() {
-        assertEquals(setOf(MailContract.OP_SESSION_TEST, MailContract.OP_SESSION_CLOSE), RequestRouter.SUPPORTED_OPS)
+        assertEquals(
+            setOf(MailContract.OP_SESSION_TEST, MailContract.OP_SESSION_CLOSE, MailContract.OP_MAIL_SEND, MailContract.OP_MESSAGES_APPEND),
+            RequestRouter.SUPPORTED_OPS,
+        )
         RequestRouter.SUPPORTED_OPS.forEach { assertTrue(it, MailContract.isKnownOp(it)) }
         assertEquals(MailContract.OPS.size, RequestRouter.SUPPORTED_OPS.size + RequestRouter.PENDING_OPS.size)
         assertTrue(RequestRouter.PENDING_OPS.none { it in RequestRouter.SUPPORTED_OPS })
@@ -49,9 +54,45 @@ class RequestRouterTest {
         assertTrue(failure(null).message.contains("no op"))
     }
 
-    private fun failure(op: String?): MailException {
+    @Test
+    fun descriptorsBelongToTheTransferOpsOnly() {
+        MailContract.OPS.forEach { op ->
+            assertEquals(op, op in MailContract.OPS_WITH_SOURCES || op in MailContract.OPS_WITH_SINK, RequestRouter.takesDescriptors(op))
+        }
+        assertTrue(RequestRouter.takesDescriptors(MailContract.OP_MAIL_SEND))
+        assertTrue(RequestRouter.takesDescriptors(MailContract.OP_MESSAGES_APPEND))
+        assertTrue(RequestRouter.takesDescriptors(MailContract.OP_ATTACHMENTS_DOWNLOAD))
+        assertFalse(RequestRouter.takesDescriptors(MailContract.OP_SESSION_TEST))
+        assertFalse(RequestRouter.takesDescriptors(null))
+    }
+
+    @Test
+    fun sourcesAreResolvedOnlyForHandledOps() {
+        val neverAsked: () -> List<Nothing> = { throw AssertionError("routing failures must precede the descriptor work") }
+        assertEquals(MailErrorCode.UNSUPPORTED_OPERATION, failure(MailContract.OP_MESSAGES_LIST, "{}", neverAsked).code)
+        assertEquals(MailErrorCode.INVALID_ARGUMENT, failure("messages.purge", "{}", neverAsked).code)
+        val descriptorProblem = failure(MailContract.OP_MAIL_SEND, "{}") { throw MailException.invalidArgument("descriptor 0 is not open") }
+        assertTrue(descriptorProblem.message, descriptorProblem.message.contains("descriptor 0"))
+    }
+
+    @Test
+    fun sendAndAppendValidateTheirArgumentsBeforeTouchingTheNetwork() {
+        val send = failure(MailContract.OP_MAIL_SEND, "{}")
+        assertEquals(MailErrorCode.INVALID_ARGUMENT, send.code)
+        assertTrue(send.message, send.message.contains("'message' is required"))
+        val unbound = failure(
+            MailContract.OP_MESSAGES_APPEND,
+            """{"folder":"Drafts","message":{"to":"bob@example.org","subject":"s","attachments":[{"descriptorIndex":0,"fileName":"a.txt"}]}}""",
+        )
+        assertEquals(MailErrorCode.INVALID_ARGUMENT, unbound.code)
+        assertTrue(unbound.message, unbound.message.contains("has no descriptor (0 supplied)"))
+        assertEquals(0, session.connectCount(MailProtocol.SMTP))
+        assertEquals(0, session.connectCount(MailProtocol.IMAP))
+    }
+
+    private fun failure(op: String?, args: String = "{}", sources: () -> List<Nothing> = { emptyList() }): MailException {
         try {
-            router.execute(op, "{}")
+            router.execute(op, args, sources)
         } catch (e: MailException) {
             return e
         }

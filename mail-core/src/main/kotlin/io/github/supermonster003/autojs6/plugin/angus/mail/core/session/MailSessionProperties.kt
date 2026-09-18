@@ -28,7 +28,6 @@ object MailSessionProperties {
             put("mail.mime.encodefilename", "true")
             put("mail.mime.parameters.strict", "false")
             put("mail.mime.address.strict", "false")
-            put("mail.mime.allowutf8", "true")
 
             if (protocol == MailProtocol.SMTP) {
                 put("mail.transport.protocol", provider)

@@ -10,6 +10,7 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.os.ParcelFileDescriptor
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.autojs.plugin.common.api.IPluginInfoProvider
@@ -29,6 +30,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -38,7 +40,8 @@ import java.util.concurrent.atomic.AtomicReference
  * Verifies the host-facing activation and discovery contract against the installed APK: the Wake
  * Activity, the INFO service (with a real `getInfo()` round trip), and the `org.autojs.plugin.MAIL`
  * service whose `IMailPlugin` Binder answers info, capabilities, listings and the session envelope
- * of `mail-api.aar` (roadmap P1.3; operations themselves arrive with P2).
+ * of `mail-api.aar` (roadmap P1.3), and the descriptor ownership rules of `call` for the transfer
+ * ops (roadmap P2.2: copies are validated on the session thread and closed before `onResult`).
  */
 @RunWith(AndroidJUnit4::class)
 class AngusMailPluginContractTest {
@@ -208,6 +211,53 @@ class AngusMailPluginContractTest {
             val unknown = call(session::call, callCallback, results, "req-3", "messages.purge")
             assertEquals(MailErrorCodes.INVALID_ARGUMENT, unknown.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
 
+            // Descriptor ownership (contract B.3, roadmap P2.2). The service runs in this process, so the
+            // descriptors reach the Binder as the very objects created here and their state is observable.
+            val attachment = File(context.cacheDir, "contract-attachment.bin").apply { writeBytes(ByteArray(64) { it.toByte() }) }
+            try {
+                fun open() = ParcelFileDescriptor.open(attachment, ParcelFileDescriptor.MODE_READ_ONLY)
+                val misplaced = open()
+                val notATransfer = call(session::call, callCallback, results, "req-d1", MailContract.OP_SESSION_TEST, descriptors = arrayOf(misplaced))
+                assertEquals(MailErrorCodes.INVALID_ARGUMENT, notATransfer.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
+                assertTrue(notATransfer.second.toString(), notATransfer.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_MESSAGE).contains("does not take descriptors"))
+                assertFalse("the plugin closes its copy before onResult", misplaced.fileDescriptor.valid())
+
+                val unbound = open()
+                val appendArgs = """{"folder":"Drafts","message":{"to":"bob@example.org","subject":"s","attachments":[{"descriptorIndex":1,"fileName":"a.bin"}]}}"""
+                val outOfRange = call(session::call, callCallback, results, "req-d2", MailContract.OP_MESSAGES_APPEND, appendArgs, arrayOf(unbound))
+                assertEquals(MailErrorCodes.INVALID_ARGUMENT, outOfRange.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
+                assertTrue(outOfRange.second.toString(), outOfRange.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_MESSAGE).contains("has no descriptor (1 supplied)"))
+                assertFalse(unbound.fileDescriptor.valid())
+
+                val pipe = ParcelFileDescriptor.createPipe()
+                val notSeekable = call(session::call, callCallback, results, "req-d3", MailContract.OP_MAIL_SEND, """{"message":{"to":"bob@example.org","subject":"s"}}""", arrayOf(pipe[0]))
+                pipe[1].close()
+                assertEquals(MailErrorCodes.INVALID_ARGUMENT, notSeekable.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
+                assertTrue(notSeekable.second.toString(), notSeekable.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_MESSAGE).contains("descriptor 0 is not a seekable file"))
+                assertFalse(pipe[0].fileDescriptor.valid())
+
+                val tooMany = Array(MailContract.MAX_DESCRIPTORS + 1) { open() }
+                val overLimit = call(session::call, callCallback, results, "req-d4", MailContract.OP_MAIL_SEND, """{"message":{"to":"bob@example.org","subject":"s"}}""", tooMany)
+                assertEquals(MailErrorCodes.LIMIT_EXCEEDED, overLimit.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
+                assertFalse(overLimit.second.getJSONObject(MailContract.FIELD_ERROR).getBoolean(MailContract.FIELD_ERROR_RETRYABLE))
+                assertTrue("every copy is closed after a rejected call", tooMany.none { it.fileDescriptor.valid() })
+
+                // A well-formed append reaches the mail core: nothing listens on the loopback port unless GreenMail
+                // is mapped, so the answer is either the appended folder or CONNECT_FAILED, never an argument error.
+                val bound = open()
+                val wellFormed = call(session::call, callCallback, results, "req-d5", MailContract.OP_MESSAGES_APPEND, appendArgs.replace("\"descriptorIndex\":1", "\"descriptorIndex\":0"), arrayOf(bound))
+                if (wellFormed.second.getBoolean(MailContract.FIELD_OK)) {
+                    assertEquals("Drafts", wellFormed.second.getJSONObject(MailContract.FIELD_RESULT).getString("folder"))
+                } else {
+                    val error = wellFormed.second.getJSONObject(MailContract.FIELD_ERROR)
+                    assertTrue(error.toString(), error.getString(MailContract.FIELD_ERROR_CODE) in setOf(MailErrorCodes.CONNECT_FAILED, MailErrorCodes.FOLDER_NOT_FOUND))
+                }
+                assertFalse(bound.fileDescriptor.valid())
+                assertFalse(results.toString().contains(FAKE_SECRET))
+            } finally {
+                attachment.delete()
+            }
+
             val closed = call(session::call, callCallback, results, "req-4", MailContract.OP_SESSION_CLOSE)
             assertTrue(closed.second.getBoolean(MailContract.FIELD_OK))
             val closedStatus = JSONObject(requireNotNull(statuses.poll(5, TimeUnit.SECONDS)))
@@ -228,17 +278,19 @@ class AngusMailPluginContractTest {
     }
 
     private fun call(
-        submit: (Bundle, Array<android.os.ParcelFileDescriptor>?, IMailCallCallback) -> String,
+        submit: (Bundle, Array<ParcelFileDescriptor>?, IMailCallCallback) -> String,
         callback: IMailCallCallback,
         results: LinkedBlockingQueue<Pair<String, String>>,
         id: String,
         op: String,
+        args: String = "{}",
+        descriptors: Array<ParcelFileDescriptor>? = null,
     ): Pair<String, JSONObject> {
         val request = Bundle().apply {
             putInt(MailContract.KEY_CONTRACT_VERSION, MailContract.CONTRACT_VERSION)
-            putString(MailContract.KEY_REQUEST_JSON, """{"id":"$id","op":"$op","args":{}}""")
+            putString(MailContract.KEY_REQUEST_JSON, """{"id":"$id","op":"$op","args":$args}""")
         }
-        assertEquals(id, submit(request, null, callback))
+        assertEquals(id, submit(request, descriptors, callback))
         val (thread, json) = requireNotNull(results.poll(5, TimeUnit.SECONDS)) { "no onResult for $id" }
         val response = JSONObject(json)
         assertEquals(id, response.getString(MailContract.FIELD_ID))

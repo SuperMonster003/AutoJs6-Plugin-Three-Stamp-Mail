@@ -6,6 +6,7 @@ import android.os.ParcelFileDescriptor
 import android.os.RemoteException
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorCode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.AttachmentSource
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.session.MailSession
 import org.autojs.plugin.mail.api.IMailCallCallback
 import org.autojs.plugin.mail.api.IMailSession
@@ -25,7 +26,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  * request id at once and runs on the session's single executor thread, results and the redacted
  * debug trace leave through the call callback from that thread, idle connections expire on a
  * timer of the same thread, and the session closes when the host asks, after `session.close`,
- * or when the host process dies. Watches and cancellation arrive with P5 and P2.5.
+ * or when the host process dies. Descriptors of a call are the plugin's copies: they are wrapped
+ * for the transfer ops on the session thread and closed before `onResult`, whatever the outcome.
+ * Watches and cancellation arrive with P5 and P2.5.
  */
 internal class MailSessionBinder(
     private val session: MailSession,
@@ -55,36 +58,40 @@ internal class MailSessionBinder(
     }
 
     override fun call(request: Bundle?, descriptors: Array<ParcelFileDescriptor>?, callback: IMailCallCallback?): String {
-        // Descriptors are consumed by the transfer ops of P2.3; until then every copy is released here.
-        descriptors?.forEach { descriptor -> runCatching { descriptor.close() } }
         val requestId = MailBundles.requestId(request) ?: UUID.randomUUID().toString()
         val op = MailBundles.requestOp(request)
         val args = MailBundles.requestArgs(request)
+        val copies: List<ParcelFileDescriptor?> = descriptors?.toList() ?: emptyList()
         if (closed.get()) {
+            closeAll(copies)
             respondDetached(callback, closedResponse(requestId))
             return requestId
         }
         try {
-            executor.execute { run(requestId, op, args, callback) }
+            executor.execute { run(requestId, op, args, copies, callback) }
         } catch (_: RejectedExecutionException) {
+            closeAll(copies)
             respondDetached(callback, closedResponse(requestId))
         }
         return requestId
     }
 
-    private fun run(requestId: String, op: String?, args: String?, callback: IMailCallCallback?) {
-        val response = if (closed.get()) {
-            closedResponse(requestId)
-        } else if (args == null) {
-            MailBundles.failure(requestId, MailBundles.error(MailErrorCode.INVALID_ARGUMENT, "'args' must be an object"))
-        } else {
-            try {
-                MailBundles.successJson(requestId, router.execute(op, args))
-            } catch (e: MailException) {
-                MailBundles.failure(requestId, MailBundles.error(e))
-            } catch (e: Throwable) {
-                MailBundles.failure(requestId, MailBundles.error(session.mapper.map(e, op)))
+    private fun run(requestId: String, op: String?, args: String?, descriptors: List<ParcelFileDescriptor?>, callback: IMailCallCallback?) {
+        val response = try {
+            if (closed.get()) {
+                closedResponse(requestId)
+            } else if (args == null) {
+                MailBundles.failure(requestId, MailBundles.error(MailErrorCode.INVALID_ARGUMENT, "'args' must be an object"))
+            } else {
+                MailBundles.successJson(requestId, router.execute(op, args) { sources(op, descriptors) })
             }
+        } catch (e: MailException) {
+            MailBundles.failure(requestId, MailBundles.error(e))
+        } catch (e: Throwable) {
+            MailBundles.failure(requestId, MailBundles.error(session.mapper.map(e, op)))
+        } finally {
+            // Contract B.3: the plugin's copies are gone before onResult, so the host may release its own.
+            closeAll(descriptors)
         }
         if (session.trace.enabled) {
             val lines = session.trace.drain()
@@ -92,6 +99,20 @@ internal class MailSessionBinder(
         }
         MailBundles.deliver(callback, response)
         if (op == MailContract.OP_SESSION_CLOSE) closeNow("closed")
+    }
+
+    /** Turns the descriptors of one call into attachment sources; only transfer ops may carry any. */
+    private fun sources(op: String?, descriptors: List<ParcelFileDescriptor?>): List<AttachmentSource> {
+        if (descriptors.isEmpty()) return emptyList()
+        if (descriptors.size > MailContract.MAX_DESCRIPTORS) {
+            throw MailException(MailErrorCode.LIMIT_EXCEEDED, "${descriptors.size} descriptors exceed the limit of ${MailContract.MAX_DESCRIPTORS}", retryable = false)
+        }
+        if (!RequestRouter.takesDescriptors(op)) throw MailException.invalidArgument("$op does not take descriptors")
+        return DescriptorSource.wrap(descriptors)
+    }
+
+    private fun closeAll(descriptors: List<ParcelFileDescriptor?>) {
+        descriptors.forEach { descriptor -> runCatching { descriptor?.close() } }
     }
 
     private fun closedResponse(requestId: String): Bundle =
