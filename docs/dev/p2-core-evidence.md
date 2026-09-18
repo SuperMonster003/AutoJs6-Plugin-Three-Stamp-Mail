@@ -1,7 +1,9 @@
-# P2 mail core evidence (P2.1 sessions, P2.2 sending, P2.3 receiving)
+# P2 mail core evidence (P2.1 to P2.5, and the P1.3 round trip with the host)
 
 Evidence for roadmap P2.1 (account layer, `session.test`), P2.2 (`mail.send`, `saveToSent`,
-`messages.append`) and P2.3 (folders, listing, search, bodies, downloads, flags), collected on 2026-09-18 with Gradle 9.5.0, AGP 9.3.2, Kotlin 2.3.20, JDK 21
+`messages.append`), P2.3 (folders, listing, search, bodies, downloads, flags), P2.4 (the POP3
+degraded path), P2.5 (Binder routing, limits, caller checks) and the P1.3 cross-process round
+trip with the host, collected on 2026-09-18 with Gradle 9.5.0, AGP 9.3.2, Kotlin 2.3.20, JDK 21
 (Windows 11), Eclipse Angus Mail 2.0.5, GreenMail 2.1.13. It also closes roadmap P0.2 item 2 (the
 real-provider round trip), which `docs/dev/p0-spike-evidence.md` had left open.
 
@@ -326,6 +328,40 @@ server attempts (QQ's index lag, `fallback: always`, 1 hit over 385 envelopes), 
 expunge 1240 ms; 1 test, 77 s, `report leak check: clean`. The runner's AVD pass of the same
 build was 10/10 with one skip.
 
+## P1.3: cross-process round trip with the host (`MailPluginRoundTripTest`)
+
+The host repository's `app/src/androidTest/java/org/autojs/autojs/core/plugin/mail/MailPluginRoundTripTest.kt`
+runs inside the AutoJs6 process (debug build 5282) against the installed release APK of plugin
+build 12, which shares the host's signer, so `HostCallerGuard` admits the calls. The host process
+owns a loopback IMAP server (greeting, CAPABILITY, LOGIN, ID, NOOP, LOGOUT) that can be told to
+stop answering; the account is `alice@localhost` with `imap 127.0.0.1:<port>/none` and no SMTP
+endpoint.
+
+| Phase | AVD_API_24 (x86) | Redmi 22120RN86C, API 33 |
+| --- | --- | --- |
+| `MailPluginHost.newClient` -> `call(session.test)` -> `ok` over the real Binder (probe `CAPABILITY, LOGIN, CAPABILITY, NOOP`, the connection stays with the session) | 123 ms (probe 86 ms) | 270 ms |
+| the server stops answering, a second `session.test` blocks in the plugin's socket read, `am force-stop` of the plugin package (UiAutomation shell) | `SESSION_CLOSED` "mail plugin process died" 149 ms after the stop, `retryable`, `isOpen` false, `status()` null | 97 ms |
+| the next `session.test` reopens on its own (new plugin process, new dedicated binding lease, `openCount` 2) | 139 ms | 319 ms |
+| force-stop while idle: the death recipient marks the client, the next call reopens (`openCount` 3) | ok | ok |
+
+Both runs: 1 test passed, 3 sessions opened, 3 IMAP connections served, the password never in a
+result document. `am force-stop` also delivers `onServiceDisconnected` to the dedicated binding,
+whose own death recipient releases the lease. The plugin side of a host death (`reason:
+"host-died"`) is not covered here because the host is the test process; `MailSessionBinderTest`
+covers `close` and `cancel` in-process. `ID` was not sent because the loopback account has no
+`clientId` (an empty client id means "never identify").
+
+Command (host repository, per device):
+
+```
+ANDROID_SERIAL=<serial> ./gradlew :app:connectedAppDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=org.autojs.autojs.core.plugin.mail.MailPluginRoundTripTest"
+```
+
+The AGP 9.3 test engine installs the host APK without `-r`: a device that already holds a
+different build of the host fails with `INSTALL_FAILED_ALREADY_EXISTS` and is left without the
+host; `adb install -r` of the same split APK beforehand makes the engine skip the install by
+digest.
+
 ## JVM
 
 `:mail-core:test`: 146 tests. New in P2.2: `OutgoingMessageParserTest` (9), `MessageComposerTest`
@@ -361,6 +397,7 @@ python .python/run_real_account.py GMAIL_A <serial> --cleanup --debug
 python .python/run_real_account.py QQ_A <serial> --peer QQ_B --receive pop3 --cleanup --debug   # P2.4, peer reads over POP3
 ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest                      # P2.5 binder suites
 ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedReleaseAndroidTest -PandroidTestRelease
+cd ../AutoJs6 && ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedAppDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=org.autojs.autojs.core.plugin.mail.MailPluginRoundTripTest"   # P1.3, host repository
 ```
 
 Profiles read `QQ_USER_NAME_A` / `QQ_AUTH_CODE_A`, `QQ_USER_NAME_B` / `QQ_AUTH_CODE_B`,
