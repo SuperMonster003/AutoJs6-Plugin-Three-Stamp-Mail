@@ -388,8 +388,8 @@ MailErrorCodes.kt           附录 B.4 的错误码字符串常量
 
 ### P3.3 文档与 changelog 同步 (P3 末)
 
-- [ ] (文档) 宿主 `docs/dev/mail-plugin-protocol-v1.md` 补脚本 API 到 op 的映射表; 宿主 `.changelog` 10 语言 `feature` 条目 "脚本 API mail".
-- [ ] (宿主) 全量 `testAppDebugUnitTest` 与 `assembleAppDebug` 通过.
+- [x] (文档) 宿主 `docs/dev/mail-plugin-protocol-v1.md` 补脚本 API 到 op 的映射表; 宿主 `.changelog` 10 语言 `feature` 条目 "脚本 API mail". (2026-09-19 完成: 协议文档新增 "Script API (P3)" 节, 表格列出 `mail.connect` / `client.test` / `send` / `folders` / `folder(path)` / `folderStatus` / `createFolder` / `deleteFolder` / `renameFolder` / `fetch` / `search` / `get` (`fetchBody`, `message.load`) / `raw` / `download` (`attachment.download`) / `setFlags` 与四个语法糖 / `move` / `copy` / `delete` / `expunge` / `append` / `close` 各自对应的 op 与参数 / 结果约定, 附结果装饰与错误映射说明, Open Items 的 P3 条目更新; 宿主 `.changelog/lang_*.json` 十语言在 `v6.8.0` 的 `feature` 末尾追加 "脚本 API mail" 条目并经宿主 `.python/generate_markdown.py` 重新生成 README / CHANGELOG 产物)
+- [x] (宿主) 全量 `testAppDebugUnitTest` 与 `assembleAppDebug` 通过. (2026-09-19 完成: 宿主 `:app:testAppDebugUnitTest` 490 个测试类 2985 用例 0 失败 5 跳过, `:app:assembleAppDebug` 成功, 2 m 14 s)
 
 验收条件: P3.2 的冒烟脚本在两台以上设备 (含 API 24 AVD) 与三家服务商通过; JVM 测试通过; 证据写入 `docs/dev/p3-script-api-evidence.md`. (2026-09-19: 两台设备 x QQ / 163 通过, Gmail 待新令牌)
 
@@ -883,10 +883,10 @@ mail.searchAsync({ subject: '发票', since: '2026-09-01' }).then(list => consol
 
 ### 2026-09-19 (第十一次会话, P3.2)
 
-- 完成: P3.2 宿主五项与冒烟脚本 (Gmail 部分待令牌). 宿主新增 `runtime/api/mail/MailScriptArguments.kt` (纯 Kotlin 参数规范化), `core/plugin/mail/MailDownloads.kt` (流式下载), `runtime/api/augment/mail/MailJsResults.kt` (结果装饰), `MailPromises.OnScriptThread / launchWith`, `MailClientNativeObject` 全部收发方法 (`defineOp` 统一同步 / Async 定义), `Mail.FORWARDED` 转发表; JVM `MailScriptArgumentsTest` 8 + `MailJsResultsTest` 5; 设备测试 `MailScriptSmokeDeviceTest#realProviderScript`; 本仓库 `docs/smoke/send-receive.js` / `send-receive-async.js`, 运行脚本 `--script` 与 `GMAIL_A` 档案; 插件修复 163 / 126 预设 `autoSavesSent` (build 15); 证据 `docs/dev/p3-script-api-evidence.md`.
+- 完成: P3.2 宿主五项与冒烟脚本 (Gmail 部分待令牌) 以及 P3.3 两项 (宿主协议文档的脚本方法到 op 对照表与 changelog 十语言条目, 宿主全量单元测试 2985 用例与 `assembleAppDebug`). 宿主新增 `runtime/api/mail/MailScriptArguments.kt` (纯 Kotlin 参数规范化), `core/plugin/mail/MailDownloads.kt` (流式下载), `runtime/api/augment/mail/MailJsResults.kt` (结果装饰), `MailPromises.OnScriptThread / launchWith`, `MailClientNativeObject` 全部收发方法 (`defineOp` 统一同步 / Async 定义), `Mail.FORWARDED` 转发表; JVM `MailScriptArgumentsTest` 8 + `MailJsResultsTest` 5; 设备测试 `MailScriptSmokeDeviceTest#realProviderScript`; 本仓库 `docs/smoke/send-receive.js` / `send-receive-async.js`, 运行脚本 `--script` 与 `GMAIL_A` 档案; 插件修复 163 / 126 预设 `autoSavesSent` (build 15); 证据 `docs/dev/p3-script-api-evidence.md`.
 - 教训: `Augmentable.selfAssignmentFunctions` 经反射找同名方法, 生成式转发表要走 `selfAssignmentProperties` 的 `BaseFunction`; `ArgumentGuards` 的消息需要应用上下文, 裸 Rhino JVM 测试覆盖的绑定方法自行检查参数数并抛 `MailError`; KDoc 里的 `docs/smoke/*.js` 会被 Kotlin 当作嵌套块注释起始 ("Unclosed comment"); 附件 `size` 是 BODYSTRUCTURE 的编码后大小, 不能作为接收端的期望大小; 163 服务器自动保存已发送 (延迟数分钟) 且 SEARCH SUBJECT / FROM 对刚投递邮件答 OK 无命中; QQ 经 IMAP 新建的文件夹约一分钟后 `FOLDER_NOT_FOUND`; `"ui";` 脚本的引擎属于 Activity, 设备测试改读脚本落盘的报告文件.
-- 未做: Gmail XOAUTH2 冒烟 (令牌过期, 待维护者提供新令牌后 `python .python/run_host_script_smoke.py GMAIL_A <serial> --script docs/smoke/send-receive.js` 与 `-async.js`); 宿主 changelog 条目, 协议文档的脚本方法到 op 对照表与宿主完整构建留给 P3.3; 其余同上次 (`CallerGuard` 官方证书分支, POP3 真实账户, Yahoo / Sina / Aliyun 的 `autoSavesSent`, 插件侧宿主死亡).
-- 下次会话建议起点: P3.3 文档与 changelog 同步 (宿主 `docs/dev/mail-plugin-protocol-v1.md` 的脚本方法到 op 对照表, 宿主 `.changelog` 十语言 feature 条目, 宿主 `testAppDebugUnitTest` 全量与 `assembleAppDebug`), 顺带补跑 Gmail 冒烟.
+- 未做: Gmail XOAUTH2 冒烟 (令牌过期, 待维护者提供新令牌后 `python .python/run_host_script_smoke.py GMAIL_A <serial> --script docs/smoke/send-receive.js` 与 `-async.js`); 其余同上次 (`CallerGuard` 官方证书分支, POP3 真实账户, Yahoo / Sina / Aliyun 的 `autoSavesSent`, 插件侧宿主死亡).
+- 下次会话建议起点: P4 插件设置页与账户存储 (P4.1 起), 开始前若维护者已更新 `GMAIL_ACCESS_TOKEN_A` 则先补跑 Gmail 冒烟并把结果写入 `docs/dev/p3-script-api-evidence.md`.
 
 ### 2026-09-18 (第十次会话, P3.1)
 
