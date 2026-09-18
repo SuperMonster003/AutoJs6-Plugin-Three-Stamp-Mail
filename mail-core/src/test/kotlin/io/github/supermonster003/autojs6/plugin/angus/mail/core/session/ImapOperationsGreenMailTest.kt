@@ -357,7 +357,7 @@ class ImapOperationsGreenMailTest {
     fun flagsAreAddedRemovedAndReplaced() {
         seed("INBOX", 4)
         val added = session.setFlags(MessageArgs.flags("""{"uids": [1, 2, 99], "flags": ["seen", "flagged", "Work"]}"""))
-        assertEquals(listOf(1L, 2L), added.uids)
+        assertEquals(listOf(1L, 2L), added.imapUids)
         val one = session.getMessage(MessageArgs.get("""{"uid": 1}"""))
         assertTrue(one.seen && one.flagged)
         assertTrue(one.flags.toString(), one.flags.containsAll(listOf("seen", "flagged", "Work")))
@@ -411,7 +411,7 @@ class ImapOperationsGreenMailTest {
         assertEquals(listOf("seed 5", "seed 1"), session.listMessages(MessageArgs.list("""{"folder": "Copies"}""")).map { it.subject })
 
         val flagged = session.delete(MessageArgs.delete("""{"uids": [5]}"""))
-        assertEquals(listOf(5L), flagged.uids)
+        assertEquals(listOf(5L), flagged.imapUids)
         val still = session.listMessages(MessageArgs.list("{}"))
         assertEquals(listOf(6L, 5L, 1L), still.map { it.uid() })
         assertTrue(still.single { it.uid() == 5L }.deleted)
@@ -420,7 +420,7 @@ class ImapOperationsGreenMailTest {
         assertEquals(0, session.expunge("INBOX").count)
 
         val gone = session.delete(MessageArgs.delete("""{"uids": [1, 6, 42], "expunge": true}"""))
-        assertEquals(listOf(1L, 6L), gone.uids)
+        assertEquals(listOf(1L, 6L), gone.imapUids)
         assertTrue(session.listMessages(MessageArgs.list("{}")).isEmpty())
         assertEquals(0, session.folderStatus("INBOX").messages)
 
@@ -428,20 +428,6 @@ class ImapOperationsGreenMailTest {
         assertEquals(MailErrorCode.FOLDER_NOT_FOUND, failure { session.move(MessageArgs.target("""{"folder": "Archive", "uids": [1], "target": "Nowhere"}""")) }.code)
         assertEquals(MailErrorCode.MESSAGE_NOT_FOUND, failure { session.copy(MessageArgs.target("""{"folder": "Archive", "uids": [500], "target": "Copies"}""")) }.code)
         assertEquals(3, session.folderStatus("Archive").messages)
-    }
-
-    @Test
-    fun pop3AccountsAnswerUnsupportedUntilP24() {
-        val pop3 = MailAccountOptions.parse(
-            """{"address":"$ALICE","user":"$ALICE_LOGIN","pop3":{"host":"$HOST","port":${ServerSetupTest.POP3.port},"tls":"none"}}""",
-            SecretKind.PASSWORD,
-        )
-        val session = MailSession(pop3, MailSecret(ALICE_PASSWORD)).also { sessions += it }
-        val error = failure { session.listMessages(MessageArgs.list("{}")) }
-        assertEquals(MailErrorCode.UNSUPPORTED_OPERATION, error.code)
-        assertTrue(error.message, error.message.contains("P2.4"))
-        assertEquals(error, session.lastError)
-        assertEquals(0, session.connectCount(MailProtocol.POP3))
     }
 
     // ------------------------------------------------------------------ helpers

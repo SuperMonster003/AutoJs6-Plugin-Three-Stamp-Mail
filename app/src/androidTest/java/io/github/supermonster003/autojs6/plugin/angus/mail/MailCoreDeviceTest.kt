@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccount
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccountOptions
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailEndpoint
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailSecret
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.SecretKind
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.TlsMode
@@ -61,13 +62,17 @@ import java.io.File
  * `mailSaveToSent` (`true` / `false` forces the sent copy; absent follows the preset), `mailDebug`
  * (`true` logs the redacted protocol trace of the session, roadmap D28), `mailAppendFolder` (a
  * folder such as `Drafts` receives one draft through `messages.append`, reporting the UID),
- * `mailCleanup` (`true` deletes and expunges the round-trip message at the end). A second account
- * (`mailPeerAddress`, `mailPeerSecret`, `mailPeerProvider`, `mailPeerAuth`, optional `mailPeerImapHost`) turns the run into a
- * two-account round trip: the message with its attachment goes to the peer and the test polls the
- * peer inbox until it arrives. Wherever the message lands (the peer, or the account itself when it
- * is its own recipient), the roadmap P2.3 operations run against it: the folder tree, the inbox
- * page, `messages.search` by Message-ID, `messages.get`, `attachments.download` (byte-compared with
- * what was sent), `messages.raw`, `messages.setFlags` and, with `mailCleanup`, `messages.delete`.
+ * `mailCleanup` (`true` deletes and expunges the round-trip message at the end), `mailReceive`
+ * (`imap`, the default, or `pop3` for the roadmap P2.4 degraded path; `mailPop3Host` / `mailPop3Port`
+ * override the preset). A second account (`mailPeerAddress`, `mailPeerSecret`, `mailPeerProvider`,
+ * `mailPeerAuth`, optional `mailPeerImapHost` / `mailPeerPop3Host` / `mailPeerReceive`) turns the run
+ * into a two-account round trip: the message with its attachment goes to the peer and the test
+ * polls the peer inbox until it arrives. Wherever the message lands (the peer, or the account
+ * itself when it is its own recipient), the roadmap P2.3 operations run against it: the folder
+ * tree, the inbox page, `messages.search` by Message-ID, `messages.get`, `attachments.download`
+ * (byte-compared with what was sent), `messages.raw`, `messages.setFlags` and, with `mailCleanup`,
+ * `messages.delete`; a POP3 receiver runs the P2.4 subset instead (client search, no flags,
+ * `UNSUPPORTED_OPERATION` for the rest).
  *
  * Credential-free device run against a GreenMail server on the development machine (the same
  * server the `:mail-core` JVM tests use; `adb reverse` maps the device's localhost onto it):
@@ -143,13 +148,15 @@ class MailCoreDeviceTest {
         val secret = arguments.getString("mailSecret")
         val provider = arguments.getString("mailProvider")?.takeIf { it.isNotBlank() }
         val imapHost = arguments.getString("mailImapHost")?.takeIf { it.isNotBlank() }
+        val pop3Host = arguments.getString("mailPop3Host")?.takeIf { it.isNotBlank() }
         val smtpHost = arguments.getString("mailSmtpHost")?.takeIf { it.isNotBlank() }
+        val receive = arguments.getString("mailReceive")?.takeIf { it.isNotBlank() } ?: "imap"
         assumeTrue(
             "no test account supplied through instrumentation arguments; skipping the real-provider round trip",
-            !address.isNullOrBlank() && !secret.isNullOrBlank() && (provider != null || (imapHost != null && smtpHost != null)),
+            !address.isNullOrBlank() && !secret.isNullOrBlank() && (provider != null || ((imapHost != null || pop3Host != null) && smtpHost != null)),
         )
         val tls = arguments.getString("mailTls")?.takeIf { it.isNotBlank() }
-        val options = JSONObject().put("address", address)
+        val options = JSONObject().put("address", address).put("receive", receive)
         provider?.let { options.put("provider", it) }
         arguments.getString("mailUsername")?.takeIf { it.isNotBlank() }?.let { options.put("user", it) }
         fun endpoint(host: String?, portKey: String): JSONObject? {
@@ -162,22 +169,23 @@ class MailCoreDeviceTest {
             }
         }
         endpoint(imapHost, "mailImapPort")?.let { options.put("imap", it) }
+        endpoint(pop3Host, "mailPop3Port")?.let { options.put("pop3", it) }
         endpoint(smtpHost, "mailSmtpPort")?.let { options.put("smtp", it) }
         if (arguments.getString("mailTrustAll") == "true") options.put("tls", JSONObject().put("trustAll", true))
         if (arguments.getString("mailDebug") == "true") options.put("debug", true)
         options.put("timeout", JSONObject().put("connect", 20_000).put("read", 60_000))
         val secretKind = if (arguments.getString("mailAuth") == "xoauth2") SecretKind.ACCESS_TOKEN else SecretKind.PASSWORD
         val account = MailAccountOptions.parse(options.toString(), secretKind, clientIdDefaults())
-        val imap = requireNotNull(account.imap) { "the account needs an IMAP endpoint" }
+        val receiveEndpoint = requireNotNull(account.endpointOrNull(account.receive)) { "the account needs a ${account.receive.id} endpoint" }
         val smtp = requireNotNull(account.smtp) { "the account needs an SMTP endpoint" }
-        Log.i(TAG, "account run: provider=${account.provider?.id} auth=${account.auth.id} imap=$imap smtp=$smtp insecure=${account.insecure}")
+        Log.i(TAG, "account run: provider=${account.provider?.id} auth=${account.auth.id} ${account.receive.id}=$receiveEndpoint smtp=$smtp insecure=${account.insecure}")
 
         MailSession(account, MailSecret(secret!!)).use { session ->
             val report = session.test()
             listOfNotNull(report.imap, report.pop3, report.smtp).forEach { endpoint ->
                 Log.i(TAG, "session.test ${endpoint.protocol} ${endpoint.host}:${endpoint.port}/${endpoint.tls} ok=${endpoint.ok} ${endpoint.elapsedMs} ms capabilities=${endpoint.capabilities} error=${endpoint.error?.code} ${endpoint.error?.message ?: ""}")
             }
-            assertTrue("session.test failed: imap=${report.imap?.error?.code} smtp=${report.smtp?.error?.code}", report.ok)
+            assertTrue("session.test failed: imap=${report.imap?.error?.code} pop3=${report.pop3?.error?.code} smtp=${report.smtp?.error?.code}", report.ok)
 
             val peerAddress = arguments.getString("mailPeerAddress")?.takeIf { it.isNotBlank() }
             val peerSecret = arguments.getString("mailPeerSecret")?.takeIf { it.isNotBlank() }
@@ -219,7 +227,7 @@ class MailCoreDeviceTest {
             }
 
             val listStarted = System.nanoTime()
-            val summaries = session.listMessages(MessageArgs.list("""{"limit": 5}"""))
+            val summaries = session.listMessages(MessageArgs.list("""{"limit": 5}""", session.receiveProtocol))
             val listMillis = (System.nanoTime() - listStarted) / 1_000_000
             assertTrue("the inbox listing must return at least one message", summaries.isNotEmpty())
             assertTrue(summaries.size <= 5)
@@ -231,6 +239,8 @@ class MailCoreDeviceTest {
                 val peerOptions = JSONObject().put("address", peerAddress).put("timeout", JSONObject().put("connect", 20_000).put("read", 60_000))
                 arguments.getString("mailPeerProvider")?.takeIf { it.isNotBlank() }?.let { peerOptions.put("provider", it) }
                 arguments.getString("mailPeerImapHost")?.takeIf { it.isNotBlank() }?.let { peerOptions.put("imap", JSONObject().put("host", it)) }
+                arguments.getString("mailPeerPop3Host")?.takeIf { it.isNotBlank() }?.let { peerOptions.put("pop3", JSONObject().put("host", it)) }
+                arguments.getString("mailPeerReceive")?.takeIf { it.isNotBlank() }?.let { peerOptions.put("receive", it) }
                 if (arguments.getString("mailDebug") == "true") peerOptions.put("debug", true)
                 val peerKind = if (arguments.getString("mailPeerAuth") == "xoauth2") SecretKind.ACCESS_TOKEN else SecretKind.PASSWORD
                 val peer = MailAccountOptions.parse(peerOptions.toString(), peerKind, clientIdDefaults())
@@ -257,12 +267,12 @@ class MailCoreDeviceTest {
         var polls = 0
         while (delivered == null && System.currentTimeMillis() < deadline) {
             polls++
-            delivered = receiver.listMessages(MessageArgs.list("""{"limit": 10}""")).firstOrNull { it.subject == subject }
+            delivered = receiver.listMessages(MessageArgs.list("""{"limit": 10}""", receiver.receiveProtocol)).firstOrNull { it.subject == subject }
             if (delivered == null) Thread.sleep(PEER_POLL_MS)
         }
         val waited = (System.nanoTime() - pollStarted) / 1_000_000
         assertNotNull("the $label inbox (${receiver.account.provider?.id ?: receiver.account.imap}) did not receive the message within ${PEER_WAIT_MS / 1000} s ($polls polls)", delivered)
-        Log.i(TAG, "$label inbox received the message after $waited ms ($polls polls): uid=${delivered!!.imapUid} size=${delivered.size} bytes seen=${delivered.seen} hasAttachments=${delivered.hasAttachments}")
+        Log.i(TAG, "$label inbox (${receiver.receiveProtocol.id}) received the message after $waited ms ($polls polls): uid=${delivered!!.uid} size=${delivered.size} bytes seen=${delivered.seen} hasAttachments=${delivered.hasAttachments}")
         logTrace(receiver)
         return delivered
     }
@@ -272,6 +282,10 @@ class MailCoreDeviceTest {
      * `messages.get` (peek), the attachment bytes, the raw source, flags and the optional cleanup.
      */
     private fun verifyReceivedMessage(receiver: MailSession, delivered: MessageDocument, subject: String, messageId: String, attachmentBytes: ByteArray, cleanup: Boolean) {
+        if (receiver.receiveProtocol == MailProtocol.POP3) {
+            verifyReceivedMessagePop3(receiver, delivered, subject, messageId, attachmentBytes, cleanup)
+            return
+        }
         val uid = requireNotNull(delivered.imapUid)
         logFolders(receiver)
 
@@ -328,7 +342,7 @@ class MailCoreDeviceTest {
         assertEquals(subject, MimeMessage(null as jakarta.mail.Session?, ByteArrayInputStream(raw.toByteArray())).subject)
 
         val flagged = receiver.setFlags(MessageArgs.flags("""{"uids": [$uid], "flags": ["seen", "flagged"]}"""))
-        assertEquals(listOf(uid), flagged.uids)
+        assertEquals(listOf(uid), flagged.imapUids)
         val afterFlags = receiver.getMessage(MessageArgs.get("""{"uid": $uid}"""))
         assertTrue(afterFlags.seen && afterFlags.flagged)
         receiver.setFlags(MessageArgs.flags("""{"uids": [$uid], "flags": ["seen", "flagged"], "mode": "remove"}"""))
@@ -338,7 +352,7 @@ class MailCoreDeviceTest {
 
         if (cleanup) {
             val deleted = receiver.delete(MessageArgs.delete("""{"uids": [$uid], "expunge": true}"""))
-            assertEquals(listOf(uid), deleted.uids)
+            assertEquals(listOf(uid), deleted.imapUids)
             try {
                 receiver.getMessage(MessageArgs.get("""{"uid": $uid}"""))
                 fail("the message must be gone after delete + expunge")
@@ -350,15 +364,96 @@ class MailCoreDeviceTest {
         }
     }
 
-    /** Read-only P2.3 operations on an existing message when the round-trip message went to a third party. */
+    /**
+     * Roadmap P2.4 against the message that just arrived over POP3: the single folder, client-side
+     * search by Message-ID and subject, `messages.get` (full download), the attachment bytes, the
+     * raw source, the refused IMAP-only operations and the optional cleanup (`DELE` at close).
+     */
+    private fun verifyReceivedMessagePop3(receiver: MailSession, delivered: MessageDocument, subject: String, messageId: String, attachmentBytes: ByteArray, cleanup: Boolean) {
+        val protocol = MailProtocol.POP3
+        val uid = delivered.uid
+        assertTrue("POP3 uids are UIDL strings: $uid", uid.isString)
+        logFolders(receiver)
+
+        val storedId = delivered.messageId ?: messageId
+        Log.i(TAG, "Message-ID kept by the receiving server: ${storedId == messageId}")
+        val searchStarted = System.nanoTime()
+        // a Message-ID is unique, and limit 1 lets the POP3 scan stop at the first hit instead of reading the whole window
+        val found = receiver.searchMessages(MessageArgs.search("""{"query": {"messageId": ${JSONObject.quote(storedId)}}, "limit": 1}""", protocol))
+        Log.i(TAG, "messages.search by Message-ID (pop3, ${found.fallback}, limit 1): ${found.messages.size} hit(s) in ${(System.nanoTime() - searchStarted) / 1_000_000} ms")
+        assertEquals("client", found.fallback)
+        assertEquals("the client search must find the round-trip message", listOf(uid), found.messages.map { it.uid })
+        val bySubject = receiver.searchMessages(MessageArgs.search("""{"query": {"subject": "Angus Mail round trip"}, "limit": 5}""", protocol))
+        Log.i(TAG, "messages.search by subject (pop3): ${bySubject.messages.size} hit(s), contains ours=${bySubject.messages.any { it.uid == uid }}")
+        assertEquals(MailErrorCode.UNSUPPORTED_OPERATION, failing { receiver.searchMessages(MessageArgs.search("""{"query": {"text": "x"}}""", protocol)) }.code)
+        assertEquals(MailErrorCode.UNSUPPORTED_OPERATION, failing { receiver.listMessages(MessageArgs.list("""{"unseenOnly": true}""", protocol)) }.code)
+
+        val getStarted = System.nanoTime()
+        val message = receiver.getMessage(MessageArgs.get("""{"uid": $uid}""", protocol))
+        Log.i(TAG, "messages.get (pop3) in ${(System.nanoTime() - getStarted) / 1_000_000} ms: textLength=${message.text?.length} html=${message.html != null} headers=${message.headers.size} attachments=${message.attachments.map { "${it.partId}:${it.mimeType}:${it.size}" }} bodyTruncated=${message.bodyTruncated}")
+        assertEquals(subject, message.subject)
+        assertTrue(message.bodyLoaded)
+        assertTrue("the text body must be present", message.text?.contains("Sent from the AutoJs6 Angus Mail plugin") == true)
+        assertTrue(message.hasAttachments)
+        assertEquals(1, message.attachments.size)
+        assertEquals("round-trip-attachment.txt", message.attachments.single().fileName)
+        assertEquals(storedId, message.messageId)
+
+        val part = message.attachments.single()
+        val downloadStarted = System.nanoTime()
+        val bytes = ByteArrayOutputStream()
+        var reports = 0
+        val download = receiver.downloadAttachment(MessageArgs.download("""{"uid": $uid, "partId": "${part.partId}"}""", protocol), bytes) { _, _ -> reports++ }
+        Log.i(TAG, "attachments.download (pop3) part ${part.partId}: ${download.bytes} bytes (${download.mimeType}) in ${(System.nanoTime() - downloadStarted) / 1_000_000} ms, $reports progress report(s)")
+        assertArrayEquals("the attachment bytes must round trip unchanged", attachmentBytes, bytes.toByteArray())
+
+        val rawStarted = System.nanoTime()
+        val raw = ByteArrayOutputStream()
+        val rawResult = receiver.downloadRaw(MessageArgs.raw("""{"uid": $uid}""", protocol), raw)
+        Log.i(TAG, "messages.raw (pop3): ${rawResult.bytes} bytes in ${(System.nanoTime() - rawStarted) / 1_000_000} ms")
+        assertEquals(raw.size().toLong(), rawResult.bytes)
+        assertEquals(subject, MimeMessage(null as jakarta.mail.Session?, ByteArrayInputStream(raw.toByteArray())).subject)
+
+        listOf(
+            "messages.setFlags" to { receiver.setFlags(MessageArgs.flags("""{"uids": [1], "flags": "seen"}""")) },
+            "messages.move" to { receiver.move(MessageArgs.target("""{"uids": [1], "target": "Archive"}""")) },
+            "messages.expunge" to { receiver.expunge("INBOX") },
+            "folders.status" to { receiver.folderStatus("INBOX") },
+        ).forEach { (op, call) ->
+            val error = failing(call)
+            assertEquals(op, MailErrorCode.UNSUPPORTED_OPERATION, error.code)
+        }
+        Log.i(TAG, "IMAP-only ops answer UNSUPPORTED_OPERATION on pop3")
+        logTrace(receiver)
+
+        if (cleanup) {
+            val deleted = receiver.delete(MessageArgs.delete("""{"uids": [$uid], "expunge": true}""", protocol))
+            assertEquals(listOf(uid.content), deleted.uidStrings)
+            assertEquals(MailErrorCode.MESSAGE_NOT_FOUND, failing { receiver.getMessage(MessageArgs.get("""{"uid": $uid}""", protocol)) }.code)
+            Log.i(TAG, "messages.delete (pop3, DELE at close) ok, uid $uid gone")
+            logTrace(receiver)
+        }
+    }
+
+    private fun failing(block: () -> Any?): MailException {
+        try {
+            block()
+        } catch (e: MailException) {
+            return e
+        }
+        throw AssertionError("expected a MailException")
+    }
+
+    /** Read-only P2.3 / P2.4 operations on an existing message when the round-trip message went to a third party. */
     private fun verifyReadOperations(session: MailSession, newest: MessageDocument) {
         logFolders(session)
-        val uid = requireNotNull(newest.imapUid)
-        val message = session.getMessage(MessageArgs.get("""{"uid": $uid}"""))
+        val protocol = session.receiveProtocol
+        val uid = newest.uid
+        val message = session.getMessage(MessageArgs.get("""{"uid": $uid}""", protocol))
         Log.i(TAG, "messages.get uid $uid: textLength=${message.text?.length} attachments=${message.attachments.size} bodyTruncated=${message.bodyTruncated}")
         assertTrue(message.bodyLoaded)
         val raw = ByteArrayOutputStream()
-        Log.i(TAG, "messages.raw uid $uid: ${session.downloadRaw(MessageArgs.raw("""{"uid": $uid}"""), raw).bytes} bytes")
+        Log.i(TAG, "messages.raw uid $uid: ${session.downloadRaw(MessageArgs.raw("""{"uid": $uid}""", protocol), raw).bytes} bytes")
         logTrace(session)
     }
 
@@ -375,8 +470,13 @@ class MailCoreDeviceTest {
         val flat = ArrayList<FolderDocument>().also { fun collect(f: FolderDocument) { it += f; f.children.forEach(::collect) }; folders.forEach(::collect) }
         Log.i(TAG, "folders.list: ${flat.size} folder(s) in $millis ms, roles=${flat.mapNotNull { it.specialUse }.sorted()}")
         assertTrue("INBOX must carry the inbox role", flat.any { it.specialUse == "inbox" })
-        val status = session.folderStatus("INBOX")
-        Log.i(TAG, "folders.status INBOX: messages=${status.messages} unseen=${status.unseen} uidNext=${status.uidNext} uidValidity=${status.uidValidity}")
+        if (session.receiveProtocol == MailProtocol.IMAP) {
+            val status = session.folderStatus("INBOX")
+            Log.i(TAG, "folders.status INBOX: messages=${status.messages} unseen=${status.unseen} uidNext=${status.uidNext} uidValidity=${status.uidValidity}")
+        } else {
+            assertEquals(listOf("INBOX"), flat.map { it.path })
+            Log.i(TAG, "folders.status: UNSUPPORTED_OPERATION on ${session.receiveProtocol.id} (count from folders.list: ${flat.single().messages})")
+        }
         logTrace(session)
     }
 

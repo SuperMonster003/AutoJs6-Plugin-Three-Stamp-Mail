@@ -105,7 +105,7 @@ class RequestRouterTest {
         assertTrue(failure(MailContract.OP_MESSAGES_SET_FLAGS, """{"uids": 1, "flags": []}""").message.contains("at least one flag"))
         assertTrue(failure(MailContract.OP_MESSAGES_MOVE, """{"uids": [1]}""").message.contains("'target' is required"))
         assertTrue(failure(MailContract.OP_MESSAGES_COPY, """{"target": "Archive"}""").message.contains("at least one UID"))
-        assertTrue(failure(MailContract.OP_MESSAGES_DELETE, """{"uids": [0]}""").message.contains("invalid IMAP UID"))
+        assertTrue(failure(MailContract.OP_MESSAGES_DELETE, """{"uids": [0]}""").message.contains("not a valid IMAP UID"))
         assertTrue(failure(MailContract.OP_MESSAGES_EXPUNGE, """{"path": "x"}""").message.contains("args.path"))
         assertTrue(failure(MailContract.OP_FOLDERS_STATUS, "{}").message.contains("'folder' is required"))
         assertTrue(failure(MailContract.OP_FOLDERS_CREATE, "{}").message.contains("'path' is required"))
@@ -115,6 +115,48 @@ class RequestRouterTest {
         assertTrue(failure(MailContract.OP_FOLDERS_LIST, "[]").message.contains("JSON object"))
         assertEquals(0, session.connectCount(MailProtocol.SMTP))
         assertEquals(0, session.connectCount(MailProtocol.IMAP))
+    }
+
+    @Test
+    fun pop3AccountsGetTheDegradedSubsetWithoutConnecting() {
+        val pop3Session = MailSession(
+            MailAccount("alice@example.org", pop3 = MailEndpoint("pop.example.org", 995, TlsMode.SSL), smtp = MailEndpoint("smtp.example.org", 465, TlsMode.SSL), receive = MailProtocol.POP3),
+            MailSecret("not-a-real-secret"),
+        )
+        val pop3Router = RequestRouter(pop3Session)
+        fun pop3Failure(op: String, args: String = "{}"): MailException = try {
+            pop3Router.execute(op, args)
+            throw AssertionError("$op must fail")
+        } catch (e: MailException) {
+            e
+        }
+        // IMAP-only ops: UNSUPPORTED_OPERATION from the parser or the session, before any connection
+        listOf(
+            MailContract.OP_MESSAGES_SET_FLAGS to """{"uids": ["u1"], "flags": "seen"}""",
+            MailContract.OP_MESSAGES_MOVE to """{"uids": ["u1"], "target": "Archive"}""",
+            MailContract.OP_MESSAGES_COPY to """{"uids": ["u1"], "target": "Archive"}""",
+            MailContract.OP_MESSAGES_EXPUNGE to "{}",
+            MailContract.OP_FOLDERS_STATUS to """{"folder": "INBOX"}""",
+            MailContract.OP_FOLDERS_CREATE to """{"path": "Work"}""",
+            MailContract.OP_FOLDERS_DELETE to """{"path": "Work"}""",
+            MailContract.OP_FOLDERS_RENAME to """{"path": "Work", "newPath": "Done"}""",
+            MailContract.OP_MESSAGES_APPEND to """{"folder": "Drafts", "message": {"to": "bob@example.org", "subject": "s"}}""",
+        ).forEach { (op, args) ->
+            val error = pop3Failure(op, args)
+            assertEquals(op, MailErrorCode.UNSUPPORTED_OPERATION, error.code)
+            assertTrue(error.message, error.message.contains(op))
+        }
+        // the shared ops accept UIDL strings; what POP3 cannot do is refused before the network too
+        assertTrue(pop3Failure(MailContract.OP_MESSAGES_RAW, """{"uid": "u1"}""").message.contains("single descriptor (0 supplied)"))
+        assertEquals(MailErrorCode.FOLDER_NOT_FOUND, pop3Failure(MailContract.OP_MESSAGES_LIST, """{"folder": "Archive"}""").code)
+        assertEquals(MailErrorCode.FOLDER_NOT_FOUND, pop3Failure(MailContract.OP_MESSAGES_GET, """{"folder": "Sent", "uid": "u1"}""").code)
+        assertEquals(MailErrorCode.UNSUPPORTED_OPERATION, pop3Failure(MailContract.OP_MESSAGES_LIST, """{"unseenOnly": true}""").code)
+        assertEquals(MailErrorCode.UNSUPPORTED_OPERATION, pop3Failure(MailContract.OP_MESSAGES_SEARCH, """{"query": {"body": "x"}}""").code)
+        assertEquals(MailErrorCode.UNSUPPORTED_OPERATION, pop3Failure(MailContract.OP_MESSAGES_SEARCH, """{"query": {"uid": "1:*"}}""").code)
+        assertEquals(MailErrorCode.INVALID_ARGUMENT, pop3Failure(MailContract.OP_MESSAGES_DELETE, """{"uids": []}""").code)
+        assertEquals(0, pop3Session.connectCount(MailProtocol.POP3))
+        assertEquals(0, pop3Session.connectCount(MailProtocol.IMAP))
+        pop3Session.close()
     }
 
     private class FakeIo(val count: Int, private val sourcesError: String? = null) : RequestRouter.CallIo {

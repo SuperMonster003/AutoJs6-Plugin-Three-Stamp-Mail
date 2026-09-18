@@ -178,57 +178,101 @@ class MailSession(
 
     /** `messages.append`: stores a composed message in [folder] (drafts, archived copies). */
     fun append(folder: String, message: OutgoingMessage, flags: Flags): AppendResult {
-        ensureOpen()
-        val uid = imap { mailbox ->
+        val uid = imapOnly("messages.append") { mailbox ->
             val mime = smtpComposer().compose(message)
             mailbox.append(folder, mime, flags)
         }
         return AppendResult(folder, uid)
     }
 
-    // ------------------------------------------------------------------ P2.3 folders and messages
+    // ------------------------------------------------------------------ P2.3 folders and messages (IMAP), P2.4 POP3 subset
 
-    fun listFolders(args: MessageArgs.FoldersListArgs): List<FolderDocument> = receive { it.listFolders(args.subscribedOnly, args.status) }
+    /** The protocol every receive operation runs on; the argument parsers take it (roadmap P2.4). */
+    val receiveProtocol: MailProtocol get() = account.receive
 
-    fun folderStatus(path: String): FolderStatusDocument = receive { it.folderStatus(path) }
+    fun listFolders(args: MessageArgs.FoldersListArgs): List<FolderDocument> =
+        receive({ it.listFolders(args.subscribedOnly, args.status) }, { it.listFolders(args.status) })
 
-    fun createFolder(path: String): FolderDocument = receive { it.createFolder(path) }
+    fun folderStatus(path: String): FolderStatusDocument = imapOnly("folders.status") { it.folderStatus(path) }
 
-    fun deleteFolder(path: String): Boolean = receive(retryOnLoss = false) { it.deleteFolder(path) }
+    fun createFolder(path: String): FolderDocument = imapOnly("folders.create") { it.createFolder(path) }
 
-    fun renameFolder(args: MessageArgs.RenameArgs): FolderDocument = receive(retryOnLoss = false) { it.renameFolder(args.path, args.newPath) }
+    fun deleteFolder(path: String): Boolean = imapOnly("folders.delete", retryOnLoss = false) { it.deleteFolder(path) }
 
-    fun listMessages(args: MessageArgs.ListArgs): List<MessageDocument> = receive { it.listMessages(args) }
+    fun renameFolder(args: MessageArgs.RenameArgs): FolderDocument = imapOnly("folders.rename", retryOnLoss = false) { it.renameFolder(args.path, args.newPath) }
 
-    fun searchMessages(args: MessageArgs.SearchArgs): SearchResult = receive { it.search(args) }
+    fun listMessages(args: MessageArgs.ListArgs): List<MessageDocument> =
+        receive({ it.listMessages(args) }, { it.listMessages(args) }, precheck = { Pop3Mailbox.checkList(args) })
 
-    fun getMessage(args: MessageArgs.GetArgs): MessageDocument = receive { it.getMessage(args.folder, args.uid, args.peek, args.includeRaw) }
+    fun searchMessages(args: MessageArgs.SearchArgs): SearchResult =
+        receive({ it.search(args) }, { it.search(args) }, precheck = { Pop3Mailbox.checkSearch(args) })
+
+    fun getMessage(args: MessageArgs.GetArgs): MessageDocument =
+        receive({ it.getMessage(args.folder, args.uid.imap, args.peek, args.includeRaw) }, { it.getMessage(args.uid, args.includeRaw) }, precheck = { Pop3Mailbox.checkFolder(args.folder) })
 
     /** Streams into [sink]; never retried, because the sink already holds whatever went out before a loss. */
     fun downloadAttachment(args: MessageArgs.DownloadArgs, sink: OutputStream, progress: TransferProgress = TransferProgress.NONE): TransferResult =
-        receive(retryOnLoss = false) { it.downloadPart(args.folder, args.uid, args.partId, sink, progress) }
+        receive(
+            retryOnLoss = false,
+            imap = { it.downloadPart(args.folder, args.uid.imap, args.partId, sink, progress) },
+            pop3 = { it.downloadPart(args.uid, args.partId, sink, progress) },
+            precheck = { Pop3Mailbox.checkFolder(args.folder) },
+        )
 
     fun downloadRaw(args: MessageArgs.RawArgs, sink: OutputStream, progress: TransferProgress = TransferProgress.NONE): TransferResult =
-        receive(retryOnLoss = false) { it.downloadRaw(args.folder, args.uid, sink, progress) }
+        receive(
+            retryOnLoss = false,
+            imap = { it.downloadRaw(args.folder, args.uid.imap, sink, progress) },
+            pop3 = { it.downloadRaw(args.uid, sink, progress) },
+            precheck = { Pop3Mailbox.checkFolder(args.folder) },
+        )
 
-    fun setFlags(args: MessageArgs.FlagsArgs): UidsResult = receive(retryOnLoss = false) { it.setFlags(args.folder, args.uids, args.flags, args.mode) }
+    fun setFlags(args: MessageArgs.FlagsArgs): UidsResult = imapOnly("messages.setFlags", retryOnLoss = false) { it.setFlags(args.folder, args.uids, args.flags, args.mode) }
 
-    fun move(args: MessageArgs.TargetArgs): TargetUidsResult = receive(retryOnLoss = false) { it.move(args.folder, args.uids, args.target) }
+    fun move(args: MessageArgs.TargetArgs): TargetUidsResult = imapOnly("messages.move", retryOnLoss = false) { it.move(args.folder, args.uids, args.target) }
 
-    fun copy(args: MessageArgs.TargetArgs): TargetUidsResult = receive(retryOnLoss = false) { it.copy(args.folder, args.uids, args.target) }
+    fun copy(args: MessageArgs.TargetArgs): TargetUidsResult = imapOnly("messages.copy", retryOnLoss = false) { it.copy(args.folder, args.uids, args.target) }
 
-    fun delete(args: MessageArgs.DeleteArgs): UidsResult = receive(retryOnLoss = false) { it.delete(args.folder, args.uids, args.expunge) }
+    /** POP3 deletes commit when the folder closes at the end of the call, whatever [MessageArgs.DeleteArgs.expunge] says (roadmap P2.4). */
+    fun delete(args: MessageArgs.DeleteArgs): UidsResult =
+        receive(
+            retryOnLoss = false,
+            imap = { it.delete(args.folder, args.uids.map { uid -> uid.imap }, args.expunge) },
+            pop3 = { it.delete(args.uids) },
+            precheck = { Pop3Mailbox.checkFolder(args.folder) },
+        )
 
-    fun expunge(folder: String): ExpungeResult = receive(retryOnLoss = false) { it.expunge(folder) }
+    fun expunge(folder: String): ExpungeResult = imapOnly("messages.expunge", retryOnLoss = false) { it.expunge(folder) }
 
-    /** The receive-side store; POP3 accounts get the P2.4 subset later and answer `UNSUPPORTED_OPERATION` until then. */
-    private fun <R> receive(retryOnLoss: Boolean = true, block: (ImapMailbox) -> R): R {
+    /**
+     * Runs the receive operation on the account's protocol: [imap] for IMAP accounts, [pop3] for
+     * POP3 accounts after [precheck] (what POP3 cannot do is refused before any connection).
+     */
+    private fun <R> receive(imap: (ImapMailbox) -> R, pop3: (Pop3Mailbox) -> R, retryOnLoss: Boolean = true, precheck: () -> Unit = {}): R {
+        ensureOpen()
+        return when (account.receive) {
+            MailProtocol.POP3 -> {
+                try {
+                    precheck()
+                } catch (e: MailException) {
+                    lastError = e
+                    throw e
+                }
+                pop3(retryOnLoss, pop3)
+            }
+            else -> imap(retryOnLoss, imap)
+        }
+    }
+
+    /** IMAP-only operations: POP3 accounts get `UNSUPPORTED_OPERATION` without connecting (roadmap D3 / P2.4). */
+    private fun <R> imapOnly(op: String, retryOnLoss: Boolean = true, block: (ImapMailbox) -> R): R {
         ensureOpen()
         if (account.receive != MailProtocol.IMAP) {
-            throw MailException.unsupported("this operation needs an IMAP account; the POP3 subset arrives with roadmap P2.4").also { lastError = it }
+            throw MailException.unsupported("$op needs an IMAP account; this account receives over ${account.receive.id} (roadmap D3)").also { lastError = it }
         }
         return imap(retryOnLoss, block)
     }
+
 
     /**
      * The sent folder: the preset's name when that folder exists, else the `\Sent` special-use

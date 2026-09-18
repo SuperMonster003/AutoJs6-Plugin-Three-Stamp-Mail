@@ -179,8 +179,8 @@ and client searches (GreenMail matches `FROM` / `TO` on whole addresses only), `
 downloadable, a 10 MiB attachment streamed with 20 progress reports and compared byte for byte,
 the raw source re-parsed, a sink that fails after 200 KB (`IO_FAILED`, the IMAP connection is
 kept: one connect for the whole test), flags in the three modes, `MOVE` and the
-`COPY` + `\Deleted` + `UID EXPUNGE` path, copy, delete with and without expunge, expunge counts,
-and POP3 accounts answering `UNSUPPORTED_OPERATION` until P2.4.
+`COPY` + `\Deleted` + `UID EXPUNGE` path, copy, delete with and without expunge and expunge
+counts.
 
 `IdentifyingImapStoreTest` scripts a minimal IMAP server on the loopback interface (CAPABILITY,
 LOGIN, ID, LIST, SELECT / EXAMINE, UID FETCH, UID EXPUNGE answered with `BAD`, EXPUNGE, LOGOUT)
@@ -189,6 +189,54 @@ opened, with the account's payload; that an empty `clientId` sends nothing (the 
 then refuses the folder with `Unsafe Login`, as NetEase does); that a server without the `ID`
 capability is left alone; and that `messages.delete` with `expunge` falls back to a plain
 `EXPUNGE` after the `BAD` and records `uidExpungeRefused`.
+
+## P2.4: the POP3 degraded path
+
+The runner's `--receive pop3` makes the receiving side read over POP3: `QQ_A` sends over SMTP
+(IMAP for its own listing) and `QQ_B` receives through `pop.qq.com:995`. Its POP3 view holds
+1305 messages, which made the cost of the protocol visible.
+
+### QQ Mail, account A to account B over POP3 (Redmi 22120RN86C, API 33)
+
+| Step | Result |
+| --- | --- |
+| peer `session` connect | `pop.qq.com:995/ssl` in 700 ms |
+| peer `messages.list` polling (limit 10) | received after 14.5 s, second poll; each poll is one `UIDL` for all 1305 messages (about 200 ms) plus `TOP` + `LIST` per listed message (10 messages in about 3 s); the uid is a 30-character opaque string, `seen = false`, `hasAttachments = true` from the Content-Type |
+| `folders.list` with counts | `INBOX` alone, 1305 messages, `unseen = null`, 1.0 s (`STAT`) |
+| `folders.status INBOX` | `UNSUPPORTED_OPERATION` before any command |
+| `messages.search` by Message-ID, `limit: 1` | 1 hit in 1.8 s: the scan stopped after the first candidate (`client filter scanned 1 matched 1`) |
+| `messages.search` by subject, `limit: 5` | 5 hits in 1.2 s, ours included, 5 candidates scanned |
+| `messages.search` by Message-ID, `limit: 5` (earlier run) | 1 hit in 39.6 s: one hit cannot fill the limit, so all 200 candidates of the window were scanned at about 190 ms each |
+| `messages.search` with `text`, `messages.list` with `unseenOnly` | `UNSUPPORTED_OPERATION` before any command |
+| `messages.get` | 1.8 s (`RETR`): 49 characters of text, 12 headers, 1 attachment `2:text/plain:40` |
+| `attachments.download` part 2 | 28 bytes, byte-identical to what was sent, 1.5 s (a second `RETR`) |
+| `messages.raw` | 2377 bytes in 2.0 s, re-parsed subject matches |
+| `messages.setFlags`, `move`, `expunge`, `folders.status` | `UNSUPPORTED_OPERATION` |
+| `messages.delete` | `DELE` then `QUIT` commits (`close INBOX commit` 385 ms); the next `UIDL` counts 1304 and `messages.get` answers `MESSAGE_NOT_FOUND` |
+
+The first version of the POP3 search reused the IMAP window (`MAX_CLIENT_FILTER`, 2000) and
+prefetched the envelopes of the whole window before filtering. Angus Mail implements the POP3
+`ENVELOPE` prefetch as one `TOP n 0` plus one `LIST n` per message, so the search over 1305
+messages took 428 s (and 387 s on the second search of the same run). The search now walks the
+window newest first, loads the headers of one candidate at a time (`TOP` only, the `LIST` runs for
+the matched page) and stops as soon as `limit` messages match, with the window cut to
+`MAX_POP3_CLIENT_FILTER` (200). A miss is therefore bounded by about 40 s against QQ; a search
+for something recent costs a few round trips. QQ rewrites the outgoing Message-ID, and the POP3
+view shows the rewritten id too, so the device test searches for the id the listing reported.
+
+### GreenMail (JVM)
+
+`Pop3OperationsGreenMailTest` seeds the mailbox through IMAP `APPEND` (GreenMail serves one
+store over both protocols) and checks, over POP3: `folders.list` answering `INBOX` alone with the
+`STAT` count and no unseen count, the nine IMAP-only operations and any folder other than `INBOX`
+refused before a connection (the connect count stays at one), UIDL cursor paging in both
+directions over headers only (`hasAttachments` from `multipart/mixed`, uids serialized as
+strings), `messages.get` with `includeRaw`, an attachment download compared byte for byte, the
+raw source re-parsed, missing uids and parts, client-side header searches (`subject`, `from` with
+`not`, `header`, `messageId`, `sentSince`, `before`), the scan count in the trace (`limit: 1`
+scans one candidate, a miss scans all seven), `DELE` committed when the folder closes with the
+IMAP view of the same mailbox agreeing, and `session.test` / `mail.send` for a POP3 account
+(no sent copy without IMAP).
 
 ## Descriptor ownership through `IMailSession.call` (API 24 emulator)
 
@@ -214,17 +262,20 @@ pass 6 tests with the real-account test skipped.
 
 ## JVM
 
-`:mail-core:test`: 140 tests. New in P2.2: `OutgoingMessageParserTest` (9), `MessageComposerTest`
+`:mail-core:test`: 146 tests. New in P2.2: `OutgoingMessageParserTest` (9), `MessageComposerTest`
 (7), `SmtpSendGreenMailTest` (9). `mail.mime.allowutf8` was dropped from the session properties
 so display names and subjects are always RFC 2047 encoded on the wire (decision D34). New in
 P2.3: `HtmlToTextTest` (9), `SearchQueryCompilerTest` (11), `MessageArgsTest` (6), `TransferTest`
 (5), `MessageMapperFixturesTest` (10, over the ten `.eml` fixtures generated by
 `build/make_fixtures.py`), `ImapOperationsGreenMailTest` (10) and `IdentifyingImapStoreTest` (4).
+New in P2.4: `Pop3OperationsGreenMailTest` (6) and a POP3 case in `MessageArgsTest` (now 7).
 
-`:app:testDebugUnitTest`: 21 tests; `RequestRouterTest` (6) snapshots the op table (all 19
+`:app:testDebugUnitTest`: 22 tests; `RequestRouterTest` (7) snapshots the op table (all 19
 contract ops handled since P2.3, `PENDING_OPS` empty), checks that descriptors belong to the
-transfer ops only and that the descriptor rules run after routing and before the handler, and
-that argument errors of every op surface before a descriptor is opened or a connection is made.
+transfer ops only and that the descriptor rules run after routing and before the handler, that
+argument errors of every op surface before a descriptor is opened or a connection is made, and
+that a POP3 account gets the degraded subset (IMAP-only ops, other folders, `unseenOnly` and body
+searches refused) without connecting.
 
 ## Reproducing
 
@@ -235,6 +286,7 @@ python .python/run_real_account.py QQ_A <serial> --save-sent true    # shows sen
 python .python/run_real_account.py QQ_A <serial> --peer QQ_B --cleanup --debug   # P2.3 round trip
 python .python/run_real_account.py NETEASE_A <serial> --peer NETEASE_B --cleanup --debug
 python .python/run_real_account.py GMAIL_A <serial> --cleanup --debug
+python .python/run_real_account.py QQ_A <serial> --peer QQ_B --receive pop3 --cleanup --debug   # P2.4, peer reads over POP3
 ```
 
 Profiles read `QQ_USER_NAME_A` / `QQ_AUTH_CODE_A`, `QQ_USER_NAME_B` / `QQ_AUTH_CODE_B`,

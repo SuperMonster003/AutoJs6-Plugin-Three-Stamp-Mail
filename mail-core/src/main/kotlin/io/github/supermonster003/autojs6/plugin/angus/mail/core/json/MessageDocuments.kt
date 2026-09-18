@@ -105,9 +105,25 @@ data class SearchResult(
     }
 }
 
-/** Result of `messages.setFlags` and `messages.delete`: the UIDs that were found and changed. */
+/**
+ * Result of `messages.setFlags` and `messages.delete`: the UIDs that were found and changed, as
+ * numbers for IMAP and as UIDL strings for POP3 (roadmap P2.4).
+ */
 @Serializable
-data class UidsResult(val uids: List<Long>)
+data class UidsResult(val uids: List<JsonPrimitive>) {
+
+    /** The UIDs as IMAP numbers; empty for POP3 results. */
+    val imapUids: List<Long> get() = uids.mapNotNull { if (it.isString) null else it.content.toLongOrNull() }
+
+    /** The UIDs as strings (UIDLs for POP3, decimal numbers for IMAP). */
+    val uidStrings: List<String> get() = uids.map { it.content }
+
+    companion object {
+        fun imap(uids: List<Long>): UidsResult = UidsResult(uids.map { JsonPrimitive(it) })
+
+        fun pop3(uidls: List<String>): UidsResult = UidsResult(uidls.map { JsonPrimitive(it) })
+    }
+}
 
 /** Result of `messages.move` / `messages.copy`: the UIDs in the target folder when the server reports them (UIDPLUS), else null. */
 @Serializable

@@ -1,6 +1,6 @@
 """Runs the real-provider device round trip with an account from mail-test-accounts.properties.
 
-Usage: python .python/run_real_account.py <QQ_A|QQ_B|GMAIL_A|NETEASE_A|NETEASE_B> <adb serial> [--peer QQ_B] [--save-sent true|false] [--debug] [--append Drafts] [--cleanup] [--release]
+Usage: python .python/run_real_account.py <QQ_A|QQ_B|GMAIL_A|NETEASE_A|NETEASE_B> <adb serial> [--peer QQ_B] [--save-sent true|false] [--debug] [--append Drafts] [--cleanup] [--receive pop3] [--release]
 
 Secrets never reach stdout: every value of a secret key is masked in the Gradle output, the
 logcat excerpt and the XML report check. The command line itself is not echoed.
@@ -19,6 +19,8 @@ release = '--release' in opts
 debug = '--debug' in opts
 append_folder = opts[opts.index('--append') + 1] if '--append' in opts else None
 cleanup = '--cleanup' in opts
+# --receive pop3: the receiving side (the peer when given, else the account itself) reads over POP3 (roadmap P2.4)
+receive = opts[opts.index('--receive') + 1] if '--receive' in opts else None
 props = {}
 for line in open('mail-test-accounts.properties', encoding='utf-8'):
     line = line.strip()
@@ -42,7 +44,7 @@ for name in ('NETEASE_A', 'NETEASE_B'):
     domain = address.rsplit('@', 1)[-1]
     profiles[name]['provider'] = '126' if domain == '126.com' else '163'
     if domain == 'yeah.net':
-        profiles[name].update(imapHost='imap.yeah.net', smtpHost='smtp.yeah.net')
+        profiles[name].update(imapHost='imap.yeah.net', pop3Host='pop.yeah.net', smtpHost='smtp.yeah.net')
 profile = profiles[which]
 assert profile['address'] and profile['secret'], 'profile incomplete'
 secret = profile['secret']
@@ -67,11 +69,14 @@ args = {
     'mailAuth': profile['auth'],
 }
 if profile.get('imapHost'):
-    args.update({'mailImapHost': profile['imapHost'], 'mailSmtpHost': profile['smtpHost']})
+    args.update({'mailImapHost': profile['imapHost'], 'mailPop3Host': profile['pop3Host'], 'mailSmtpHost': profile['smtpHost']})
 if peer:
     args.update({'mailPeerAddress': peer['address'], 'mailPeerSecret': peer['secret'], 'mailPeerProvider': peer['provider'], 'mailPeerAuth': peer['auth']})
     if peer.get('imapHost'):
         args['mailPeerImapHost'] = peer['imapHost']
+        args['mailPeerPop3Host'] = peer['pop3Host']
+if receive:
+    args['mailPeerReceive' if peer else 'mailReceive'] = receive
 if save_sent is not None:
     args['mailSaveToSent'] = save_sent
 if debug:

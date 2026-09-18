@@ -1,6 +1,7 @@
 package io.github.supermonster003.autojs6.plugin.angus.mail.core.query
 
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.MailLimits
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorCode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
 import jakarta.mail.Flags
@@ -27,8 +28,8 @@ class MessageArgsTest {
         val page = MessageArgs.list("""{"folder": "Archive", "limit": 10, "before": "500", "after": 100, "order": "asc", "unseenOnly": true}""")
         assertEquals("Archive", page.folder)
         assertEquals(10, page.limit)
-        assertEquals(500L, page.before)
-        assertEquals(100L, page.after)
+        assertEquals(500L, page.before?.imap)
+        assertEquals(100L, page.after?.imap)
         assertFalse(page.descending)
         assertTrue(page.unseenOnly)
 
@@ -48,7 +49,7 @@ class MessageArgsTest {
         val args = MessageArgs.search("""{"query": {"from": "alice"}, "folder": "Sent", "limit": 5, "before": 900}""")
         assertEquals("Sent", args.folder)
         assertEquals(5, args.limit)
-        assertEquals(900L, args.before)
+        assertEquals(900L, args.before?.imap)
         assertTrue(args.clientFallback)
         assertTrue(args.serverSearch)
         val none = MessageArgs.search("""{"query": {"from": "a"}, "fallback": "none"}""")
@@ -67,7 +68,7 @@ class MessageArgsTest {
     fun getRawAndDownloadAddressOneMessage() {
         val get = MessageArgs.get("""{"uid": 42}""")
         assertEquals("INBOX", get.folder)
-        assertEquals(42L, get.uid)
+        assertEquals(42L, get.uid.imap)
         assertTrue(get.peek)
         assertFalse(get.includeRaw)
         val marked = MessageArgs.get("""{"folder": "Work", "uid": "7", "peek": false, "includeRaw": true}""")
@@ -78,7 +79,7 @@ class MessageArgsTest {
         assertTrue(failure { MessageArgs.get("""{"uid": [1, 2]}""") }.message.contains("single UID"))
         assertTrue(failure { MessageArgs.get("""{"uid": "abc"}""") }.message.contains("not a valid IMAP UID"))
 
-        assertEquals(9L, MessageArgs.raw("""{"uid": 9}""").uid)
+        assertEquals(9L, MessageArgs.raw("""{"uid": 9}""").uid.imap)
         val download = MessageArgs.download("""{"uid": 3, "partId": "2.1"}""")
         assertEquals("2.1", download.partId)
         assertTrue(failure { MessageArgs.download("""{"uid": 3}""") }.message.contains("'partId' is required"))
@@ -122,6 +123,36 @@ class MessageArgsTest {
         assertEquals("Trash", MessageArgs.folderOnly("""{"folder": "Trash"}"""))
         assertTrue(failure { MessageArgs.folderOnly("{}", required = true) }.message.contains("'folder' is required"))
         assertTrue(failure { MessageArgs.folderOnly("""{"path": "x"}""") }.message.contains("args.path"))
+    }
+
+    @Test
+    fun pop3AccountsTakeUidlStringsAndLoseTheImapOnlyOps() {
+        val pop3 = MailProtocol.POP3
+        val list = MessageArgs.list("""{"before": "UID-0042", "after": "0001abc", "order": "asc"}""", pop3)
+        assertEquals("UID-0042", list.before?.text)
+        assertEquals("0001abc", list.after?.text)
+        assertEquals(MailErrorCode.INVALID_ARGUMENT, failure { list.before!!.imap }.code)
+        // a numeric UIDL is still a string on POP3, and IMAP-style cursor ordering is not checked
+        assertEquals("7", MessageArgs.list("""{"before": 3, "after": 7}""", pop3).after?.text)
+        assertEquals("abc", MessageArgs.get("""{"uid": "abc"}""", pop3).uid.text)
+        assertEquals("\"abc\"", MessageArgs.get("""{"uid": "abc"}""", pop3).uid.json.toString())
+        assertEquals("12", MessageArgs.raw("""{"uid": 12}""", pop3).uid.text)
+        assertEquals("x1", MessageArgs.download("""{"uid": "x1", "partId": "2"}""", pop3).uid.text)
+        assertEquals(listOf("a", "b"), MessageArgs.delete("""{"uids": ["a", "b", "a"]}""", pop3).uids.map { it.text })
+        assertEquals("k", MessageArgs.search("""{"query": {"from": "a"}, "before": "k"}""", pop3).before?.text)
+        assertTrue(failure { MessageArgs.get("""{"uid": " "}""", pop3) }.message.contains("must not be blank"))
+        assertTrue(failure { MessageArgs.get("""{"uid": "${"x".repeat(MessageUid.MAX_UIDL_LENGTH + 1)}"}""", pop3) }.message.contains("not a valid POP3 UIDL"))
+
+        listOf(
+            failure { MessageArgs.flags("""{"uids": ["a"], "flags": "seen"}""", pop3) } to "messages.setFlags",
+            failure { MessageArgs.target("""{"uids": ["a"], "target": "Archive"}""", pop3) } to "messages.move",
+            failure { MessageArgs.target("""{"uids": ["a"], "target": "Archive"}""", pop3, "messages.copy") } to "messages.copy",
+        ).forEach { (error, op) ->
+            assertEquals(op, MailErrorCode.UNSUPPORTED_OPERATION, error.code)
+            assertTrue(error.message, error.message.contains(op) && error.message.contains("IMAP"))
+        }
+        // unknown fields are still reported first
+        assertTrue(failure { MessageArgs.flags("""{"uids": ["a"], "flags": "seen", "x": 1}""", pop3) }.message.contains("args.x"))
     }
 
     @Test

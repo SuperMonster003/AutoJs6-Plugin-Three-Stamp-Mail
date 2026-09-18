@@ -15,6 +15,13 @@ object MailLimits {
     const val MAX_PAGE_SIZE = 1000
     const val DEFAULT_PAGE_SIZE = 50
     const val MAX_CLIENT_FILTER = 2000
+
+    /**
+     * Candidates a POP3 client search scans (roadmap P2.4). POP3 has no batch header fetch, so
+     * every candidate costs one `TOP` round trip (about 0.15 s against QQ from a phone); the
+     * window is a tenth of [MAX_CLIENT_FILTER] and the scan stops once `limit` messages match.
+     */
+    const val MAX_POP3_CLIENT_FILTER = 200
     const val MAX_WATCHES_PER_SESSION = 4
     const val MAX_WATCH_QUEUE = 256
     const val MIN_POLL_INTERVAL_MS = 15_000L

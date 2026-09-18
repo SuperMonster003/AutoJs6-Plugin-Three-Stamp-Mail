@@ -101,7 +101,7 @@ class IdentifyingImapStoreTest {
     fun deleteFallsBackToExpungeWhenTheServerCannotParseUidExpunge() {
         server.messages = 1
         ImapMailbox.connect(account("""{"name":"AutoJs6-Plugin-Angus-Mail"}"""), MailSecret(PASSWORD)).use { mailbox ->
-            assertEquals(listOf(1L), mailbox.delete("INBOX", listOf(1L), expunge = true).uids)
+            assertEquals(listOf(1L), mailbox.delete("INBOX", listOf(1L), expunge = true).imapUids)
             assertTrue(mailbox.uidExpungeRefused)
         }
         val folderSession = server.sessions.first { "UID EXPUNGE" in it.commands }

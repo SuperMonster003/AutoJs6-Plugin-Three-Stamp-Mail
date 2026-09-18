@@ -192,8 +192,8 @@ class ImapMailbox private constructor(
     fun listMessages(args: MessageArgs.ListArgs): List<MessageDocument> = withFolder(args.folder, Folder.READ_ONLY) { folder ->
         val total = folder.messageCount
         if (total == 0) return@withFolder emptyList()
-        val upper = args.before?.let { positionBefore(folder, it) } ?: total
-        val lower = args.after?.let { positionAfter(folder, it) } ?: 1
+        val upper = args.before?.let { positionBefore(folder, it.imap) } ?: total
+        val lower = args.after?.let { positionAfter(folder, it.imap) } ?: 1
         if (upper < lower || upper < 1) return@withFolder emptyList()
         val numbers: List<Int> = if (args.unseenOnly) {
             trace.timed(MailProtocol.IMAP.id, "search unseen") { folder.search(FlagTerm(Flags(Flags.Flag.SEEN), false)) }
@@ -216,7 +216,7 @@ class ImapMailbox private constructor(
     fun search(args: MessageArgs.SearchArgs, serverSearch: Boolean = args.serverSearch): SearchResult = withFolder(args.folder, Folder.READ_ONLY) { folder ->
         val total = folder.messageCount
         if (total == 0) return@withFolder SearchResult(emptyList(), SearchResult.FALLBACK_SERVER)
-        val upper = args.before?.let { positionBefore(folder, it) } ?: total
+        val upper = args.before?.let { positionBefore(folder, it.imap) } ?: total
         if (upper < 1) return@withFolder SearchResult(emptyList(), SearchResult.FALLBACK_SERVER)
         val candidates: Array<Message>? = args.query.uids?.let { byUidSet(folder, it) }
         if (candidates != null && candidates.isEmpty()) return@withFolder SearchResult(emptyList(), SearchResult.FALLBACK_SERVER)
@@ -299,7 +299,7 @@ class ImapMailbox private constructor(
                 }
             }
         }
-        UidsResult(messages.map { f.getUID(it) })
+        UidsResult.imap(messages.map { f.getUID(it) })
     }
 
     /**
@@ -348,7 +348,7 @@ class ImapMailbox private constructor(
             f.setFlags(messages, Flags(Flags.Flag.DELETED), true)
             if (expunge) expungeDeleted(f, messages)
         }
-        UidsResult(found)
+        UidsResult.imap(found)
     }
 
     /** True once the server answered `BAD` to `UID EXPUNGE` (NetEase advertises UIDPLUS but cannot parse it); the folder is expunged as a whole from then on. */

@@ -35,7 +35,8 @@ dependencies {
     api(libs.jakarta.activation.api)
     // Jakarta Activation implementation: the MIME data handlers Angus Mail resolves through mailcap.
     implementation(libs.angus.activation)
-    implementation(libs.kotlinx.serialization.json)
+    // Public: MessageDocument.uid and UidsResult carry JsonPrimitive (IMAP numbers or POP3 UIDL strings, roadmap P2.4).
+    api(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
     // GreenMail also declares jakarta.mail-api; the bundle above already contains those classes.

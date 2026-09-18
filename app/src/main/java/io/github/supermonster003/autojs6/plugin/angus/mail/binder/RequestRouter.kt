@@ -104,21 +104,23 @@ internal class RequestRouter(private val session: MailSession) {
             MailContract.OP_FOLDERS_DELETE to Handler { session, args, _ -> session.deleteFolder(MessageArgs.path(args)).toString() },
             MailContract.OP_FOLDERS_RENAME to Handler { session, args, _ -> session.renameFolder(MessageArgs.rename(args)).toJson() },
 
-            MailContract.OP_MESSAGES_LIST to Handler { session, args, _ -> session.listMessages(MessageArgs.list(args)).toJson() },
-            MailContract.OP_MESSAGES_SEARCH to Handler { session, args, _ -> session.searchMessages(MessageArgs.search(args)).toJson() },
-            MailContract.OP_MESSAGES_GET to Handler { session, args, _ -> session.getMessage(MessageArgs.get(args)).toJson() },
+            // The parsers take the account's receive protocol (roadmap P2.4): POP3 UIDs are UIDL
+            // strings, and the IMAP-only ops answer UNSUPPORTED_OPERATION for POP3 accounts before any connection.
+            MailContract.OP_MESSAGES_LIST to Handler { session, args, _ -> session.listMessages(MessageArgs.list(args, session.receiveProtocol)).toJson() },
+            MailContract.OP_MESSAGES_SEARCH to Handler { session, args, _ -> session.searchMessages(MessageArgs.search(args, session.receiveProtocol)).toJson() },
+            MailContract.OP_MESSAGES_GET to Handler { session, args, _ -> session.getMessage(MessageArgs.get(args, session.receiveProtocol)).toJson() },
             MailContract.OP_MESSAGES_RAW to Handler { session, args, io ->
-                val raw = MessageArgs.raw(args)
+                val raw = MessageArgs.raw(args, session.receiveProtocol)
                 session.downloadRaw(raw, io.sink(), TransferProgress { transferred, total -> io.progress(transferred, total) }).toJson()
             },
             MailContract.OP_ATTACHMENTS_DOWNLOAD to Handler { session, args, io ->
-                val download = MessageArgs.download(args)
+                val download = MessageArgs.download(args, session.receiveProtocol)
                 session.downloadAttachment(download, io.sink(), TransferProgress { transferred, total -> io.progress(transferred, total) }).toJson()
             },
-            MailContract.OP_MESSAGES_SET_FLAGS to Handler { session, args, _ -> session.setFlags(MessageArgs.flags(args)).toJson() },
-            MailContract.OP_MESSAGES_MOVE to Handler { session, args, _ -> session.move(MessageArgs.target(args)).toJson() },
-            MailContract.OP_MESSAGES_COPY to Handler { session, args, _ -> session.copy(MessageArgs.target(args)).toJson() },
-            MailContract.OP_MESSAGES_DELETE to Handler { session, args, _ -> session.delete(MessageArgs.delete(args)).toJson() },
+            MailContract.OP_MESSAGES_SET_FLAGS to Handler { session, args, _ -> session.setFlags(MessageArgs.flags(args, session.receiveProtocol)).toJson() },
+            MailContract.OP_MESSAGES_MOVE to Handler { session, args, _ -> session.move(MessageArgs.target(args, session.receiveProtocol, MailContract.OP_MESSAGES_MOVE)).toJson() },
+            MailContract.OP_MESSAGES_COPY to Handler { session, args, _ -> session.copy(MessageArgs.target(args, session.receiveProtocol, MailContract.OP_MESSAGES_COPY)).toJson() },
+            MailContract.OP_MESSAGES_DELETE to Handler { session, args, _ -> session.delete(MessageArgs.delete(args, session.receiveProtocol)).toJson() },
             MailContract.OP_MESSAGES_EXPUNGE to Handler { session, args, _ -> session.expunge(MessageArgs.folderOnly(args)).toJson() },
             MailContract.OP_MESSAGES_APPEND to Handler { session, args, io ->
                 val append = OutgoingMessageParser.parseAppendArgs(args, io.sources())
@@ -136,7 +138,7 @@ internal class RequestRouter(private val session: MailSession) {
 
         val SUPPORTED_OPS: Set<String> get() = HANDLERS.keys
 
-        /** Contract ops without a handler; empty since P2.3 (P2.4 changes what POP3 accounts answer, not the table). */
+        /** Contract ops without a handler; empty since P2.3 (P2.4 changed what POP3 accounts answer, not the table). */
         val PENDING_OPS: List<String> get() = MailContract.OPS.filter { it !in HANDLERS }
 
         fun errorCodeFor(route: Route): String? = when (route) {

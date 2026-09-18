@@ -32,6 +32,16 @@ object MessageMapper {
         return base(message, folder, uid, leaves)
     }
 
+    /**
+     * POP3 listings (roadmap P2.4): the envelope from the headers a `TOP n 0` delivered, without
+     * touching the content. `hasAttachments` is a Content-Type heuristic here (`multipart/mixed`
+     * carries attachments by convention); `messages.get` enumerates the real parts.
+     */
+    fun envelopeFromHeaders(message: Message, folder: String, uid: JsonPrimitive): MessageDocument {
+        val contentType = runCatching { message.contentType }.getOrNull()?.substringBefore(';')?.trim()?.lowercase()
+        return base(message, folder, uid, emptyList(), hasAttachments = contentType == "multipart/mixed")
+    }
+
     fun full(message: Message, folder: String, uid: JsonPrimitive, includeRaw: Boolean = false): MessageDocument {
         val leaves = MimeTree.leaves(message)
         val body = Body.extract(leaves)
@@ -94,7 +104,7 @@ object MessageMapper {
         return out
     }
 
-    private fun base(message: Message, folder: String, uid: JsonPrimitive, leaves: List<MimeLeaf>): MessageDocument {
+    private fun base(message: Message, folder: String, uid: JsonPrimitive, leaves: List<MimeLeaf>, hasAttachments: Boolean = leaves.any { it.kind == PartKind.ATTACHMENT }): MessageDocument {
         val flags = runCatching { message.flags }.getOrDefault(Flags())
         return MessageDocument(
             uid = uid,
@@ -117,7 +127,7 @@ object MessageMapper {
             answered = flags.contains(Flags.Flag.ANSWERED),
             draft = flags.contains(Flags.Flag.DRAFT),
             deleted = flags.contains(Flags.Flag.DELETED),
-            hasAttachments = leaves.any { it.kind == PartKind.ATTACHMENT },
+            hasAttachments = hasAttachments,
         )
     }
 
