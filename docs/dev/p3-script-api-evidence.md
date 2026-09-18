@@ -1,9 +1,11 @@
-# P3 script API evidence (P3.1 connection and global object)
+# P3 script API evidence (P3.1 connection and global object, P3.2 send and receive)
 
 Evidence for roadmap P3.1 (the `mail` global, `MailClient`, `MailError`, argument
-normalization, the connect smoke script), collected on 2026-09-18 in the host repository
-`../AutoJs6` (Gradle 9.7.1, AGP 9.3, Kotlin 2.3, JDK 21, Windows 11) against plugin build 12
-installed on the devices below. P3.2 (send and receive methods) and P3.3 (protocol document
+normalization, the connect smoke script) collected on 2026-09-18, and for P3.2 (the send and
+receive methods of `MailClient`, the result decoration, the `docs/smoke` scripts) collected on
+2026-09-19, in the host repository `../AutoJs6` (Gradle 9.7.1, AGP 9.3, Kotlin 2.3, JDK 21,
+Windows 11) against plugin build 12 installed on the devices below (the last 163 run of P3.2
+used a local debug build of the preset fix that became build 15). P3.3 (protocol document
 table, host changelog, full host build) will extend this file.
 
 Real accounts come from the git-ignored `mail-test-accounts.properties` and reach the device only
@@ -15,76 +17,76 @@ Logs carry provider ids, address domains and durations only.
 
 | Device | API | Network | Used for |
 | --- | --- | --- | --- |
-| AVD_API_24 (x86 emulator) | 24 | host network | connect smoke against the loopback fake IMAP server, QQ Mail |
-| Redmi 22120RN86C (bek749scrwv4wo8h) | 33 | Wi-Fi | connect smoke against the loopback fake IMAP server, QQ Mail |
+| AVD_API_24 (x86 emulator) | 24 | host network | connect smoke against the loopback fake IMAP server, QQ Mail, 163 Mail |
+| Redmi 22120RN86C (bek749scrwv4wo8h) | 33 | Wi-Fi | connect smoke against the loopback fake IMAP server, QQ Mail, 163 Mail, Gmail (token expired) |
 
 ## P3.1: host code
 
-Everything lives in the host repository; the plugin needed no change.
+| File (host `app/src/main/java/org/autojs/autojs/`) | Role |
+| --- | --- |
+| `runtime/api/mail/MailScriptOptions.kt` | `mail.connect` argument shapes (alias or inline account) in pure Kotlin: `spec` for the plugin, `snapshot` without secrets for `client.account`, `debug` flag, `describe()` for `toString` |
+| `runtime/api/mail/MailProviderCatalog.kt` | `mail.providers.list() / get(id) / resolve(address)` over the plugin's provider documents |
+| `runtime/api/mail/MailScriptValues.kt` | Gson trees to plain Kotlin values (`Map` / `List` / numbers as `Long` or `Double`) for `RhinoUtils.toJsValue` |
+| `runtime/api/mail/MailService.kt` | Per-runtime registry of clients, the default client, the plugin host lease |
+| `runtime/api/augment/mail/Mail.kt` | The `mail` global: `connect` / `connectAsync` / `setDefault` / `close` / `default` / `providers` / `accounts` / `MailError`; every client method forwards to the default client |
+| `runtime/api/augment/mail/MailClientNativeObject.kt` | The `MailClient` object |
+| `runtime/api/augment/mail/MailJsErrors.kt` | The `MailError` constructor (per-scope cache) and the Kotlin-to-JavaScript error mapping |
+| `runtime/api/augment/mail/MailPromises.kt` / `MailAsyncDispatcher.kt` | Promise plumbing of the `Async` methods over `ScriptAsyncDispatcher` |
+| `runtime/ScriptRuntime.kt` | `Mail(this, mail).augment(target)` and `mail.close()` in the exit hook |
+| `core/plugin/mail/MailPluginHost.kt` / `MailBinders.kt` / `MailJson.kt` | Refusal wait (`awaitClosed`, 3 s) for the oneway `closed` status, `Progress.debug` lines |
 
-| Area | Files | Notes |
-| --- | --- | --- |
-| Pure Kotlin (JVM-testable) | `runtime/api/mail/MailScriptOptions.kt`, `MailProviderCatalog.kt`, `MailScriptValues.kt` | `mail.connect` argument shapes (unknown keys refused by name, `password` / `accessToken` / `tokenProvider` rules, `auth` consistency, endpoint / timeout / tls / clientId shapes, secrets split from the `client.account` snapshot), the provider table (`list`, `get` by id, `resolve` by address domain), Gson tree to plain JVM values |
-| Per-script owner | `runtime/api/mail/MailService.kt` | open clients, the default client, provider catalog (fetched once), saved accounts; closed from the `ScriptRuntime` exit hook so no plugin session outlives its script |
-| Rhino boundary | `runtime/api/augment/mail/Mail.kt`, `MailClientNativeObject.kt`, `MailJsErrors.kt`, `MailPromises.kt`, `MailAsyncDispatcher.kt` | the `mail` global (`connect` / `connectAsync`, `setDefault`, `default`, `close`, `providers.*`, `accounts.*`, `MailError`, default-client forwarders that throw or reject `NO_DEFAULT_ACCOUNT`), `MailClient` (`account`, `isConnected`, `isClosed`, `test` / `testAsync`, `close`; sync via `runBlocking(scriptRuntime.coroutineContext)`, async via `ScriptAsyncDispatcher` and `ScriptPromiseAdapter`; `debug: true` trace lines to `console.verbose`), the script-visible `MailError` class (`instanceof Error` and `instanceof mail.MailError`, `code` / `details` / `retryable`, hidden `javaException`) |
-| Registration | `runtime/ScriptRuntime.kt` | `Mail(this, mail).augment(target)` next to `Mediainfo`, `mail.close()` in the exit hook |
-| Client protocol layer | `core/plugin/mail/MailJson.kt`, `MailBinders.kt`, `MailPluginHost.kt` | `Progress.debug` carries the redacted trace lines (decision D28); a refused `openSession` waits up to 3 s for the `closed` status of the oneway session callback (see lessons) |
-| Protocol document | `docs/dev/mail-plugin-protocol-v1.md` | the `openSession` row notes the oneway wait |
+## P3.2: host code
 
-`mail.connect(options)` opens the plugin session eagerly (`openSession`, no network); the first
-operation connects, and `test()` reports an unreachable endpoint inside its result
-(`ok: false`, `imap.error.code === 'CONNECT_FAILED'`) instead of throwing. `mail.connect('alias')`
-reaches the plugin and comes back as `MailError` `ACCOUNT_NOT_FOUND` until roadmap P4.
+| File (host `app/src/main/java/org/autojs/autojs/`) | Role |
+| --- | --- |
+| `runtime/api/mail/MailScriptArguments.kt` | Pure-Kotlin argument normalization of every client method (Gson trees in, operation `args` out): UIDs as number / UIDL string / message object with its `folder`, unknown keys refused by name, `date` as millis or ISO-8601, attachments as path or `{path, fileName?, mimeType?, contentId?, inline?}` mapped to `descriptorIndex` entries |
+| `core/plugin/mail/MailDownloads.kt` | One streamed download end to end: `MailAttachmentSink` pipe with the request, write end closed on submit, read end drained while the call is in flight |
+| `runtime/api/augment/mail/MailJsResults.kt` | Result decoration on the script thread: `date` / `receivedDate` as `Date`, addresses print as `Name <address>`, attachments and body parts carry `uid` / `folder` and bound `download` / `downloadAsync`, messages carry bound `load` / `loadAsync`, search results carry a non-enumerable `fallback` |
+| `runtime/api/augment/mail/MailPromises.kt` | `OnScriptThread` results (decoration needs a Rhino context) and `launchWith` (the dispatcher reaches the work for `onProgress`) |
+| `runtime/api/augment/mail/MailClientNativeObject.kt` | `send`, `folders`, `folder(path)` (`status` / `create` / `delete` / `rename`), `folderStatus`, `createFolder`, `deleteFolder`, `renameFolder`, `fetch`, `search`, `get` (alias `fetchBody`), `download`, `raw`, `setFlags` with `markRead` / `markUnread` / `flag` / `unflag`, `move`, `copy`, `delete`, `expunge`, `append`, each with an `Async` form; `defineOp` shares the arity guard, the sync bridge (`runBlocking` in the runtime's coroutine context) and the async bridge |
+| `runtime/api/augment/mail/Mail.kt` | `FORWARDED` table: every client method mirrored on `mail` as a `BaseFunction` property (throws or rejects `NO_DEFAULT_ACCOUNT`) |
+| `app/src/androidTest/.../MailScriptSmokeDeviceTest.kt` | `realProviderScript`: runs a script pushed to the device (`mail.smoke.script`) with `mail.smoke.provider` / `address` / `password` or `accessToken`, injects `MAIL_SMOKE` after a leading `"ui";`, reads the report file the script writes, logs the report after the leak check |
+
+Sync methods block the script thread inside `scriptRuntime.coroutineContext`, so stopping the
+script cancels the plugin call; `Async` methods return Promises settled on the script thread.
+Downloads of `attachments.download` and `messages.raw` go to the script's working directory by
+default (or a directory or file path given as `target`), with `MailFileNames.unique` naming unless
+`overwrite: true`. The `size` of an attachment is the encoded part size the server reports
+(BODYSTRUCTURE), so it only budgets the call timeout and the progress total; the sink never
+enforces it against the decoded bytes.
 
 ## JVM tests (host `:app:testAppDebugUnitTest`)
 
-| Class | Cases | Covers |
+| Test class | Cases | Covers |
 | --- | --- | --- |
-| `runtime/api/mail/MailScriptOptionsTest` | 7 | alias form, password and token accounts, secret / auth consistency, address and unknown keys, endpoint / timeout / tls / clientId / debug shapes, `null` as absent |
-| `runtime/api/mail/MailProviderCatalogTest` | 4 | empty or invalid catalogs, entries without an id, case-insensitive `get`, `resolve` by domain |
-| `runtime/api/mail/MailScriptValuesTest` | 4 | blank / invalid JSON, key order and nesting, `Int` versus `Double`, scalars |
-| `runtime/api/augment/mail/MailJsErrorsTest` (bare Rhino, ES6, interpreted) | 4 | one constructor per scope, `instanceof Error` / `MailError`, own keys, `toString`, JSON details versus text details, hidden `javaException`, `WrappedIllegalArgumentException` to `INVALID_ARGUMENT`, script values and `EcmaError` pass through, `jsException` |
-| `core/plugin/mail/MailJsonTest` | 13 | one new case: `debug` lines of a progress document (null entries skipped, empty array and non-array ignored) |
+| `runtime/api/mail/MailScriptOptionsTest` | 7 | alias and inline shapes, secret split, XOAUTH2 implied by `accessToken` / `tokenProvider`, refusals |
+| `runtime/api/mail/MailProviderCatalogTest` | 4 | list / get / resolve over provider documents |
+| `runtime/api/mail/MailScriptValuesTest` | 4 | Gson to plain values |
+| `runtime/api/mail/MailScriptArgumentsTest` | 8 | fetch / search paging and unknown keys, get with UIDs and message objects, raw and download sink descriptions, flags / transfers / deletions, folder paths, send with attachments and dates, append, the shared UID rules |
+| `runtime/api/augment/mail/MailJsErrorsTest` | 4 | bare Rhino: `MailError` constructor cache, error mapping, `WrappedIllegalArgumentException` to `INVALID_ARGUMENT` |
+| `runtime/api/augment/mail/MailJsResultsTest` | 5 | bare Rhino: Dates, address `toString`, attachment `uid` / `folder`, non-enumerable bound methods surviving `JSON.stringify`, bound calls reaching the binding with their receiver, list and search wrapping, arity errors as `MailError` |
 
-`org.autojs.autojs.core.plugin.mail.*` stays at 64 passing cases after the `MailBinders` /
-`MailPluginHost` change.
+Run on 2026-09-19: the two packages above, 32 tests, 0 failures.
 
 ## Device smoke: `connect-smoke.js` against the loopback fake IMAP server
 
-`MailScriptSmokeDeviceTest.scriptConnectsTestsAndClosesAgainstTheFakeServer` runs
-`app/src/androidTest/assets/mail/connect-smoke.js` through the real script engine
-(`scriptEngineService.execute`) with a prelude naming the port of `FakeImapServer` (moved out of
-`MailPluginRoundTripTest` into its own file) and a closed loopback port. The script performs 75
-checks and writes a JSON report into a runtime property:
+`MailScriptSmokeDeviceTest.scriptConnectsTestsAndClosesAgainstTheFakeServer` starts the shared
+`FakeImapServer` of P1.3 on 127.0.0.1, prepends `var MAIL_SMOKE = {port, closedPort, password}`
+to `app/src/androidTest/assets/mail/connect-smoke.js` and runs it through the real script engine
+(`ScriptEngineService.execute`); the script leaves a JSON report in the runtime property
+`mail.smoke.report`. 75 checks: `mail.providers` / `mail.accounts` / `MailError` shape,
+`connect` with an inline account against the fake server, `client.account` without the
+password, `test()` and `testAsync()` (`ok`, `imap.ok`, capabilities), `setDefault` and the
+forwarders, `connect('no-such-alias')` as `ACCOUNT_NOT_FOUND`, a closed port as `test()` with
+`ok: false` and `imap.error.code === 'CONNECT_FAILED'` (openSession has no network, so `connect`
+itself succeeds), argument refusals as `INVALID_ARGUMENT`, `close()` / `isClosed` /
+`SESSION_CLOSED` after close, and no secret in the report.
 
-- the global and its metadata: `mail.connect` / `mail.MailError`, `mail.default` empty,
-  `providers.list()` non-empty, `providers.get('qq')`, `providers.get(unknown) === null`,
-  `providers.resolve('someone@163.com').id === '163'`, unknown domain `null`,
-  `accounts.list()` empty and `accounts.has('work') === false` before P4;
-- refusals as `MailError`: `mail.test()` without a default (`NO_DEFAULT_ACCOUNT`),
-  `mail.connect()` and bad shapes (`INVALID_ARGUMENT` from the argument guard and from
-  `MailScriptOptions`), `mail.connect('no-such-alias')` (`ACCOUNT_NOT_FOUND` from the plugin),
-  a closed port (`connect()` succeeds, `test()` reports `CONNECT_FAILED`, no password in the
-  result, `close()` works);
-- the fake server: `connect` / `client.account` without `password` / `test().ok` /
-  `setDefault` / `mail.default` / `mail.test()` / `client.test('extra')` (`INVALID_ARGUMENT`);
-- the async forms on the script thread: `testAsync`, `mail.testAsync`, `connectAsync` with
-  `debug: true` (the trace line reaches `console.verbose`), `close()` then `SESSION_CLOSED` from
-  `test()` and `testAsync()`, `setDefault(closed)` (`INVALID_ARGUMENT`), rejected
-  `connectAsync('no-such-alias')` and `connectAsync({address: 'nobody'})`, `mail.close()` clearing
-  the default and `NO_DEFAULT_ACCOUNT` afterwards (sync and async).
-
-The test then asserts two IMAP connections on the fake server (one per client that probed, both
-with `LOGIN`) and that the secret never enters the report.
-
-| Device | Checks | `connect` | `test()` | `testAsync()` | Script |
-| --- | --- | --- | --- | --- | --- |
-| AVD_API_24 | 75 | 14 ms | 85 ms | 21 ms | 0.519 s |
-| Redmi 22120RN86C | 75 | 61 ms | 137 ms | 63 ms | 1.480 s |
-
-Debug trace line seen on both devices (`console.verbose`):
-`+83ms imap connect 127.0.0.1:<port>/none password ok 73ms` (AVD) and
-`+133ms imap connect 127.0.0.1:<port>/none password ok 98ms` (Redmi).
+| Device | Checks | `connect` | `test()` | `testAsync()` | Script | IMAP sessions (both with LOGIN) |
+| --- | --- | --- | --- | --- | --- | --- |
+| AVD_API_24 (P3.1 build) | 75 | 14 ms | 85 ms | 21 ms | 0.519 s | 2 |
+| Redmi 22120RN86C (P3.1 build) | 75 | 61 ms | 137 ms | 63 ms | 1.480 s | 2 |
+| AVD_API_24 (P3.2 build) | 75 | 12 ms | 110 ms | 17 ms | 1.729 s | 2 |
 
 ## Device smoke: real provider (`provider-smoke.js`)
 
@@ -97,6 +99,42 @@ password})`, `test()`, `close()`) with `mail.smoke.provider` / `mail.smoke.addre
 | --- | --- | --- | --- | --- | --- | --- |
 | Redmi 22120RN86C | qq | 111 ms | 1678 ms | ok | ok | clean |
 | AVD_API_24 | qq | 103 ms | 1031 ms | ok | ok | clean |
+
+## Device smoke: send and receive (`docs/smoke/send-receive.js`, `docs/smoke/send-receive-async.js`)
+
+`MailScriptSmokeDeviceTest.realProviderScript` runs a script of this repository pushed to
+`/data/local/tmp/autojs6-mail-smoke/` by `.python/run_host_script_smoke.py <PROFILE> <serial>
+--script docs/smoke/<name>.js`. Both scripts run the same 15 steps: `connect`, `createFolder`,
+`folders` (the new folder is listed), `send` to the account itself with a 2035-byte text
+attachment written in the working directory, `search({subject})` polled every 3 s until the
+message is delivered, `load` (body carries the marker, one attachment with the sent name),
+`download` of that attachment into the working directory (content compared byte for byte),
+`raw` (`.eml` carries subject and body), `markRead`, `get` with `peek: true` (`seen` is true),
+`move`, `folderStatus`, `fetch` of the target folder, `delete` with `expunge: true`,
+`deleteFolder`, `close`. The synchronous script uses the plain methods; the `"ui";` script
+chains the `Async` forms on Promises while a 50 ms `setInterval` ticker runs on the UI thread and
+reports `uiBlocked` when fewer than half of the expected ticks arrived. On QQ and 163 the search
+uses `fallback: 'always'` (see Lessons), on QQ the message is moved to the trash folder and a
+vanished created folder is tolerated at `deleteFolder`. Every report ended with `closed: true`
+and passed the leak check.
+
+| Device | Provider | Mode | Steps | `send` | `search` (polls, path) | `load` | `download` | `raw` | `move` | `delete` | UI ticks | Sent copy |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| AVD_API_24 | qq | sync | 15/15 | 1010 ms | 38.3 s (2, client) | 409 ms | 569 ms | 486 ms | 1121 ms (trash) | 1093 ms | - | server |
+| AVD_API_24 | qq | async (`ui`) | 15/15 | 1155 ms | 28.9 s (2, client) | 412 ms | 498 ms (1 progress call) | 496 ms | 1185 ms (trash) | 1062 ms | 718 of 738, not blocked | server |
+| AVD_API_24 | 163 | sync | 15/15 | 1163 ms | 266 ms (1, client) | 259 ms | 244 ms | 249 ms | 1732 ms (created folder) | 1611 ms | - | appended (preset before the fix) |
+| AVD_API_24 | 163 | async (`ui`) | 15/15 | 1091 ms | 285 ms (1, client) | 261 ms | 261 ms (1 progress call) | 257 ms | 1770 ms (created folder) | 1566 ms | 143 of 152, not blocked | appended (preset before the fix) |
+| AVD_API_24 | 163 | sync, preset fix | 15/15 | 742 ms | 9.9 s (4, client) | 263 ms | 266 ms | 258 ms | 1976 ms (created folder) | 1575 ms | - | server |
+| Redmi 22120RN86C | qq | sync | 15/15 | 1539 ms | 34.9 s (2, client) | 701 ms | 732 ms | 667 ms | 1771 ms (trash) | 1617 ms | - | server |
+| Redmi 22120RN86C | qq | async (`ui`) | 15/15 | 1454 ms | 30.7 s (2, client) | 699 ms | 738 ms (1 progress call) | 684 ms | 1789 ms (trash) | 1493 ms | 814 of 840, not blocked | server |
+| Redmi 22120RN86C | 163 | sync | 15/15 | 1372 ms | 351 ms (1, client) | 317 ms | 306 ms | 286 ms | 1926 ms (created folder) | 1617 ms | - | appended (preset before the fix) |
+| Redmi 22120RN86C | 163 | async (`ui`) | 15/15 | 1898 ms | 491 ms (1, client) | 437 ms | 420 ms (1 progress call) | 394 ms | 2387 ms (created folder) | 2002 ms | 215 of 227, not blocked | appended (preset before the fix) |
+| Redmi 22120RN86C | gmail | sync | 1/15 | - | - | - | - | - | - | - | - | `AUTH_FAILED` at `connect` (340 ms): the stored OAuth Playground access token has expired; rerun with a fresh `GMAIL_ACCESS_TOKEN_A` |
+
+Other numbers: `connect` 71 to 396 ms, `createFolder` 506 to 1324 ms, `folders` 84 to 260 ms,
+`markRead` 241 to 645 ms, `folderStatus` 197 to 416 ms, `deleteFolder` 143 to 290 ms; the raw
+`.eml` was 3.9 to 5.1 KB; the downloaded attachment landed as `smoke-<ts> (1).txt` because the
+source file of the same name still sat in the working directory (`MailFileNames.unique`).
 
 ## Lessons
 
@@ -116,6 +154,27 @@ password})`, `test()`, `close()`) with `mail.smoke.provider` / `mail.smoke.addre
   emulator the same recipe still failed with `INSTALL_FAILED_ALREADY_EXISTS`, and
   `adb uninstall org.autojs.autojs6` reported `DELETE_FAILED_INTERNAL_ERROR` while removing the
   package anyway, after which the engine installed fresh.
+- (P3.2) `Augmentable` resolves `selfAssignmentFunctions` by reflection to same-named methods,
+  so a generated forwarder table cannot use it; the `mail` forwarders are `BaseFunction`
+  properties (`selfAssignmentProperties`) built from one `FORWARDED` list.
+- (P3.2) `ArgumentGuards` messages need the application context, so the bound methods of
+  decorated results (which the bare-Rhino JVM tests exercise) check their arity themselves and
+  throw `MailError` (`INVALID_ARGUMENT`) through `MailJsErrors.jsException`.
+- (P3.2) A KDoc line containing `` `docs/smoke/*.js` `` opens a nested block comment for the
+  Kotlin compiler ("Unclosed comment"); write "the `docs/smoke` scripts" instead.
+- (P3.2) 163 Mail keeps a server copy of every message sent through SMTP (a message sent with
+  `saveToSent: false` appeared in `已发送` a few minutes later), so the preset `autoSavesSent:
+  false` doubled every sent message; the preset is `true` for 163 and 126 since plugin build 15.
+  Its IMAP `SEARCH` by `SUBJECT` or `FROM` answers OK with no hits for just-delivered mail
+  (`SINCE` works), so the smoke scripts search with `fallback: 'always'` on 163 as on QQ.
+- (P3.2) On QQ a folder created over IMAP is usable for a few seconds (`STATUS`, `COPY` into it)
+  and then answers `FOLDER_NOT_FOUND` to `STATUS` / `COPY` / `MOVE` / `DELETE` (observed 60 s
+  and 65 s after creation on both devices; a nested folder under `其他文件夹` cannot be created
+  at all, and a folder holding messages refuses `DELETE`). The cause was not determined; the
+  smoke scripts move the message to the trash folder on QQ and tolerate the vanished folder.
+- (P3.2) A `"ui";` script runs in an Activity whose engine the execution does not expose, so the
+  device test reads the report from a file the script writes (`MAIL_SMOKE.reportPath`) instead
+  of a runtime property; the `MAIL_SMOKE` prelude is inserted after the directive line.
 
 ## Reproducing
 
@@ -125,4 +184,12 @@ cd ../AutoJs6
 ANDROID_SERIAL=<serial> ./gradlew :app:connectedAppDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=org.autojs.autojs.runtime.api.augment.mail.MailScriptSmokeDeviceTest"
 cd ../AutoJs6-Plugin-Angus-Mail
 python .python/run_host_script_smoke.py QQ_A <serial>
+python .python/run_host_script_smoke.py QQ_A <serial> --script docs/smoke/send-receive.js
+python .python/run_host_script_smoke.py NETEASE_A <serial> --script docs/smoke/send-receive-async.js
+python .python/run_host_script_smoke.py GMAIL_A <serial> --script docs/smoke/send-receive.js
 ```
+
+The host must already be installed on the device with the current debug build (`adb install -r`
+of the matching split on the Redmi, uninstall first on the API 24 emulator). Reports are logged
+as `MailScriptSmokeTest` lines (`adb logcat -s MailScriptSmokeTest`) after the leak check; the
+runner's Gradle log lands under `build/p3/`.

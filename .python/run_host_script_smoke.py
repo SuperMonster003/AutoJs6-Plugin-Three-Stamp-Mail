@@ -1,13 +1,15 @@
-"""Runs the host script-API smoke test against a real account (mail roadmap P3).
+"""Runs the host script-API smoke tests against a real account (mail roadmap P3).
 
-Usage: python .python/run_host_script_smoke.py <PROFILE> <serial> [--log <name>]
+Usage: python .python/run_host_script_smoke.py <PROFILE> <serial> [--script docs/smoke/x.js] [--log <name>]
 
-PROFILE is QQ_A / QQ_B / NETEASE_A / NETEASE_B (password accounts). Credentials come from the
-git-ignored mail-test-accounts.properties next to this repository's root and reach the device
-only as instrumentation arguments of the host test
-`org.autojs.autojs.runtime.api.augment.mail.MailScriptSmokeDeviceTest#realProviderConnectAndTest`
-(host repository `../AutoJs6`). Nothing secret is printed; the Gradle log is scanned for the
-secret afterwards and reported as "report leak check: clean" or "LEAK".
+PROFILE is QQ_A / QQ_B / NETEASE_A / NETEASE_B (password accounts) or GMAIL_A (access token).
+Credentials come from the git-ignored mail-test-accounts.properties next to this repository's
+root and reach the device only as instrumentation arguments of the host tests in
+`org.autojs.autojs.runtime.api.augment.mail.MailScriptSmokeDeviceTest` (host repository
+`../AutoJs6`): `#realProviderConnectAndTest` without `--script`, `#realProviderScript` with
+`--script`, which first pushes the script to /data/local/tmp/autojs6-mail-smoke/ on the device.
+Nothing secret is printed; the Gradle log is scanned for the secret afterwards and reported as
+"report leak check: clean" or "LEAK".
 
 The host test engine installs the host APK without `-r`: put the matching split APK on the
 device with `adb install -r` (or uninstall the host) before running, see
@@ -21,8 +23,10 @@ import sys
 
 PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOST = os.path.join(os.path.dirname(PLUGIN), "AutoJs6")
-TEST = "org.autojs.autojs.runtime.api.augment.mail.MailScriptSmokeDeviceTest#realProviderConnectAndTest"
-PROVIDERS = {"qq.com": "qq", "foxmail.com": "qq", "163.com": "163", "126.com": "126", "yeah.net": "163"}
+TEST_CLASS = "org.autojs.autojs.runtime.api.augment.mail.MailScriptSmokeDeviceTest"
+DEVICE_DIR = "/data/local/tmp/autojs6-mail-smoke"
+PROVIDERS = {"qq.com": "qq", "foxmail.com": "qq", "163.com": "163", "126.com": "126", "yeah.net": "163", "gmail.com": "gmail"}
+TOKEN_KINDS = {"GMAIL"}
 
 
 def read_properties(path):
@@ -39,31 +43,50 @@ def read_properties(path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("profile", help="QQ_A, QQ_B, NETEASE_A or NETEASE_B")
+    parser.add_argument("profile", help="QQ_A, QQ_B, NETEASE_A, NETEASE_B or GMAIL_A")
     parser.add_argument("serial", help="adb serial of the device")
+    parser.add_argument("--script", default=None, help="repository-relative smoke script (docs/smoke/*.js) to push and run")
     parser.add_argument("--log", default=None, help="log file name under build/p3/")
     args = parser.parse_args()
 
     props = read_properties(os.path.join(PLUGIN, "mail-test-accounts.properties"))
     kind, letter = args.profile.rsplit("_", 1)
     address = props[f"{kind}_USER_NAME_{letter}"]
-    secret = props[f"{kind}_AUTH_CODE_{letter}"]
+    if kind in TOKEN_KINDS:
+        secret = props[f"{kind}_ACCESS_TOKEN_{letter}"]
+        secret_argument = "mail.smoke.accessToken"
+    else:
+        secret = props[f"{kind}_AUTH_CODE_{letter}"]
+        secret_argument = "mail.smoke.password"
     domain = address.rsplit("@", 1)[-1].lower()
     provider = PROVIDERS[domain]
 
     log_dir = os.path.join(PLUGIN, "build", "p3")
     os.makedirs(log_dir, exist_ok=True)
-    log = os.path.join(log_dir, args.log or f"host-smoke-{args.profile.lower()}-{args.serial}.log")
+    suffix = ""
+    test = TEST_CLASS + "#realProviderConnectAndTest"
+    extra = []
+    if args.script:
+        local = os.path.join(PLUGIN, args.script)
+        name = os.path.basename(local)
+        remote = f"{DEVICE_DIR}/{name}"
+        subprocess.check_call(["adb", "-s", args.serial, "shell", "mkdir", "-p", DEVICE_DIR])
+        subprocess.check_call(["adb", "-s", args.serial, "push", local, remote], stdout=subprocess.DEVNULL)
+        test = TEST_CLASS + "#realProviderScript"
+        extra.append(f"-Pandroid.testInstrumentationRunnerArguments.mail.smoke.script={remote}")
+        suffix = "-" + os.path.splitext(name)[0]
+    log = os.path.join(log_dir, args.log or f"host-smoke-{args.profile.lower()}{suffix}-{args.serial}.log")
     gradlew = os.path.join(HOST, "gradlew.bat" if os.name == "nt" else "gradlew")
     command = [
         gradlew, ":app:connectedAppDebugAndroidTest",
-        f"-Pandroid.testInstrumentationRunnerArguments.class={TEST}",
+        f"-Pandroid.testInstrumentationRunnerArguments.class={test}",
         f"-Pandroid.testInstrumentationRunnerArguments.mail.smoke.provider={provider}",
         f"-Pandroid.testInstrumentationRunnerArguments.mail.smoke.address={address}",
-        f"-Pandroid.testInstrumentationRunnerArguments.mail.smoke.password={secret}",
+        f"-Pandroid.testInstrumentationRunnerArguments.{secret_argument}={secret}",
+        *extra,
         "--console=plain",
     ]
-    print(f"profile={args.profile} provider={provider} domain={domain} serial={args.serial}")
+    print(f"profile={args.profile} provider={provider} domain={domain} serial={args.serial} test={test.rsplit('#', 1)[1]}")
     env = dict(os.environ, ANDROID_SERIAL=args.serial)
     with io.open(log, "w", encoding="utf-8") as out:
         code = subprocess.call(command, cwd=HOST, env=env, stdout=out, stderr=subprocess.STDOUT)
@@ -71,7 +94,7 @@ def main():
     print("gradle exit", code)
     print("report leak check:", "LEAK" if secret in text else "clean")
     for line in text.splitlines():
-        if "BUILD " in line or "INSTALL_" in line or line.startswith("e: "):
+        if "BUILD " in line or "INSTALL_" in line or line.startswith("e: ") or "FAILED" in line:
             print(line.replace(secret, "****"))
     return code
 
