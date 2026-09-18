@@ -12,12 +12,22 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.Redactor
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.AccountDocument
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.AppendResult
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.EndpointReport
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.ExpungeResult
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.FolderDocument
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.FolderStatusDocument
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.MessageDocument
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.SearchResult
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.SendResult
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.SessionTestResult
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.TargetUidsResult
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.TransferResult
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.UidsResult
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.toDocument
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.OutgoingMessage
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.query.MessageArgs
 import jakarta.mail.Flags
 import java.io.Closeable
+import java.io.OutputStream
 
 /**
  * One account's session (roadmap D15): the IMAP or POP3 store and the SMTP transport behind
@@ -174,6 +184,50 @@ class MailSession(
             mailbox.append(folder, mime, flags)
         }
         return AppendResult(folder, uid)
+    }
+
+    // ------------------------------------------------------------------ P2.3 folders and messages
+
+    fun listFolders(args: MessageArgs.FoldersListArgs): List<FolderDocument> = receive { it.listFolders(args.subscribedOnly, args.status) }
+
+    fun folderStatus(path: String): FolderStatusDocument = receive { it.folderStatus(path) }
+
+    fun createFolder(path: String): FolderDocument = receive { it.createFolder(path) }
+
+    fun deleteFolder(path: String): Boolean = receive(retryOnLoss = false) { it.deleteFolder(path) }
+
+    fun renameFolder(args: MessageArgs.RenameArgs): FolderDocument = receive(retryOnLoss = false) { it.renameFolder(args.path, args.newPath) }
+
+    fun listMessages(args: MessageArgs.ListArgs): List<MessageDocument> = receive { it.listMessages(args) }
+
+    fun searchMessages(args: MessageArgs.SearchArgs): SearchResult = receive { it.search(args) }
+
+    fun getMessage(args: MessageArgs.GetArgs): MessageDocument = receive { it.getMessage(args.folder, args.uid, args.peek, args.includeRaw) }
+
+    /** Streams into [sink]; never retried, because the sink already holds whatever went out before a loss. */
+    fun downloadAttachment(args: MessageArgs.DownloadArgs, sink: OutputStream, progress: TransferProgress = TransferProgress.NONE): TransferResult =
+        receive(retryOnLoss = false) { it.downloadPart(args.folder, args.uid, args.partId, sink, progress) }
+
+    fun downloadRaw(args: MessageArgs.RawArgs, sink: OutputStream, progress: TransferProgress = TransferProgress.NONE): TransferResult =
+        receive(retryOnLoss = false) { it.downloadRaw(args.folder, args.uid, sink, progress) }
+
+    fun setFlags(args: MessageArgs.FlagsArgs): UidsResult = receive(retryOnLoss = false) { it.setFlags(args.folder, args.uids, args.flags, args.mode) }
+
+    fun move(args: MessageArgs.TargetArgs): TargetUidsResult = receive(retryOnLoss = false) { it.move(args.folder, args.uids, args.target) }
+
+    fun copy(args: MessageArgs.TargetArgs): TargetUidsResult = receive(retryOnLoss = false) { it.copy(args.folder, args.uids, args.target) }
+
+    fun delete(args: MessageArgs.DeleteArgs): UidsResult = receive(retryOnLoss = false) { it.delete(args.folder, args.uids, args.expunge) }
+
+    fun expunge(folder: String): ExpungeResult = receive(retryOnLoss = false) { it.expunge(folder) }
+
+    /** The receive-side store; POP3 accounts get the P2.4 subset later and answer `UNSUPPORTED_OPERATION` until then. */
+    private fun <R> receive(retryOnLoss: Boolean = true, block: (ImapMailbox) -> R): R {
+        ensureOpen()
+        if (account.receive != MailProtocol.IMAP) {
+            throw MailException.unsupported("this operation needs an IMAP account; the POP3 subset arrives with roadmap P2.4").also { lastError = it }
+        }
+        return imap(retryOnLoss, block)
     }
 
     /**

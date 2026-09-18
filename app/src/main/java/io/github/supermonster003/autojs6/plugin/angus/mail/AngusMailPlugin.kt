@@ -20,6 +20,9 @@ object AngusMailPlugin {
     const val VARIANT = "default"
     const val AUTHOR = "SuperMonster003"
 
+    /** `support-email` of the IMAP `ID` payload NetEase asks clients to send (name, version, vendor, support-email); the maintainer's public commit address. */
+    const val SUPPORT_EMAIL = "30370009+SuperMonster003@users.noreply.github.com"
+
     /** Discovery contract of [AngusMailPluginService]. */
     const val SERVICE_ACTION = "org.autojs.plugin.MAIL"
     const val SERVICE_CATEGORY = "mail"

@@ -1,0 +1,25 @@
+From: Sender <sender@example.org>
+To: Receiver <receiver@example.org>
+Date: Tue, 01 Sep 2026 08:00:00 +0800
+Message-ID: <fixture-encoded-filenames@example.org>
+MIME-Version: 1.0
+Subject: encoded file names
+Content-Type: multipart/mixed; boundary="b2"
+
+--b2
+Content-Type: text/plain; charset=utf-8
+
+two attachments
+--b2
+Content-Type: application/octet-stream
+Content-Disposition: attachment; filename*=UTF-8''%E6%8A%A5%E8%A1%A8.csv
+Content-Transfer-Encoding: base64
+
+YSxiDQo=
+--b2
+Content-Type: application/pdf; name="=?UTF-8?B?5ZCI5ZCMLnBkZg==?="
+Content-Disposition: attachment; filename="=?UTF-8?B?5ZCI5ZCMLnBkZg==?="
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjQgZmFrZQ==
+--b2--

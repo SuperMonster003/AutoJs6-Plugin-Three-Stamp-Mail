@@ -8,6 +8,7 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorC
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.AttachmentSource
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.session.MailSession
+import java.io.OutputStream
 import org.autojs.plugin.mail.api.IMailCallCallback
 import org.autojs.plugin.mail.api.IMailSession
 import org.autojs.plugin.mail.api.IMailSessionCallback
@@ -27,8 +28,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  * debug trace leave through the call callback from that thread, idle connections expire on a
  * timer of the same thread, and the session closes when the host asks, after `session.close`,
  * or when the host process dies. Descriptors of a call are the plugin's copies: they are wrapped
- * for the transfer ops on the session thread and closed before `onResult`, whatever the outcome.
- * Watches and cancellation arrive with P5 and P2.5.
+ * for the transfer ops on the session thread (attachment sources, or the sink a download streams
+ * into) and closed before `onResult`, whatever the outcome, so the host's read end of a download
+ * pipe sees EOF before the result. Watches and cancellation arrive with P5 and P2.5.
  */
 internal class MailSessionBinder(
     private val session: MailSession,
@@ -77,20 +79,22 @@ internal class MailSessionBinder(
     }
 
     private fun run(requestId: String, op: String?, args: String?, descriptors: List<ParcelFileDescriptor?>, callback: IMailCallCallback?) {
+        val io = BinderCallIo(requestId, descriptors, callback)
         val response = try {
             if (closed.get()) {
                 closedResponse(requestId)
             } else if (args == null) {
                 MailBundles.failure(requestId, MailBundles.error(MailErrorCode.INVALID_ARGUMENT, "'args' must be an object"))
             } else {
-                MailBundles.successJson(requestId, router.execute(op, args) { sources(op, descriptors) })
+                MailBundles.successJson(requestId, router.execute(op, args, io))
             }
         } catch (e: MailException) {
             MailBundles.failure(requestId, MailBundles.error(e))
         } catch (e: Throwable) {
             MailBundles.failure(requestId, MailBundles.error(session.mapper.map(e, op)))
         } finally {
-            // Contract B.3: the plugin's copies are gone before onResult, so the host may release its own.
+            // Contract B.3: the sink is flushed and the plugin's copies are gone before onResult, so the host may release its own.
+            io.finish()
             closeAll(descriptors)
         }
         if (session.trace.enabled) {
@@ -101,14 +105,42 @@ internal class MailSessionBinder(
         if (op == MailContract.OP_SESSION_CLOSE) closeNow("closed")
     }
 
-    /** Turns the descriptors of one call into attachment sources; only transfer ops may carry any. */
-    private fun sources(op: String?, descriptors: List<ParcelFileDescriptor?>): List<AttachmentSource> {
-        if (descriptors.isEmpty()) return emptyList()
-        if (descriptors.size > MailContract.MAX_DESCRIPTORS) {
-            throw MailException(MailErrorCode.LIMIT_EXCEEDED, "${descriptors.size} descriptors exceed the limit of ${MailContract.MAX_DESCRIPTORS}", retryable = false)
+    /**
+     * The descriptors and the progress channel of one call. The router has already applied the
+     * contract rules (limit, transfer ops only) when a handler asks for [sources] or [sink].
+     */
+    private class BinderCallIo(
+        private val requestId: String,
+        private val descriptors: List<ParcelFileDescriptor?>,
+        private val callback: IMailCallCallback?,
+    ) : RequestRouter.CallIo {
+
+        private var sink: OutputStream? = null
+
+        override val descriptorCount: Int get() = descriptors.size
+
+        override fun sources(): List<AttachmentSource> = if (descriptors.isEmpty()) emptyList() else DescriptorSource.wrap(descriptors)
+
+        override fun sink(): OutputStream {
+            if (descriptors.size != 1) {
+                throw MailException.invalidArgument("a download needs the write end of a pipe or file as its single descriptor (${descriptors.size} supplied)")
+            }
+            val descriptor = descriptors[0]
+            if (descriptor == null || descriptor.fileDescriptor?.valid() != true) throw MailException.invalidArgument("descriptor 0 is not open")
+            return ParcelFileDescriptor.AutoCloseOutputStream(descriptor).also { sink = it }
         }
-        if (!RequestRouter.takesDescriptors(op)) throw MailException.invalidArgument("$op does not take descriptors")
-        return DescriptorSource.wrap(descriptors)
+
+        override fun progress(transferred: Long, total: Long?) {
+            MailBundles.progress(callback, MailBundles.transferProgress(requestId, transferred, total))
+        }
+
+        /** Flushes and closes the sink (and with it the descriptor) so the host's read end sees EOF before `onResult`. */
+        fun finish() {
+            val stream = sink ?: return
+            sink = null
+            runCatching { stream.flush() }
+            runCatching { stream.close() }
+        }
     }
 
     private fun closeAll(descriptors: List<ParcelFileDescriptor?>) {

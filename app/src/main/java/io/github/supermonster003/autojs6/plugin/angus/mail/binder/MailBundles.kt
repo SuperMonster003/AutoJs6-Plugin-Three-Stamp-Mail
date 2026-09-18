@@ -72,6 +72,15 @@ internal object MailBundles {
         return json(MailContract.KEY_PROGRESS_JSON, document.toString())
     }
 
+    /** The `onProgress` document of a transfer (`messages.raw`, `attachments.download`): `{id, transferred, total?}`. */
+    fun transferProgress(requestId: String, transferred: Long, total: Long?): Bundle {
+        val document = JSONObject()
+            .put(MailContract.FIELD_ID, requestId)
+            .put(MailContract.FIELD_TRANSFERRED, transferred)
+        total?.let { document.put(MailContract.FIELD_TOTAL, it) }
+        return json(MailContract.KEY_PROGRESS_JSON, document.toString())
+    }
+
     /** Returns the error document when the open-session bundle is unusable, or null when it is fine. */
     fun validateAccount(account: Bundle?): JSONObject? {
         account ?: return error(MailErrorCodes.INVALID_ARGUMENT, "account bundle is missing")

@@ -1,6 +1,6 @@
 """Runs the real-provider device round trip with an account from mail-test-accounts.properties.
 
-Usage: python build/run_real_account.py <QQ_A|QQ_B|GMAIL_A> <adb serial> [--peer QQ_B] [--save-sent true|false] [--debug] [--append Drafts] [--release]
+Usage: python .python/run_real_account.py <QQ_A|QQ_B|GMAIL_A|NETEASE_A|NETEASE_B> <adb serial> [--peer QQ_B] [--save-sent true|false] [--debug] [--append Drafts] [--cleanup] [--release]
 
 Secrets never reach stdout: every value of a secret key is masked in the Gradle output, the
 logcat excerpt and the XML report check. The command line itself is not echoed.
@@ -18,6 +18,7 @@ save_sent = opts[opts.index('--save-sent') + 1] if '--save-sent' in opts else No
 release = '--release' in opts
 debug = '--debug' in opts
 append_folder = opts[opts.index('--append') + 1] if '--append' in opts else None
+cleanup = '--cleanup' in opts
 props = {}
 for line in open('mail-test-accounts.properties', encoding='utf-8'):
     line = line.strip()
@@ -31,7 +32,17 @@ profiles = {
     'QQ_A': dict(address=props.get('QQ_USER_NAME_A'), secret=props.get('QQ_AUTH_CODE_A'), provider='qq', auth='password'),
     'QQ_B': dict(address=props.get('QQ_USER_NAME_B'), secret=props.get('QQ_AUTH_CODE_B'), provider='qq', auth='password'),
     'GMAIL_A': dict(address=props.get('GMAIL_USER_NAME_A'), secret=props.get('GMAIL_ACCESS_TOKEN_A'), provider='gmail', auth='xoauth2'),
+    'NETEASE_A': dict(address=props.get('NETEASE_USER_NAME_A'), secret=props.get('NETEASE_AUTH_CODE_A'), provider=None, auth='password'),
+    'NETEASE_B': dict(address=props.get('NETEASE_USER_NAME_B'), secret=props.get('NETEASE_AUTH_CODE_B'), provider=None, auth='password'),
 }
+# NetEase accounts pick the preset from the address domain (163 / 126); yeah.net keeps the 163 preset
+# (ID command, sent folder) but talks to its own hosts.
+for name in ('NETEASE_A', 'NETEASE_B'):
+    address = profiles[name]['address'] or ''
+    domain = address.rsplit('@', 1)[-1]
+    profiles[name]['provider'] = '126' if domain == '126.com' else '163'
+    if domain == 'yeah.net':
+        profiles[name].update(imapHost='imap.yeah.net', smtpHost='smtp.yeah.net')
 profile = profiles[which]
 assert profile['address'] and profile['secret'], 'profile incomplete'
 secret = profile['secret']
@@ -55,14 +66,20 @@ args = {
     'mailProvider': profile['provider'],
     'mailAuth': profile['auth'],
 }
+if profile.get('imapHost'):
+    args.update({'mailImapHost': profile['imapHost'], 'mailSmtpHost': profile['smtpHost']})
 if peer:
     args.update({'mailPeerAddress': peer['address'], 'mailPeerSecret': peer['secret'], 'mailPeerProvider': peer['provider'], 'mailPeerAuth': peer['auth']})
+    if peer.get('imapHost'):
+        args['mailPeerImapHost'] = peer['imapHost']
 if save_sent is not None:
     args['mailSaveToSent'] = save_sent
 if debug:
     args['mailDebug'] = 'true'
 if append_folder:
     args['mailAppendFolder'] = append_folder
+if cleanup:
+    args['mailCleanup'] = 'true'
 import os
 gradlew = os.path.abspath('gradlew.bat') if os.path.exists('gradlew.bat') else os.path.abspath('gradlew')
 task = ':app:connectedReleaseAndroidTest' if release else ':app:connectedDebugAndroidTest'

@@ -41,7 +41,9 @@ import java.util.concurrent.atomic.AtomicReference
  * Activity, the INFO service (with a real `getInfo()` round trip), and the `org.autojs.plugin.MAIL`
  * service whose `IMailPlugin` Binder answers info, capabilities, listings and the session envelope
  * of `mail-api.aar` (roadmap P1.3), and the descriptor ownership rules of `call` for the transfer
- * ops (roadmap P2.2: copies are validated on the session thread and closed before `onResult`).
+ * ops (roadmap P2.2: copies are validated on the session thread and closed before `onResult`;
+ * roadmap P2.3: a download takes exactly one write end, which is closed before `onResult` so the
+ * host's read end sees EOF).
  */
 @RunWith(AndroidJUnit4::class)
 class AngusMailPluginContractTest {
@@ -203,10 +205,15 @@ class AngusMailPluginContractTest {
             assertTrue(traced, lines.length() >= 2 && traced.contains("imap connect 127.0.0.1:3143/none password"))
             assertFalse(traced.contains(FAKE_SECRET))
 
-            val pending = call(session::call, callCallback, results, "req-2", MailContract.OP_MESSAGES_LIST)
-            assertFalse(pending.second.getBoolean(MailContract.FIELD_OK))
-            assertEquals(MailErrorCodes.UNSUPPORTED_OPERATION, pending.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
-            assertFalse(pending.second.getJSONObject(MailContract.FIELD_ERROR).getBoolean(MailContract.FIELD_ERROR_RETRYABLE))
+            // Every contract op is routed since P2.3: a well-formed receive op reaches the mail core (the loopback
+            // port answers CONNECT_FAILED unless GreenMail is mapped), a malformed one is refused before any connection.
+            val listing = call(session::call, callCallback, results, "req-2", MailContract.OP_MESSAGES_LIST, """{"limit": 3}""")
+            if (!listing.second.getBoolean(MailContract.FIELD_OK)) {
+                assertEquals(listing.second.toString(), MailErrorCodes.CONNECT_FAILED, listing.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
+            }
+            val malformed = call(session::call, callCallback, results, "req-2b", MailContract.OP_FOLDERS_STATUS)
+            assertEquals(MailErrorCodes.INVALID_ARGUMENT, malformed.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
+            assertTrue(malformed.second.toString(), malformed.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_MESSAGE).contains("'folder' is required"))
 
             val unknown = call(session::call, callCallback, results, "req-3", "messages.purge")
             assertEquals(MailErrorCodes.INVALID_ARGUMENT, unknown.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
@@ -254,6 +261,41 @@ class AngusMailPluginContractTest {
                 }
                 assertFalse(bound.fileDescriptor.valid())
                 assertFalse(results.toString().contains(FAKE_SECRET))
+
+                // Sink descriptors (roadmap P2.3): a download takes exactly one write end. The plugin closes it before
+                // onResult, so the read end reaches EOF whether bytes were streamed (GreenMail mapped) or not.
+                val pipe1 = ParcelFileDescriptor.createPipe()
+                val raw = call(session::call, callCallback, results, "req-s1", MailContract.OP_MESSAGES_RAW, """{"uid": 1}""", arrayOf(pipe1[1]))
+                if (!raw.second.getBoolean(MailContract.FIELD_OK)) {
+                    val error = raw.second.getJSONObject(MailContract.FIELD_ERROR)
+                    assertTrue(error.toString(), error.getString(MailContract.FIELD_ERROR_CODE) in setOf(MailErrorCodes.CONNECT_FAILED, MailErrorCodes.MESSAGE_NOT_FOUND))
+                }
+                assertFalse("the write end is closed before onResult", pipe1[1].fileDescriptor.valid())
+                val drained = ParcelFileDescriptor.AutoCloseInputStream(pipe1[0]).use { it.readBytes() }
+                if (!raw.second.getBoolean(MailContract.FIELD_OK)) assertEquals("nothing is written when the transfer fails before it starts", 0, drained.size)
+
+                val pipe2 = ParcelFileDescriptor.createPipe()
+                val pipe3 = ParcelFileDescriptor.createPipe()
+                val twoSinks = call(session::call, callCallback, results, "req-s2", MailContract.OP_ATTACHMENTS_DOWNLOAD, """{"uid": 1, "partId": "2"}""", arrayOf(pipe2[1], pipe3[1]))
+                assertEquals(MailErrorCodes.INVALID_ARGUMENT, twoSinks.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
+                assertTrue(twoSinks.second.toString(), twoSinks.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_MESSAGE).contains("single descriptor (2 supplied)"))
+                assertFalse(pipe2[1].fileDescriptor.valid())
+                assertFalse(pipe3[1].fileDescriptor.valid())
+                pipe2[0].close()
+                pipe3[0].close()
+
+                val noSink = call(session::call, callCallback, results, "req-s3", MailContract.OP_MESSAGES_RAW, """{"uid": 1}""")
+                assertEquals(MailErrorCodes.INVALID_ARGUMENT, noSink.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
+                assertTrue(noSink.second.toString(), noSink.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_MESSAGE).contains("(0 supplied)"))
+
+                val pipe4 = ParcelFileDescriptor.createPipe()
+                val badArgs = call(session::call, callCallback, results, "req-s4", MailContract.OP_ATTACHMENTS_DOWNLOAD, """{"uid": 1}""", arrayOf(pipe4[1]))
+                assertTrue(badArgs.second.toString(), badArgs.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_MESSAGE).contains("'partId' is required"))
+                assertFalse("argument errors still release the sink", pipe4[1].fileDescriptor.valid())
+                assertEquals(0, ParcelFileDescriptor.AutoCloseInputStream(pipe4[0]).use { it.readBytes() }.size)
+
+                val sinkOnSourceOp = call(session::call, callCallback, results, "req-s5", MailContract.OP_MESSAGES_GET, """{"uid": 1}""", arrayOf(open()))
+                assertTrue(sinkOnSourceOp.second.toString(), sinkOnSourceOp.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_MESSAGE).contains("does not take descriptors"))
             } finally {
                 attachment.delete()
             }

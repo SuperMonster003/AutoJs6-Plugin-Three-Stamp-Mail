@@ -1,0 +1,36 @@
+From: Sender <sender@example.org>
+To: Receiver <receiver@example.org>
+Date: Tue, 01 Sep 2026 08:00:00 +0800
+Message-ID: <fixture-nested-rfc822@example.org>
+MIME-Version: 1.0
+Subject: Fwd: forwarded inner
+Content-Type: multipart/mixed; boundary="outer"
+
+--outer
+Content-Type: text/plain; charset=utf-8
+
+see the forwarded message
+--outer
+Content-Type: message/rfc822
+Content-Disposition: attachment
+
+From: Inner <inner@example.org>
+To: Receiver <receiver@example.org>
+Subject: forwarded inner
+Date: Mon, 31 Aug 2026 10:00:00 +0000
+Message-ID: <inner@example.org>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="inner"
+
+--inner
+Content-Type: text/plain; charset=utf-8
+
+inner body
+--inner
+Content-Type: image/png; name="inner.png"
+Content-Disposition: attachment; filename="inner.png"
+Content-Transfer-Encoding: base64
+
+AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+Pw==
+--inner--
+--outer--

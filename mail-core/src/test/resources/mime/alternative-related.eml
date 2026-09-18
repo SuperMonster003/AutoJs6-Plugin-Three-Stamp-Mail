@@ -1,0 +1,38 @@
+From: Sender <sender@example.org>
+To: Receiver <receiver@example.org>
+Date: Tue, 01 Sep 2026 08:00:00 +0800
+Message-ID: <fixture-alternative-related@example.org>
+MIME-Version: 1.0
+Subject: invitation
+Content-Type: multipart/mixed; boundary="m"
+
+--m
+Content-Type: multipart/related; boundary="r"
+
+--r
+Content-Type: multipart/alternative; boundary="a"
+
+--a
+Content-Type: text/plain; charset=utf-8
+
+plain version
+--a
+Content-Type: text/html; charset=utf-8
+
+<p>html version <img src="cid:logo"></p>
+--a--
+--r
+Content-Type: image/png; name="logo.png"
+Content-ID: <logo>
+Content-Disposition: inline; filename="logo.png"
+Content-Transfer-Encoding: base64
+
+AAECAwQFBgcICQoLDA0ODw==
+--r--
+--m
+Content-Type: text/calendar; charset=utf-8; method=REQUEST; name="invite.ics"
+Content-Disposition: attachment; filename="invite.ics"
+
+BEGIN:VCALENDAR
+END:VCALENDAR
+--m--

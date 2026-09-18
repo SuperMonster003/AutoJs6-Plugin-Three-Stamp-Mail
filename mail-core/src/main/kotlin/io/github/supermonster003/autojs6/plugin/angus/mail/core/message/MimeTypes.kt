@@ -28,6 +28,12 @@ object MimeTypes {
         return BY_EXTENSION[extension] ?: OCTET_STREAM
     }
 
+    /** The usual extension of [mimeType] (without the dot), or null when none is known. */
+    fun extensionFor(mimeType: String): String? {
+        val wanted = mimeType.lowercase()
+        return BY_EXTENSION.entries.firstOrNull { it.value == wanted }?.key
+    }
+
     /** A loose `type/subtype` check for script-supplied MIME types. */
     fun isValid(mimeType: String): Boolean = MIME_TYPE.matches(mimeType)
 

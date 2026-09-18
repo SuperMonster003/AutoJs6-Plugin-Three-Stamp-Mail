@@ -2,6 +2,7 @@ package io.github.supermonster003.autojs6.plugin.angus.mail.core.error
 
 import jakarta.mail.AuthenticationFailedException
 import jakarta.mail.FolderClosedException
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.session.SinkFailedException
 import jakarta.mail.FolderNotFoundException
 import jakarta.mail.MessageRemovedException
 import jakarta.mail.MessagingException
@@ -57,6 +58,7 @@ class ExceptionMapper(private val redactor: Redactor) {
     private fun classify(chain: List<Throwable>): Classified {
         val auth = chain.find<AuthenticationFailedException>()
         if (auth != null) return Classified(MailErrorCode.AUTH_FAILED, "authentication failed")
+        chain.find<SinkFailedException>()?.let { return Classified(MailErrorCode.IO_FAILED, it.message ?: "the download destination could not be written", retryable = false) }
         if (chain.any { it is SSLException || it is CertificateException }) {
             return Classified(MailErrorCode.TLS_FAILED, "TLS handshake failed", retryable = false)
         }

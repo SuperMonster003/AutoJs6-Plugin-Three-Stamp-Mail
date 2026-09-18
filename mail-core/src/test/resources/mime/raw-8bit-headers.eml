@@ -1,0 +1,20 @@
+To: Receiver <receiver@example.org>
+Date: Tue, 01 Sep 2026 08:00:00 +0800
+Message-ID: <fixture-raw-8bit-headers@example.org>
+MIME-Version: 1.0
+Subject: 月度报表
+From: 张三 <zhangsan@example.org>
+Content-Type: multipart/mixed; boundary="b1"
+
+--b1
+Content-Type: text/plain; charset=gbk
+Content-Transfer-Encoding: 8bit
+
+你好，这是一封测试邮件。
+--b1
+Content-Type: text/csv; name="报表.csv"
+Content-Disposition: attachment; filename="报表.csv"
+Content-Transfer-Encoding: base64
+
+aWQsdG90YWwNCjEsNDINCg==
+--b1--

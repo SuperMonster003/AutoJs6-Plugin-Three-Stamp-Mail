@@ -1,0 +1,31 @@
+From: Sender <sender@example.org>
+To: Receiver <receiver@example.org>
+Date: Tue, 01 Sep 2026 08:00:00 +0800
+Message-ID: <fixture-traversal-filename@example.org>
+MIME-Version: 1.0
+Subject: traversal
+Content-Type: multipart/mixed; boundary="b3"
+
+--b3
+Content-Type: text/plain; charset=utf-8
+
+careful
+--b3
+Content-Type: application/octet-stream; name="../../etc/passwd"
+Content-Disposition: attachment; filename="..\\..\\windows\\system.ini"
+Content-Transfer-Encoding: base64
+
+bm90IHJlYWxseQ==
+--b3
+Content-Type: application/octet-stream
+Content-Disposition: attachment; filename="tab	name.bin"
+Content-Transfer-Encoding: base64
+
+eA==
+--b3
+Content-Type: image/png
+Content-ID: <logo@example.org>
+Content-Transfer-Encoding: base64
+
+cG5n
+--b3--

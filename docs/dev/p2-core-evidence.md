@@ -1,7 +1,7 @@
-# P2 mail core evidence (P2.1 sessions, P2.2 sending)
+# P2 mail core evidence (P2.1 sessions, P2.2 sending, P2.3 receiving)
 
-Evidence for roadmap P2.1 (account layer, `session.test`) and P2.2 (`mail.send`, `saveToSent`,
-`messages.append`), collected on 2026-09-18 with Gradle 9.5.0, AGP 9.3.2, Kotlin 2.3.20, JDK 21
+Evidence for roadmap P2.1 (account layer, `session.test`), P2.2 (`mail.send`, `saveToSent`,
+`messages.append`) and P2.3 (folders, listing, search, bodies, downloads, flags), collected on 2026-09-18 with Gradle 9.5.0, AGP 9.3.2, Kotlin 2.3.20, JDK 21
 (Windows 11), Eclipse Angus Mail 2.0.5, GreenMail 2.1.13. It also closes roadmap P0.2 item 2 (the
 real-provider round trip), which `docs/dev/p0-spike-evidence.md` had left open.
 
@@ -16,8 +16,8 @@ only. Addresses are omitted here on purpose.
 | Device | API | Network | Used for |
 | --- | --- | --- | --- |
 | AVD_API_24 (x86 emulator) | 24 | host network | contract and descriptor tests, debug and release (R8) |
-| Sony XQ-AT72 (QV710AF65F) | 31 | Wi-Fi | Gmail (XOAUTH2 access token from the OAuth Playground, scope `https://mail.google.com/`) |
-| Redmi 22120RN86C (bek749scrwv4wo8h) | 33 | Wi-Fi | QQ Mail (authorization code), two accounts |
+| Sony XQ-AT72 (QV710AF65F) | 31 | Wi-Fi | Gmail (XOAUTH2 access token from the OAuth Playground, scope `https://mail.google.com/`), P2.3 round trip to itself |
+| Redmi 22120RN86C (bek749scrwv4wo8h) | 33 | Wi-Fi | QQ Mail (authorization code), two accounts; 163 Mail to yeah.net (authorization codes), P2.3 |
 
 Devices with Wi-Fi off (only a VPN `tun0` interface) fail with `CONNECT_FAILED` within a few
 seconds; the Xiaomi 23046RP50C of the P0 runs was in that state and was not used.
@@ -70,6 +70,126 @@ it (Gmail would show a duplicate instead of refusing). `SendResult.sentCopy` rep
 no sent folder found; the plugin never creates one). After the change the same run reports
 `sentCopy = server` without an error on both providers.
 
+## P2.3: folders, listing, search, bodies, downloads and flags
+
+The same runner, now with `--cleanup`: after the send, the receiving side (the peer account, or
+the account itself when it is its own recipient) polls `messages.list` for the message and runs
+every P2.3 operation against it. Logs carry folder paths, roles, counts, sizes and durations.
+
+### QQ Mail, account A to account B (Redmi 22120RN86C, API 33)
+
+| Step | Result |
+| --- | --- |
+| `session.test` | imap 1108 ms, smtp 1003 ms |
+| `mail.send` (1 attachment) | 949 ms, `sentCopy = server` |
+| `messages.list` (sender, 5) | 1016 ms |
+| peer `messages.list` polling | received after 1977 ms, first poll, 2356 bytes, unread, `hasAttachments = true` |
+| `folders.list` with counts | 11 folders in 1041 ms; roles from `XLIST`: `Deleted Messages` = trash, `Drafts` = drafts, `INBOX` = inbox, `Junk` = junk, `Sent Messages` = sent, `其他文件夹/Archive` = archive; `其他文件夹` is a non-selectable parent with five children |
+| `folders.status INBOX` | 385 messages, 3 unseen, `uidNext` / `uidValidity` present (323 ms) |
+| `messages.search` by Message-ID, server | 0 hits in 4 attempts over 16 s (each `SEARCH` about 80 ms) |
+| `messages.search` with `fallback: "always"` | 1 hit via the client in 9.6 s (ENVELOPE prefetch of 385 messages, filter 23 ms) |
+| `messages.search` by subject, client | 5 hits in about 7 s, ours included |
+| `messages.list` with `unseenOnly` | 3 messages, ours included (`SEARCH UNSEEN` 79 ms) |
+| `messages.get` (peek) | 680 ms: 49 characters of text, 12 headers, 1 attachment `2:text/plain:40`, still unread |
+| `attachments.download` part 2 | 28 bytes, byte-identical to what was sent, 678 ms, 1 progress report |
+| `messages.raw` | 2359 bytes in 677 ms, re-parsed subject matches |
+| `messages.setFlags` add then remove | about 220 ms each, verified through `messages.get` |
+| `messages.delete` with `expunge` | uid gone, `messages.get` answers `MESSAGE_NOT_FOUND` |
+
+Two provider facts came out of this run and shaped the search design:
+
+- QQ replaces the Message-ID of outgoing mail: the id the receiver holds differs from
+  `SendResult.messageId`, so the device test searches for the stored id (`messages.get` and the
+  listing agree on it).
+- QQ answers `OK` to `SEARCH HEADER Message-ID` but returns nothing for a message that arrived
+  seconds earlier, so a failed server search is not the only case a script needs the client
+  filter. `messages.search` therefore accepts `fallback: "always"`, and the compiled query
+  evaluates `messageId` on the client from the ENVELOPE instead of fetching every header (the
+  first attempt with a HEADERS prefetch took 35 s for 384 messages; the ENVELOPE path takes 9.6 s).
+
+### 163 Mail to yeah.net (Redmi 22120RN86C, API 33)
+
+Two NetEase accounts: the sender is a 163.com mailbox, the receiver a yeah.net mailbox (the same
+servers policy on its own hosts `imap.yeah.net` / `smtp.yeah.net`, the `163` preset otherwise);
+runner profiles `NETEASE_A` / `NETEASE_B`.
+
+| Step | Result |
+| --- | --- |
+| `session.test` | imap 628 ms (`UIDPLUS`, `ID`, `SPECIAL-USE`, `XLIST`, `LITERAL+`, `AUTH=XOAUTH2`), smtp 675 ms |
+| `ID` handshake | 60 ms on every connection: connection 1 right after the login, connection 2 before the `APPEND` while the sent folder held the first one |
+| `mail.send` (1 attachment) | 1671 ms, `sentCopy = appended` into `已发送` (854 ms; the preset's `autoSavesSent = false` holds) |
+| `messages.list` (sender, 5) | 408 ms |
+| peer `messages.list` polling | received after 914 ms, first poll, 1824 bytes, unread, `hasAttachments = true` |
+| `folders.list` with counts | 6 folders in 480 ms; roles: `INBOX` = inbox, `垃圾邮件` = junk, `已删除` = trash, `已发送` = sent, `草稿箱` = drafts, `病毒文件夹` without a role |
+| `folders.status INBOX` | 7 messages, 4 unseen, `uidValidity` 1, no `uidNext` (163 omits UIDNEXT) (244 ms) |
+| `messages.search` by Message-ID, server | 1 hit on the first attempt, 411 ms (the receiver keeps the sender's Message-ID) |
+| `messages.search` by subject, client | 4 hits, ours included |
+| `messages.list` with `unseenOnly` | 4 messages, ours included (`SEARCH UNSEEN` 58 ms) |
+| `messages.get` (peek) | 456 ms: 49 characters of text, 13 headers, 1 attachment `2:text/plain:42`, still unread |
+| `attachments.download` part 2 | 28 bytes, byte-identical, 397 ms, 1 progress report |
+| `messages.raw` | 1824 bytes in 359 ms, re-parsed subject matches |
+| `messages.setFlags` add then remove | verified through `messages.get` |
+| `messages.delete` with `expunge` | `UID EXPUNGE` answered `BAD Parse command error`; the folder was expunged as a whole (1862 ms), uid gone |
+
+Two NetEase facts changed the mail core during this run:
+
+- `Unsafe Login` on every unidentified connection. The first attempt sent `ID` once through
+  `IMAPStore.id` right after `connect` and still failed: Angus Mail opens a second connection when
+  a store command (`LIST`, `STATUS`, `hasCapability`) runs while a folder holds the first one, and
+  drops the surplus connection once the folder closes; that second connection (tag prefix `B`)
+  got `NO SELECT Unsafe Login`. `IdentifyingImapStore` now overrides `newIMAPProtocol` and sends
+  `ID` after every successful authentication, whichever mechanism Angus picked, so every pooled
+  connection is identified. `EXAMINE` works once the connection is identified (an intermediate
+  build selected folders read-write instead; that workaround is gone).
+- `UID EXPUNGE` is refused with `BAD` although `UIDPLUS` is advertised. `ImapMailbox` remembers
+  the refusal per store and expunges the whole folder from then on (RFC 3501 `EXPUNGE`, every
+  `\Deleted` message of the folder), the path servers without `UIDPLUS` take anyway.
+
+### Gmail to itself (Sony XQ-AT72, API 31)
+
+The Gmail account sends to its own address with an OAuth Playground access token (XOAUTH2), so
+the receiving side is the same session.
+
+| Step | Result |
+| --- | --- |
+| `session.test` | imap 2427 ms (`IDLE`, `UIDPLUS`, `MOVE`, `CONDSTORE`, `ID`, `SPECIAL-USE`, `LIST-STATUS`, `ESEARCH`, `UTF8=ACCEPT`, ...), smtp 2320 ms |
+| `mail.send` (1 attachment) | 2548 ms, `sentCopy = server` (`[Gmail]/Sent Mail` listed afterwards with 231 messages, 1 unseen) |
+| `messages.list` (5) | 2178 ms |
+| own inbox polling | received after 2154 ms, first poll, uid 18471, 1125 bytes, unread, `hasAttachments = true` |
+| `folders.list` with counts | 22 folders in 11.8 s (one `STATUS` per selectable folder, INBOX holds 13790 messages); roles from the RFC 6154 `LIST` attributes: `INBOX` = inbox, `[Gmail]/Drafts` = drafts, `[Gmail]/Sent Mail` = sent, `[Gmail]/Spam` = junk, `[Gmail]/Starred` = flagged, `[Gmail]/Trash` = trash; `[Gmail]` is a non-selectable parent, `Sync Issues` has three children |
+| `folders.status INBOX` | 13790 messages, 1 unseen, `uidNext` 18472, `uidValidity` 3 (1955 ms) |
+| `messages.search` by Message-ID, server | 1 hit on the first attempt, 4186 ms (Gmail keeps the Message-ID and indexes at once) |
+| `messages.search` by subject, client | 4 hits, ours included |
+| `messages.list` with `unseenOnly` | 1 message, ours |
+| `messages.get` (peek) | 3280 ms: 49 characters of text, 9 headers, 1 attachment `2:text/plain:40`, still unread |
+| `attachments.download` part 2 | 28 bytes, byte-identical, 3273 ms (the transfer itself 441 ms), 1 progress report |
+| `messages.raw` | 1125 bytes in 3171 ms (the transfer itself 577 ms), re-parsed subject matches |
+| `messages.setFlags` add then remove | verified through `messages.get` |
+| `messages.delete` with `expunge` | `UID EXPUNGE` in 2915 ms, uid gone |
+
+Gmail figures are dominated by the round trip to the server from this network (about 2 s per
+connection, 1 to 3 s per folder open); the operations themselves behave like the IMAP baseline.
+
+### GreenMail (JVM)
+
+`ImapOperationsGreenMailTest` seeds 120 messages through `APPEND` and checks the cursor paging in
+both directions (`before` / `after`, deleted cursor UIDs included), `unseenOnly` paging, server
+and client searches (GreenMail matches `FROM` / `TO` on whole addresses only), `messages.get` with
+`peek` true / false and `includeRaw`, an over-budget text body landing in `bodyParts` and staying
+downloadable, a 10 MiB attachment streamed with 20 progress reports and compared byte for byte,
+the raw source re-parsed, a sink that fails after 200 KB (`IO_FAILED`, the IMAP connection is
+kept: one connect for the whole test), flags in the three modes, `MOVE` and the
+`COPY` + `\Deleted` + `UID EXPUNGE` path, copy, delete with and without expunge, expunge counts,
+and POP3 accounts answering `UNSUPPORTED_OPERATION` until P2.4.
+
+`IdentifyingImapStoreTest` scripts a minimal IMAP server on the loopback interface (CAPABILITY,
+LOGIN, ID, LIST, SELECT / EXAMINE, UID FETCH, UID EXPUNGE answered with `BAD`, EXPUNGE, LOGOUT)
+and checks that every pooled connection sends `ID` once, after `LOGIN` and before any folder is
+opened, with the account's payload; that an empty `clientId` sends nothing (the scripted server
+then refuses the folder with `Unsafe Login`, as NetEase does); that a server without the `ID`
+capability is left alone; and that `messages.delete` with `expunge` falls back to a plain
+`EXPUNGE` after the `BAD` and records `uidExpungeRefused`.
+
 ## Descriptor ownership through `IMailSession.call` (API 24 emulator)
 
 `AngusMailPluginContractTest` binds the real service in-process, so the descriptors reach
@@ -82,19 +202,29 @@ no sent folder found; the plugin never creates one). After the change the same r
 | `mail.send` with a pipe | `INVALID_ARGUMENT` "descriptor 0 is not a seekable file" (`ESPIPE`) |
 | `mail.send` with 65 descriptors | `LIMIT_EXCEEDED`, not retryable, all 65 copies closed |
 | well-formed `messages.append` with one file | reaches the mail core (`CONNECT_FAILED` on the unmapped loopback port, or the appended folder with GreenMail mapped) |
+| `messages.raw` with one pipe write end (P2.3) | reaches the mail core; the write end is closed before `onResult` and the read end sees EOF with nothing written |
+| `attachments.download` with two write ends | `INVALID_ARGUMENT` "single descriptor (2 supplied)", both closed |
+| `messages.raw` without a descriptor | `INVALID_ARGUMENT` "(0 supplied)" |
+| `attachments.download` without `partId` | `INVALID_ARGUMENT` "'partId' is required", the write end is still released |
+| `messages.get` with a file descriptor | `INVALID_ARGUMENT` "does not take descriptors" |
+| `folders.status` without `folder` | `INVALID_ARGUMENT` "'folder' is required" (argument errors of receive ops travel through the Binder) |
 
 Both `connectedDebugAndroidTest` and `connectedReleaseAndroidTest -PandroidTestRelease` (R8)
 pass 6 tests with the real-account test skipped.
 
 ## JVM
 
-`:mail-core:test`: 85 tests. New in P2.2: `OutgoingMessageParserTest` (9), `MessageComposerTest`
+`:mail-core:test`: 140 tests. New in P2.2: `OutgoingMessageParserTest` (9), `MessageComposerTest`
 (7), `SmtpSendGreenMailTest` (9). `mail.mime.allowutf8` was dropped from the session properties
-so display names and subjects are always RFC 2047 encoded on the wire (decision D34).
+so display names and subjects are always RFC 2047 encoded on the wire (decision D34). New in
+P2.3: `HtmlToTextTest` (9), `SearchQueryCompilerTest` (11), `MessageArgsTest` (6), `TransferTest`
+(5), `MessageMapperFixturesTest` (10, over the ten `.eml` fixtures generated by
+`build/make_fixtures.py`), `ImapOperationsGreenMailTest` (10) and `IdentifyingImapStoreTest` (4).
 
-`:app:testDebugUnitTest`: 21 tests; `RequestRouterTest` (6) snapshots the op table with
-`mail.send` and `messages.append`, checks that descriptors belong to the transfer ops only, and
-that argument errors of both ops surface before any connection is made.
+`:app:testDebugUnitTest`: 21 tests; `RequestRouterTest` (6) snapshots the op table (all 19
+contract ops handled since P2.3, `PENDING_OPS` empty), checks that descriptors belong to the
+transfer ops only and that the descriptor rules run after routing and before the handler, and
+that argument errors of every op surface before a descriptor is opened or a connection is made.
 
 ## Reproducing
 
@@ -102,8 +232,14 @@ that argument errors of both ops surface before any connection is made.
 python .python/run_real_account.py QQ_A <serial> --peer QQ_B --append Drafts --debug
 python .python/run_real_account.py GMAIL_A <serial> --append "[Gmail]/Drafts" --debug
 python .python/run_real_account.py QQ_A <serial> --save-sent true    # shows sentCopy = server
+python .python/run_real_account.py QQ_A <serial> --peer QQ_B --cleanup --debug   # P2.3 round trip
+python .python/run_real_account.py NETEASE_A <serial> --peer NETEASE_B --cleanup --debug
+python .python/run_real_account.py GMAIL_A <serial> --cleanup --debug
 ```
 
-Profiles read `QQ_USER_NAME_A` / `QQ_AUTH_CODE_A`, `QQ_USER_NAME_B` / `QQ_AUTH_CODE_B` and
-`GMAIL_USER_NAME_A` / `GMAIL_ACCESS_TOKEN_A` from `mail-test-accounts.properties`; the Gmail
-token from the OAuth Playground is valid for about one hour.
+Profiles read `QQ_USER_NAME_A` / `QQ_AUTH_CODE_A`, `QQ_USER_NAME_B` / `QQ_AUTH_CODE_B`,
+`NETEASE_USER_NAME_A` / `NETEASE_AUTH_CODE_A`, `NETEASE_USER_NAME_B` / `NETEASE_AUTH_CODE_B` and
+`GMAIL_USER_NAME_A` / `GMAIL_ACCESS_TOKEN_A` from `mail-test-accounts.properties`; NetEase
+profiles pick the `163` or `126` preset from the address domain and point yeah.net addresses at
+`imap.yeah.net` / `smtp.yeah.net`; the Gmail token from the OAuth Playground is valid for about
+one hour.

@@ -107,6 +107,8 @@ class ConnectionGuard<T : Any>(
             var depth = 0
             while (current != null && depth++ < 12) {
                 when (current) {
+                    // the host's pipe or file failed, not the server connection
+                    is SinkFailedException -> return false
                     is FolderClosedException, is StoreClosedException, is ConnectionException -> return true
                     is SocketException, is EOFException, is SocketTimeoutException -> return true
                     is IOException -> return true

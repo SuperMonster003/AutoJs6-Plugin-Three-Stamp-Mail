@@ -68,6 +68,7 @@ internal class MailPluginBinder(private val context: Context) : IMailPlugin.Stub
                 "name" to "AutoJs6-Plugin-Angus-Mail",
                 "version" to info.versionName,
                 "vendor" to AngusMailPlugin.AUTHOR,
+                "support-email" to AngusMailPlugin.SUPPORT_EMAIL,
             ),
         )
     }

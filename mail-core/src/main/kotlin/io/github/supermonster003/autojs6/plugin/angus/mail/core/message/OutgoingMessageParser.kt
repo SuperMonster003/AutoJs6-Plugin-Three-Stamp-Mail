@@ -3,7 +3,14 @@ package io.github.supermonster003.autojs6.plugin.angus.mail.core.message
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.MailLimits
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorCode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
-import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.MailJson
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.argsObject
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.bool
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.long
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.obj
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.rejectUnknown
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.string
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.stringList
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.stringValue
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.query.FlagMapper
 import jakarta.mail.Flags
 import jakarta.mail.internet.AddressException
@@ -13,8 +20,6 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.longOrNull
 
 /**
  * Parses the `message` object of `mail.send` and `messages.append` (protocol document: the
@@ -246,66 +251,6 @@ object OutgoingMessageParser {
             throw MailException.invalidArgument("'$label' has an invalid display name")
         }
         return MailAddressSpec(address, displayName)
-    }
-
-    private fun argsObject(json: String, label: String = "args"): JsonObject {
-        val element = try {
-            MailJson.format.parseToJsonElement(json)
-        } catch (e: Exception) {
-            throw MailException.invalidArgument("'$label' is not valid JSON", e.message?.take(200))
-        }
-        return element as? JsonObject ?: throw MailException.invalidArgument("'$label' must be a JSON object")
-    }
-
-    private fun JsonPrimitive.stringValue(path: String): String {
-        if (!isString) throw MailException.invalidArgument("'$path' must be a string")
-        return content
-    }
-
-    private fun JsonObject.rejectUnknown(label: String, known: Set<String>) {
-        keys.firstOrNull { it !in known }?.let { key ->
-            throw MailException.invalidArgument("unknown field '$label.$key'", "known fields: ${known.joinToString(", ")}")
-        }
-    }
-
-    private fun JsonObject.string(path: String, allowBlank: Boolean = false): String? {
-        val element = this[path.substringAfterLast('.')] ?: return null
-        if (element is JsonNull) return null
-        val primitive = element as? JsonPrimitive
-        if (primitive == null || !primitive.isString) throw MailException.invalidArgument("'$path' must be a string")
-        val text = if (allowBlank) primitive.content else primitive.content.trim()
-        if (!allowBlank && text.isEmpty()) throw MailException.invalidArgument("'$path' must not be blank")
-        return text
-    }
-
-    private fun JsonObject.stringList(field: String): List<String> {
-        val element = this[field] ?: return emptyList()
-        return when (element) {
-            is JsonNull -> emptyList()
-            is JsonPrimitive -> listOf(element.stringValue(field))
-            is JsonArray -> element.mapIndexed { index, item -> (item as? JsonPrimitive)?.stringValue("$field[$index]") ?: throw MailException.invalidArgument("'$field[$index]' must be a string") }
-            else -> throw MailException.invalidArgument("'$field' must be a string or an array of strings")
-        }
-    }
-
-    private fun JsonObject.long(path: String): Long? {
-        val element = this[path.substringAfterLast('.')] ?: return null
-        if (element is JsonNull) return null
-        val primitive = element as? JsonPrimitive
-        return primitive?.takeUnless { it.isString }?.longOrNull ?: throw MailException.invalidArgument("'$path' must be an integer")
-    }
-
-    private fun JsonObject.bool(path: String): Boolean? {
-        val element = this[path.substringAfterLast('.')] ?: return null
-        if (element is JsonNull) return null
-        val primitive = element as? JsonPrimitive
-        return primitive?.takeUnless { it.isString }?.booleanOrNull ?: throw MailException.invalidArgument("'$path' must be a boolean")
-    }
-
-    private fun JsonObject.obj(field: String): JsonObject? {
-        val element = this[field] ?: return null
-        if (element is JsonNull) return null
-        return element as? JsonObject ?: throw MailException.invalidArgument("'$field' must be an object")
     }
 
     private val HEADER_NAME = Regex("[!-9;-~]{1,64}")

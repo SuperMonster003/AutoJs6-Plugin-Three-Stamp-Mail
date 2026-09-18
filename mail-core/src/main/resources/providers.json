@@ -74,7 +74,7 @@
       "sentFolder": "已发送",
       "requiresClientId": true,
       "docsUrl": "https://help.mail.163.com/",
-      "notes": "The IMAP server rejects clients that do not send the ID command."
+      "notes": "The IMAP server answers Unsafe Login to SELECT and EXAMINE on every connection that has not sent the ID command; the plugin identifies each connection it opens."
     },
     {
       "id": "126",
@@ -89,7 +89,7 @@
       "sentFolder": "已发送",
       "requiresClientId": true,
       "docsUrl": "https://help.mail.126.com/",
-      "notes": "Same servers policy as 163 Mail: the IMAP server rejects clients that do not send the ID command."
+      "notes": "Same servers policy as 163 Mail: every IMAP connection has to send the ID command before SELECT or EXAMINE; the plugin identifies each connection it opens."
     },
     {
       "id": "icloud",

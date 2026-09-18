@@ -1,0 +1,10 @@
+From: Sender <sender@example.org>
+To: Receiver <receiver@example.org>
+Date: Tue, 01 Sep 2026 08:00:00 +0800
+Message-ID: <fixture-iso-2022-jp@example.org>
+MIME-Version: 1.0
+Subject: =?ISO-2022-JP?B?GyRCJDMkcyRLJEEkTxsoQg==?=
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+
+こんにちは、テストメールです。
