@@ -5,6 +5,7 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorC
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
 import java.io.IOException
 import java.io.InputStream
+import java.io.InterruptedIOException
 import java.io.OutputStream
 
 /**
@@ -28,12 +29,18 @@ fun interface TransferProgress {
  * buffer, a progress report every 1 MiB or 5 percent of the known total (whichever is smaller,
  * never below one buffer), and a hard stop with `LIMIT_EXCEEDED` above `MAX_ATTACHMENT_BYTES`.
  * A closed read end surfaces as the `IOException` of the write, which the mapper turns into
- * `IO_FAILED`.
+ * `IO_FAILED`. An interrupted session thread stops the copy at the next chunk with an
+ * [InterruptedIOException], which the mapper turns into `CANCELLED` (roadmap P2.5).
  */
 object Transfer {
 
     const val BUFFER_BYTES = 64 * 1024
     const val PROGRESS_MAX_STEP = 1024L * 1024
+
+    /** Throws when the current thread was interrupted, without clearing the flag. */
+    fun checkInterrupted() {
+        if (Thread.currentThread().isInterrupted) throw InterruptedIOException("the transfer was cancelled")
+    }
 
     fun copy(input: InputStream, output: OutputStream, total: Long?, progress: TransferProgress, limit: Long = MailLimits.MAX_ATTACHMENT_BYTES): Long {
         val step = progressStep(total)
@@ -42,6 +49,7 @@ object Transfer {
         var nextReport = step
         var reported = -1L
         while (true) {
+            checkInterrupted()
             val read = input.read(buffer)
             if (read < 0) break
             if (read == 0) continue
@@ -116,6 +124,7 @@ object Transfer {
         }
 
         private fun account(bytes: Long) {
+            checkInterrupted()
             transferred += bytes
             if (transferred > limit) throw MailException(MailErrorCode.LIMIT_EXCEEDED, "the message exceeds the transfer limit of $limit bytes", retryable = false)
         }

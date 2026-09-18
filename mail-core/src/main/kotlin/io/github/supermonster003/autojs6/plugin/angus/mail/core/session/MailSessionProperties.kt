@@ -8,7 +8,9 @@ import java.util.Properties
 
 /**
  * Translates a [MailAccount] into the `jakarta.mail` property set for one protocol. The result
- * never contains a secret: authentication goes through the session authenticator.
+ * never contains a secret: authentication goes through the session authenticator. With a
+ * [SocketRegistry] the plain socket under every connection comes from the registry's factory, so
+ * the session can abort a blocked operation from another thread (roadmap P2.5 `cancel`).
  */
 object MailSessionProperties {
 
@@ -16,7 +18,7 @@ object MailSessionProperties {
     fun providerName(protocol: MailProtocol, tls: TlsMode): String =
         if (tls == TlsMode.SSL) "${protocol.id}s" else protocol.id
 
-    fun build(account: MailAccount, protocol: MailProtocol): Properties {
+    fun build(account: MailAccount, protocol: MailProtocol, sockets: SocketRegistry? = null): Properties {
         val endpoint = account.endpoint(protocol)
         val provider = providerName(protocol, endpoint.tls)
         val prefix = "mail.$provider"
@@ -60,6 +62,13 @@ object MailSessionProperties {
             }
             if (account.trustAll && endpoint.tls != TlsMode.NONE) {
                 put("$prefix.ssl.trust", "*")
+            }
+            if (sockets != null) {
+                // Angus asks this factory for the unconnected socket and connects, times out and
+                // layers TLS on it itself (SocketFetcher), for implicit SSL and STARTTLS alike;
+                // without the fallback switch a failed connect would be retried on an untracked socket.
+                put("$prefix.socketFactory", sockets.factory)
+                put("$prefix.socketFactory.fallback", "false")
             }
             when (account.auth) {
                 AuthMethod.PASSWORD -> put("$prefix.auth.mechanisms", "LOGIN PLAIN")

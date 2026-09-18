@@ -570,8 +570,8 @@ class ImapMailbox private constructor(
             add(UIDFolder.FetchProfileItem.UID)
         }
 
-        fun connect(account: MailAccount, secret: MailSecret, trace: ProtocolTrace = ProtocolTrace.disabled()): ImapMailbox {
-            val store = MailSessionFactory.connectStore(account, MailProtocol.IMAP, secret, trace) as IMAPStore
+        fun connect(account: MailAccount, secret: MailSecret, trace: ProtocolTrace = ProtocolTrace.disabled(), sockets: SocketRegistry? = null): ImapMailbox {
+            val store = MailSessionFactory.connectStore(account, MailProtocol.IMAP, secret, trace, sockets) as IMAPStore
             return ImapMailbox(store, trace)
         }
     }

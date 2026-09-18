@@ -37,6 +37,49 @@ class RequestRouterTest {
     }
 
     @Test
+    fun theProtocolTableNamesWhatPop3AccountsCannotDo() {
+        assertEquals(MailContract.OPS.toSet(), RequestRouter.PROTOCOLS.keys)
+        val imapOnly = RequestRouter.PROTOCOLS.filterValues { it == RequestRouter.IMAP_ONLY }.keys
+        assertEquals(
+            setOf(
+                MailContract.OP_FOLDERS_STATUS, MailContract.OP_FOLDERS_CREATE, MailContract.OP_FOLDERS_DELETE, MailContract.OP_FOLDERS_RENAME,
+                MailContract.OP_MESSAGES_SET_FLAGS, MailContract.OP_MESSAGES_MOVE, MailContract.OP_MESSAGES_COPY, MailContract.OP_MESSAGES_EXPUNGE,
+                MailContract.OP_MESSAGES_APPEND,
+            ),
+            imapOnly,
+        )
+        RequestRouter.PROTOCOLS.forEach { (op, protocols) ->
+            assertTrue(op, protocols == RequestRouter.IMAP_ONLY || protocols == RequestRouter.ANY_RECEIVE)
+            assertTrue("$op never lists SMTP as a receive protocol", MailProtocol.SMTP !in protocols)
+            assertEquals(op, protocols, RequestRouter.PROTOCOLS.getValue(op))
+            assertTrue(op, RequestRouter.supports(op, MailProtocol.IMAP))
+            assertEquals(op, op !in imapOnly, RequestRouter.supports(op, MailProtocol.POP3))
+        }
+        assertFalse(RequestRouter.supports("messages.purge", MailProtocol.IMAP))
+        assertFalse(RequestRouter.supports(null, MailProtocol.IMAP))
+        assertEquals(RequestRouter.HANDLERS.keys, RequestRouter.PROTOCOLS.keys)
+
+        // the protocol check comes before the argument parser: empty args still answer UNSUPPORTED_OPERATION, not INVALID_ARGUMENT
+        val pop3Session = MailSession(
+            MailAccount("alice@example.org", pop3 = MailEndpoint("pop.example.org", 995, TlsMode.SSL), smtp = MailEndpoint("smtp.example.org", 465, TlsMode.SSL), receive = MailProtocol.POP3),
+            MailSecret("not-a-real-secret"),
+        )
+        val pop3Router = RequestRouter(pop3Session)
+        imapOnly.forEach { op ->
+            val error = try {
+                pop3Router.execute(op, "{}")
+                throw AssertionError("$op must be refused for POP3 accounts")
+            } catch (e: MailException) {
+                e
+            }
+            assertEquals(op, MailErrorCode.UNSUPPORTED_OPERATION, error.code)
+            assertTrue(error.message, error.message.contains("receives over pop3"))
+        }
+        assertEquals(0, pop3Session.connectCount(MailProtocol.POP3))
+        pop3Session.close()
+    }
+
+    @Test
     fun routingDistinguishesUnknownOps() {
         MailContract.OPS.forEach { op -> assertNull(op, RequestRouter.errorCodeFor(router.route(op))) }
         assertEquals(MailErrorCode.INVALID_ARGUMENT, RequestRouter.errorCodeFor(router.route("messages.purge")))

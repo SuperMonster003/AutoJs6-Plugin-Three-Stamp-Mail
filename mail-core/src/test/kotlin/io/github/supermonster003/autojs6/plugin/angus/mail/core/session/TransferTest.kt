@@ -10,6 +10,7 @@ import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.io.InterruptedIOException
 import java.io.OutputStream
 
 /** The streaming copy behind `attachments.download` and `messages.raw`. */
@@ -67,6 +68,34 @@ class TransferTest {
             fail("the limit must stop the transfer")
         } catch (e: MailException) {
             assertEquals(MailErrorCode.LIMIT_EXCEEDED, e.code)
+        }
+    }
+
+    @Test
+    fun anInterruptedThreadStopsTheCopyAtTheNextChunk() {
+        val out = ByteArrayOutputStream()
+        val chunks = ArrayList<Long>()
+        val progress = TransferProgress { transferred, _ ->
+            chunks += transferred
+            // the cancel arrives while the copy is under way
+            if (chunks.size == 2) Thread.currentThread().interrupt()
+        }
+        try {
+            Transfer.copy(ByteArrayInputStream(ByteArray(1_000_000)), out, 1_000_000L, progress)
+            fail("the interrupt must stop the copy")
+        } catch (e: InterruptedIOException) {
+            assertTrue(e.message, e.message!!.contains("cancelled"))
+        } finally {
+            assertTrue("the flag is left for the caller to clear", Thread.interrupted())
+        }
+        assertTrue("some chunks went out before the interrupt: ${out.size()}", out.size() in 1 until 1_000_000)
+        try {
+            Thread.currentThread().interrupt()
+            Transfer.counting(ByteArrayOutputStream(), null, TransferProgress.NONE).write(ByteArray(4))
+            fail("the counting sink checks the flag too")
+        } catch (_: InterruptedIOException) {
+        } finally {
+            assertTrue(Thread.interrupted())
         }
     }
 

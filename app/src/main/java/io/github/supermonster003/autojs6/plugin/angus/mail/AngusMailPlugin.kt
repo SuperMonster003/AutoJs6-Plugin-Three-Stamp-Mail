@@ -47,7 +47,13 @@ object AngusMailPlugin {
     /** Capability values advertised through `MailCapabilityKeys`; the mail core implements exactly these. */
     val PROTOCOLS = listOf(MailContract.PROTOCOL_IMAP, MailContract.PROTOCOL_POP3, MailContract.PROTOCOL_SMTP)
     val AUTH_MECHANISMS = listOf(MailContract.AUTH_PASSWORD, MailContract.AUTH_XOAUTH2)
-    val FEATURES = listOf(MailContract.FEATURE_IDLE, MailContract.FEATURE_APPEND)
+
+    /**
+     * Features the plugin implements today: `messages.append` (P2.2) and the client-side filter
+     * fallback of `messages.search` (P2.3 / P2.4). `idle` returns with the watches of P5,
+     * `savedAccounts` with P4, `backgroundWatch` with P8.
+     */
+    val FEATURES = listOf(MailContract.FEATURE_APPEND, MailContract.FEATURE_CLIENT_SEARCH_FALLBACK)
     /** Version of the built-in provider catalog (`mail-core/src/main/resources/providers.json`). */
     val PROVIDERS_VERSION: Int get() = ProviderPresets.version
     const val MAIL_LIBRARY_VERSION = "2.0.5"

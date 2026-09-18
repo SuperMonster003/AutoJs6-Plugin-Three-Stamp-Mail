@@ -94,6 +94,22 @@ class MailSessionPropertiesTest {
     }
 
     @Test
+    fun aSocketRegistrySuppliesThePlainSocketFactoryWithoutTouchingTls() {
+        val registry = SocketRegistry()
+        val imap = MailSessionProperties.build(account.copy(trustAll = true), MailProtocol.IMAP, registry)
+        assertTrue(imap["mail.imaps.socketFactory"] === registry.factory)
+        assertEquals("false", imap.getProperty("mail.imaps.socketFactory.fallback"))
+        assertNull("the TLS layer stays Angus' own (ssl.trust, default SSLSocketFactory)", imap["mail.imaps.ssl.socketFactory"])
+        assertEquals("*", imap.getProperty("mail.imaps.ssl.trust"))
+        val smtp = MailSessionProperties.build(account, MailProtocol.SMTP, registry)
+        assertTrue(smtp["mail.smtp.socketFactory"] === registry.factory)
+        assertNull(MailSessionProperties.build(account, MailProtocol.SMTP)["mail.smtp.socketFactory"])
+        assertNull(MailSessionProperties.build(account, MailProtocol.SMTP).getProperty("mail.smtp.socketFactory.fallback"))
+        val session = MailSessionFactory.session(account, MailProtocol.SMTP, MailSecret("hunter2-authorization-code"), registry)
+        assertTrue(session.properties["mail.smtp.socketFactory"] === registry.factory)
+    }
+
+    @Test
     fun missingEndpointsFailEarly() {
         try {
             MailSessionProperties.build(MailAccount("me@example.com"), MailProtocol.IMAP)

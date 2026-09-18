@@ -21,26 +21,46 @@ internal object MailBundles {
     /** Extra `getStatus` field: protocols with a live connection. */
     const val FIELD_CONNECTED = "connected"
 
+    /** Extra `getStatus` fields (roadmap P2.5): calls waiting behind the one in flight, and the id of the one in flight. */
+    const val FIELD_QUEUED = "queued"
+    const val FIELD_ACTIVE = "active"
+
     fun json(key: String, document: String): Bundle = Bundle().apply {
         putInt(MailContract.KEY_CONTRACT_VERSION, MailContract.CONTRACT_VERSION)
         putString(key, document)
     }
 
-    fun status(state: String, reason: String? = null, lastError: JSONObject? = null, connected: List<String> = emptyList()): Bundle {
+    fun status(
+        state: String,
+        reason: String? = null,
+        lastError: JSONObject? = null,
+        connected: List<String> = emptyList(),
+        queued: Int = 0,
+        active: String? = null,
+    ): Bundle {
         val document = JSONObject().put(MailContract.FIELD_STATE, state)
         reason?.let { document.put(MailContract.FIELD_REASON, it) }
         lastError?.let { document.put(MailContract.FIELD_LAST_ERROR, it) }
         document.put(FIELD_CONNECTED, JSONArray(connected))
+        document.put(FIELD_QUEUED, queued)
+        active?.let { document.put(FIELD_ACTIVE, it) }
         return json(MailContract.KEY_STATUS_JSON, document.toString())
     }
 
+    /** An error document; the message is clamped to `MAX_ERROR_MESSAGE_BYTES` like the host does on its side. */
     fun error(code: String, message: String, retryable: Boolean = MailErrorCodes.isRetryableByDefault(code), details: String? = null): JSONObject {
         val document = JSONObject()
             .put(MailContract.FIELD_ERROR_CODE, code)
-            .put(MailContract.FIELD_ERROR_MESSAGE, message)
+            .put(MailContract.FIELD_ERROR_MESSAGE, Limits.clampErrorMessage(message))
             .put(MailContract.FIELD_ERROR_RETRYABLE, retryable)
         details?.let { document.put(MailContract.FIELD_ERROR_DETAILS, it) }
         return document
+    }
+
+    /** True for a response bundle built by [success] / [successJson]. */
+    fun isSuccess(response: Bundle): Boolean {
+        val json = response.getString(MailContract.KEY_RESPONSE_JSON) ?: return false
+        return runCatching { JSONObject(json).optBoolean(MailContract.FIELD_OK, false) }.getOrDefault(false)
     }
 
     fun error(exception: MailException): JSONObject = error(exception.code, exception.message, exception.retryable, exception.details)

@@ -246,8 +246,8 @@ class Pop3Mailbox private constructor(
             add(FetchProfile.Item.SIZE)
         }
 
-        fun connect(account: MailAccount, secret: MailSecret, trace: ProtocolTrace = ProtocolTrace.disabled()): Pop3Mailbox =
-            Pop3Mailbox(MailSessionFactory.connectStore(account, MailProtocol.POP3, secret, trace) as POP3Store, trace)
+        fun connect(account: MailAccount, secret: MailSecret, trace: ProtocolTrace = ProtocolTrace.disabled(), sockets: SocketRegistry? = null): Pop3Mailbox =
+            Pop3Mailbox(MailSessionFactory.connectStore(account, MailProtocol.POP3, secret, trace, sockets) as POP3Store, trace)
 
         // The checks below need no connection; MailSession runs them before the guard connects.
 

@@ -20,17 +20,25 @@ import org.autojs.plugin.mail.api.IMailSessionCallback
 import org.autojs.plugin.mail.api.MailContract
 
 /**
- * `IMailPlugin` implementation (roadmap P1.3 / P2.5). `openSession` validates the bundle, parses
- * the account JSON through the mail core, and returns a [MailSessionBinder]; no network happens
- * before the first `call` (contract B.3). Saved-account aliases arrive with P4.
+ * `IMailPlugin` implementation (roadmap P1.3 / P2.5). The metadata methods (`getInfo`,
+ * `getCapabilities`, `listProviders`) answer any caller that holds the plugin permission;
+ * `openSession` and `listSavedAccounts` go through the [CallerGuard] first and throw
+ * `SecurityException` for anything but the installed same-signer AutoJs6 host. `openSession`
+ * validates the bundle, parses the account JSON through the mail core, and returns a
+ * [MailSessionBinder] bound to the caller's UID; no network happens before the first `call`
+ * (contract B.3). Saved-account aliases arrive with P4.
  */
-internal class MailPluginBinder(private val context: Context) : IMailPlugin.Stub() {
+internal class MailPluginBinder(
+    private val context: Context,
+    private val guard: CallerGuard,
+) : IMailPlugin.Stub() {
 
     override fun getInfo(): PluginInfo = context.angusMailPluginRuntimeInfo().toPluginInfo()
 
     override fun getCapabilities(): Bundle = context.angusMailPluginRuntimeInfo().capabilitiesBundle()
 
     override fun openSession(account: Bundle?, callback: IMailSessionCallback?): IMailSession? {
+        val ownerUid = guard.enforceHost()
         MailBundles.validateAccount(account)?.let { validation ->
             callback?.let { MailBundles.notifyClosed(it, validation) }
             return null
@@ -53,12 +61,15 @@ internal class MailPluginBinder(private val context: Context) : IMailPlugin.Stub
             callback?.let { MailBundles.notifyClosed(it, MailBundles.error(e)) }
             return null
         }
-        return MailSessionBinder(session, callback)
+        return MailSessionBinder(session, callback, guard, ownerUid)
     }
 
     override fun listProviders(): Bundle = MailBundles.json(MailContract.KEY_PROVIDERS_JSON, ProviderPresets.toJson())
 
-    override fun listSavedAccounts(): Bundle = MailBundles.json(MailContract.KEY_ACCOUNTS_JSON, "[]")
+    override fun listSavedAccounts(): Bundle {
+        guard.enforceHost()
+        return MailBundles.json(MailContract.KEY_ACCOUNTS_JSON, "[]")
+    }
 
     /** The IMAP `ID` payload for providers that require it (163 / 126): names this plugin, never the account. */
     private fun defaults(): MailAccountOptions.Defaults {

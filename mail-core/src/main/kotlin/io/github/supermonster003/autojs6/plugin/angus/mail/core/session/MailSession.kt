@@ -34,6 +34,8 @@ import java.io.OutputStream
  * [ConnectionGuard]s that connect lazily, expire when idle, and reconnect after a loss; the
  * redacted [trace]; and the exception mapping every operation goes through. Not thread-safe: the
  * app runs each session on one executor thread and calls [expireIdle] from a timer on that thread.
+ * The exceptions are [abort] and [record], which the Binder calls from its own thread to cancel
+ * the operation in flight or to log a refusal it made before reaching the session (roadmap P2.5).
  */
 class MailSession(
     val account: MailAccount,
@@ -46,13 +48,22 @@ class MailSession(
     val mapper = ExceptionMapper(redactor)
     val trace = ProtocolTrace(account.debug, redactor, clock)
 
+    /** The plain sockets under every connection of this session, so [abort] can break a blocked operation. */
+    val sockets = SocketRegistry()
+
+    @Volatile
+    private var aborting = false
+
+    private val mayRetry: () -> Boolean = { !aborting && !Thread.currentThread().isInterrupted }
+
     private val imapGuard = ConnectionGuard<ImapMailbox>(
         label = MailProtocol.IMAP.id,
         idleTimeoutMillis = idleTimeoutMillis,
         clock = clock,
         isAlive = { it.isConnected },
         onClose = { it.close() },
-        connect = { ImapMailbox.connect(account, secret, trace) },
+        connect = { ImapMailbox.connect(account, secret, trace, sockets) },
+        mayRetry = mayRetry,
     )
     private val pop3Guard = ConnectionGuard<Pop3Mailbox>(
         label = MailProtocol.POP3.id,
@@ -60,7 +71,8 @@ class MailSession(
         clock = clock,
         isAlive = { it.isConnected },
         onClose = { it.close() },
-        connect = { Pop3Mailbox.connect(account, secret, trace) },
+        connect = { Pop3Mailbox.connect(account, secret, trace, sockets) },
+        mayRetry = mayRetry,
     )
     private val smtpGuard = ConnectionGuard<SmtpSender>(
         label = MailProtocol.SMTP.id,
@@ -68,15 +80,45 @@ class MailSession(
         clock = clock,
         isAlive = { it.isConnected },
         onClose = { it.close() },
-        connect = { SmtpSender(account, secret, trace).connect() },
+        connect = { SmtpSender(account, secret, trace, sockets).connect() },
+        mayRetry = mayRetry,
     )
 
     var isClosed: Boolean = false
         private set
 
     /** The last failure any operation reported, for `getStatus`. */
+    @Volatile
     var lastError: MailException? = null
         private set
+
+    /** True between [abort] and the next [clearAbort]: every guarded operation answers `CANCELLED`. */
+    val isAborting: Boolean get() = aborting
+
+    /**
+     * Cancels the operation in flight from another thread (roadmap P2.5 `cancel`): closes every
+     * live socket of the session so a blocked connect, handshake, read or transfer fails at once,
+     * and marks the session so that failure, and any guarded operation until [clearAbort], is
+     * reported as `CANCELLED` instead of a connection loss. Returns how many sockets were closed.
+     * The next operation reconnects; the session stays open.
+     */
+    fun abort(): Int {
+        aborting = true
+        val closed = sockets.abort()
+        trace.record("session", "abort sockets=$closed")
+        return closed
+    }
+
+    /** Ends the abort state before the next operation runs; the caller also clears the thread's interrupt flag. */
+    fun clearAbort() {
+        aborting = false
+        sockets.resume()
+    }
+
+    /** Records a failure the caller produced before reaching the session (envelope, queue or routing refusals), for `getStatus`. */
+    fun record(error: MailException) {
+        lastError = error
+    }
 
     /** Protocols with a live connection right now. */
     val connectedProtocols: List<MailProtocol>
@@ -324,17 +366,22 @@ class MailSession(
         if (account.endpointOrNull(protocol) == null) {
             throw MailException.invalidArgument("account ${account.address} has no ${protocol.id} endpoint").also { lastError = it }
         }
+        // A cancelled call never starts another connection: `session.test` probes several endpoints in a row.
+        if (aborting || Thread.currentThread().isInterrupted) throw cancelled(protocol, null).also { lastError = it }
         try {
             return guard.use(retryOnLoss, block)
         } catch (e: MailException) {
             lastError = e
             throw e
         } catch (e: Exception) {
-            val mapped = mapper.map(e, "${protocol.id} ${endpointLabel(protocol)}")
+            val mapped = if (aborting) cancelled(protocol, e) else mapper.map(e, "${protocol.id} ${endpointLabel(protocol)}")
             lastError = mapped
             throw mapped
         }
     }
+
+    private fun cancelled(protocol: MailProtocol, cause: Exception?): MailException =
+        MailException(MailErrorCode.CANCELLED, "${protocol.id} ${endpointLabel(protocol)}: the operation was cancelled", retryable = false, cause = cause)
 
     private fun endpointLabel(protocol: MailProtocol): String = account.endpointOrNull(protocol)?.toString() ?: protocol.id
 

@@ -13,6 +13,8 @@ import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import io.github.supermonster003.autojs6.plugin.angus.mail.binder.CallerGuard
+import io.github.supermonster003.autojs6.plugin.angus.mail.binder.MailPluginBinder
 import org.autojs.plugin.common.api.IPluginInfoProvider
 import org.autojs.plugin.common.api.PluginCapabilityKeys
 import org.autojs.plugin.mail.api.IMailCallCallback
@@ -28,6 +30,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -43,7 +46,9 @@ import java.util.concurrent.atomic.AtomicReference
  * of `mail-api.aar` (roadmap P1.3), and the descriptor ownership rules of `call` for the transfer
  * ops (roadmap P2.2: copies are validated on the session thread and closed before `onResult`;
  * roadmap P2.3: a download takes exactly one write end, which is closed before `onResult` so the
- * host's read end sees EOF).
+ * host's read end sees EOF). The installed service refuses this instrumentation as a session
+ * caller (roadmap P2.5 `CallerGuard`: the test runs under the plugin's UID, not the host's), so
+ * the session envelope is exercised on an in-process `MailPluginBinder` with a trusting guard.
  */
 @RunWith(AndroidJUnit4::class)
 class AngusMailPluginContractTest {
@@ -139,9 +144,45 @@ class AngusMailPluginContractTest {
             val providerIds = (0 until providers.getJSONArray("providers").length()).map { providers.getJSONArray("providers").getJSONObject(it).getString("id") }
             assertTrue(providerIds.toString(), "qq" in providerIds && "gmail" in providerIds && "163" in providerIds)
             assertFalse("presets never carry an account", providers.toString().contains("@"))
-            assertEquals("[]", plugin.listSavedAccounts().getString(MailContract.KEY_ACCOUNTS_JSON))
             assertEquals(MailContract.CONTRACT_VERSION, plugin.listProviders().getInt(MailContract.KEY_CONTRACT_VERSION))
 
+            // Roadmap P2.5 CallerGuard: this instrumentation runs under the plugin's own UID, which is not the
+            // installed AutoJs6 host (whether or not the host is installed on this device), so the session
+            // entry points refuse it with the same SecurityException the MCP Server plugin raises.
+            val statuses = LinkedBlockingQueue<String>()
+            val sessionCallback = object : IMailSessionCallback.Stub() {
+                override fun onStatus(status: Bundle?) {
+                    statuses.add(status?.getString(MailContract.KEY_STATUS_JSON).orEmpty())
+                }
+            }
+            val account = accountBundle(
+                """{"address":"alice@localhost","user":"alice",
+                    "imap":{"host":"127.0.0.1","port":3143,"tls":"none"},
+                    "smtp":{"host":"127.0.0.1","port":3025,"tls":"none"}}""",
+            )
+            listOf<Pair<String, () -> Any?>>(
+                "openSession" to { plugin.openSession(account, sessionCallback) },
+                "listSavedAccounts" to { plugin.listSavedAccounts() },
+            ).forEach { (name, invoke) ->
+                try {
+                    invoke()
+                    fail("$name must refuse a caller that is not the AutoJs6 host")
+                } catch (expected: SecurityException) {
+                    android.util.Log.i("AngusMailContractTest", "$name refused: ${expected.message}")
+                    assertTrue(expected.message.orEmpty(), expected.message.orEmpty().contains("AutoJs6"))
+                    assertTrue(expected.message.orEmpty(), expected.message.orEmpty().startsWith("Caller is not the installed same-signer AutoJs6 host"))
+                }
+            }
+            assertNull("a refused open reports nothing through the callback", statuses.poll(500, TimeUnit.MILLISECONDS))
+        }
+    }
+
+    @Test
+    fun mailBinderAnswersTheSessionEnvelope() {
+        val plugin = MailPluginBinder(context, CallerGuard.trusting())
+        assertCapabilities(requireNotNull(plugin.info.capabilities))
+        assertEquals("[]", plugin.listSavedAccounts().getString(MailContract.KEY_ACCOUNTS_JSON))
+        run {
             val statuses = LinkedBlockingQueue<String>()
             val sessionCallback = object : IMailSessionCallback.Stub() {
                 override fun onStatus(status: Bundle?) {
@@ -173,6 +214,8 @@ class AngusMailPluginContractTest {
             val openStatus = JSONObject(session.status.getString(MailContract.KEY_STATUS_JSON)!!)
             assertEquals(MailContract.STATE_OPEN, openStatus.getString(MailContract.FIELD_STATE))
             assertEquals("no network before the first call", 0, openStatus.getJSONArray("connected").length())
+            assertEquals(0, openStatus.getInt("queued"))
+            assertFalse(openStatus.has("active"))
 
             val results = LinkedBlockingQueue<Pair<String, String>>()
             val progressDocuments = LinkedBlockingQueue<String>()

@@ -258,7 +258,73 @@ IMAP view of the same mailbox agreeing, and `session.test` / `mail.send` for a P
 | `folders.status` without `folder` | `INVALID_ARGUMENT` "'folder' is required" (argument errors of receive ops travel through the Binder) |
 
 Both `connectedDebugAndroidTest` and `connectedReleaseAndroidTest -PandroidTestRelease` (R8)
-pass 6 tests with the real-account test skipped.
+passed 6 tests with the real-account test skipped at the time; since P2.5 the suites hold 10
+tests (see below) and the session envelope cases run on an in-process binder.
+
+## P2.5: Binder routing, limits and caller checks
+
+### Caller guard (API 24 emulator and Redmi 22120RN86C, API 33)
+
+Both devices have the AutoJs6 host installed. The instrumentation runs under the plugin's own
+UID, so the installed `org.autojs.plugin.MAIL` service refuses it as a session caller:
+
+| Call on the installed service | Outcome |
+| --- | --- |
+| `getInfo`, `getCapabilities`, `listProviders` | answered (metadata is open to holders of the plugin permission) |
+| `openSession` | `SecurityException` "Caller is not the installed same-signer AutoJs6 host: uid <plugin uid> is not the installed AutoJs6 host", nothing through the session callback |
+| `listSavedAccounts` | the same `SecurityException` |
+
+`CallerPolicy` is the pure decision (caller UID equals the installed host UID, the host package
+runs under that UID, host `versionCode` at least `REQUIRED_HOST_VERSION`, SHA-256 signer sets of
+host and plugin equal and non-empty), `HostCallerGuard` gathers the facts through
+`Binder.getCallingUid` and the package manager; the rule and the exception text match the MCP
+Server plugin's `HostCallerVerifier`. Every session method additionally checks that the caller is
+the UID that opened the session.
+
+### Queue, cancel, close and envelope ceilings (`MailSessionBinderTest`)
+
+The test opens a session on an in-process `MailPluginBinder` with a trusting guard against a
+loopback server that accepts and never writes, so the first `folders.list` blocks in the IMAP
+greeting read with a 30 s read timeout:
+
+| Step | Outcome (API 24 emulator debug / release, Redmi API 33) |
+| --- | --- |
+| `cancel("c1")` while c1 blocks | `CANCELLED` (not retryable) from the session thread in about 0.5 s including the wait for the block; `getStatus` shows `lastError` `CANCELLED`, `queued` 0, no `active`, `connected` empty |
+| `cancel` of a finished, an unknown and a null id | ignored; the next call (`folders.status` without `folder`) still answers `INVALID_ARGUMENT`, no second answer for c1 |
+| 32 calls submitted behind the blocked one | `getStatus` reports `queued` 32 and `active` "c1"; none of them is answered while c1 blocks |
+| the 33rd queued call (`messages.raw` with a pipe write end) | `LIMIT_EXCEEDED` "MAX_QUEUED_CALLS" (not retryable) from the responder thread, the write end closed before the answer |
+| `cancel("q5")` on a queued call | `CANCELLED` at once, `queued` 31 |
+| `close()` | 31 queued calls and the blocked c1 answer `SESSION_CLOSED` exactly once each, then `onStatus(closed, "closed")`; a later call answers `SESSION_CLOSED`, no further status |
+| request envelope of 512 KiB + args | `LIMIT_EXCEEDED` "request envelope of N bytes exceeds 524288 bytes" before any parsing, no connection attempted, the descriptor copy closed |
+
+Whole suites: `connectedDebugAndroidTest` and `connectedReleaseAndroidTest -PandroidTestRelease`
+(R8) on the API 24 emulator 10 tests each, the Redmi 10 tests, one skip each (the real-account
+test without arguments). The cancel path also runs on the JVM (`MailSessionAbortTest`): an
+operation blocked on the greeting answers `CANCELLED` 144 ms after `MailSession.abort()`, a
+cancelled `session.test` does not probe SMTP after IMAP was cut, and an abort that lands before
+the socket exists still cancels the connect (`SocketRegistry` closes sockets registered between
+`abort` and `resume`).
+
+Why sockets: Angus asks `mail.<protocol>.socketFactory` for an unconnected plain socket and does
+the connect, the timeouts and the TLS layering itself (`SocketFetcher`), for implicit SSL and
+STARTTLS alike, so closing that socket from another thread breaks a connect, a handshake, a read
+or a transfer at once; `Folder.close(false)` would only cover an open folder. The factory ships
+with `socketFactory.fallback=false`, because Angus otherwise retries a failed factory connect on
+an untracked plain socket. `MailSessionGreenMailTest.implicitTlsEndpointsWorkWithTrustAll` covers
+SSL through the tracked socket on the JVM; the QQ regression below covers it on a device.
+
+### QQ regression (Redmi 22120RN86C, API 33)
+
+`python .python/run_real_account.py QQ_A bek749scrwv4wo8h --peer QQ_B --cleanup --debug` after the
+binder rewrite, so every QQ connection now goes through the tracked plain socket with Angus'
+own SSL layer on top (`imaps` 993, `smtps` 465): `session.test` IMAP 1211 ms and SMTP 903 ms,
+`imap connect` 1103 ms / 754 ms and `smtp connect` 752 ms in the trace, `mail.send` with one
+attachment 966 ms (`sentCopy = server`); on the peer `folders.list` 11 folders in 1041 ms,
+`folders.status` INBOX 385 messages, the Message-ID search fell back to the client after four
+server attempts (QQ's index lag, `fallback: always`, 1 hit over 385 envelopes), `messages.get`
+619 ms, `attachments.download` 639 ms, `messages.raw` 656 ms, flag add / remove, delete with
+expunge 1240 ms; 1 test, 77 s, `report leak check: clean`. The runner's AVD pass of the same
+build was 10/10 with one skip.
 
 ## JVM
 
@@ -269,13 +335,19 @@ P2.3: `HtmlToTextTest` (9), `SearchQueryCompilerTest` (11), `MessageArgsTest` (6
 (5), `MessageMapperFixturesTest` (10, over the ten `.eml` fixtures generated by
 `build/make_fixtures.py`), `ImapOperationsGreenMailTest` (10) and `IdentifyingImapStoreTest` (4).
 New in P2.4: `Pop3OperationsGreenMailTest` (6) and a POP3 case in `MessageArgsTest` (now 7).
+New in P2.5 (now 156 tests): `SocketRegistryTest` (3), `MailSessionAbortTest` (3), an interrupt case
+in `TransferTest` (6), a forbidden-retry and an interrupted-thread case in `ConnectionGuardTest`
+(10) and the socket-factory case in `MailSessionPropertiesTest` (8).
 
-`:app:testDebugUnitTest`: 22 tests; `RequestRouterTest` (7) snapshots the op table (all 19
+`:app:testDebugUnitTest`: 31 tests; `RequestRouterTest` (8) snapshots the op table (all 19
 contract ops handled since P2.3, `PENDING_OPS` empty), checks that descriptors belong to the
 transfer ops only and that the descriptor rules run after routing and before the handler, that
 argument errors of every op surface before a descriptor is opened or a connection is made, and
 that a POP3 account gets the degraded subset (IMAP-only ops, other folders, `unseenOnly` and body
-searches refused) without connecting.
+searches refused) without connecting, and (P2.5) that the protocol table marks nine ops IMAP-only
+so a POP3 account is refused before its arguments are parsed. New in P2.5: `LimitsTest` (4:
+UTF-8 counting, envelopes at and one byte over the ceiling, queue depth, error message clamping)
+and `CallerPolicyTest` (4: the passing host and every refusal reason).
 
 ## Reproducing
 
@@ -287,6 +359,8 @@ python .python/run_real_account.py QQ_A <serial> --peer QQ_B --cleanup --debug  
 python .python/run_real_account.py NETEASE_A <serial> --peer NETEASE_B --cleanup --debug
 python .python/run_real_account.py GMAIL_A <serial> --cleanup --debug
 python .python/run_real_account.py QQ_A <serial> --peer QQ_B --receive pop3 --cleanup --debug   # P2.4, peer reads over POP3
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest                      # P2.5 binder suites
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedReleaseAndroidTest -PandroidTestRelease
 ```
 
 Profiles read `QQ_USER_NAME_A` / `QQ_AUTH_CODE_A`, `QQ_USER_NAME_B` / `QQ_AUTH_CODE_B`,

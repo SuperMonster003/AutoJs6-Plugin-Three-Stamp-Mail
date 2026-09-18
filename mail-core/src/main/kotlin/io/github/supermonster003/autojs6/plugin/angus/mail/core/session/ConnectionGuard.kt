@@ -13,7 +13,9 @@ import java.net.SocketTimeoutException
  * session (roadmap P2.1 `ConnectionGuard`): connects on first use, drops the connection after
  * [idleTimeoutMillis] without use, reconnects transparently when the server or the network closed
  * it, and retries an operation once when the loss surfaced during the operation and the caller
- * allows a retry. Not thread-safe by design: a session runs on one executor thread (roadmap D15).
+ * allows a retry. A loss caused by a cancellation is never retried: [mayRetry] answers false when
+ * the session thread was interrupted or the session aborted its sockets (roadmap P2.5).
+ * Not thread-safe by design: a session runs on one executor thread (roadmap D15).
  */
 class ConnectionGuard<T : Any>(
     val label: String,
@@ -22,6 +24,7 @@ class ConnectionGuard<T : Any>(
     private val isAlive: (T) -> Boolean,
     private val onClose: (T) -> Unit,
     private val connect: () -> T,
+    private val mayRetry: () -> Boolean = { !Thread.currentThread().isInterrupted },
 ) {
     private var connection: T? = null
     private var lastUsedAt: Long = 0L
@@ -56,7 +59,7 @@ class ConnectionGuard<T : Any>(
             } catch (e: Exception) {
                 val lost = !isAlive(current) || isConnectionLoss(e)
                 if (lost) drop()
-                if (lost && retryOnLoss && !retried && !isTimeout(e)) {
+                if (lost && retryOnLoss && !retried && !isTimeout(e) && mayRetry()) {
                     retried = true
                     continue
                 }

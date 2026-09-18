@@ -17,13 +17,13 @@ import jakarta.mail.URLName
  */
 object MailSessionFactory {
 
-    fun session(account: MailAccount, protocol: MailProtocol, secret: MailSecret): Session {
+    fun session(account: MailAccount, protocol: MailProtocol, secret: MailSecret, sockets: SocketRegistry? = null): Session {
         MailcapRegistry.ensureRegistered()
         val authenticator = object : Authenticator() {
             override fun getPasswordAuthentication(): PasswordAuthentication =
                 PasswordAuthentication(account.username, secret.reveal())
         }
-        return Session.getInstance(MailSessionProperties.build(account, protocol), authenticator).apply {
+        return Session.getInstance(MailSessionProperties.build(account, protocol, sockets), authenticator).apply {
             // Protocol traces would contain credentials; roadmap D28 exposes only a redacted summary.
             debug = false
         }
@@ -33,10 +33,10 @@ object MailSessionFactory {
      * Connects an IMAP or POP3 store; the caller owns it and must close it. IMAP stores are
      * [IdentifyingImapStore]s so that every pooled connection sends the account's `ID` payload.
      */
-    fun connectStore(account: MailAccount, protocol: MailProtocol, secret: MailSecret, trace: ProtocolTrace = ProtocolTrace.disabled()): Store {
+    fun connectStore(account: MailAccount, protocol: MailProtocol, secret: MailSecret, trace: ProtocolTrace = ProtocolTrace.disabled(), sockets: SocketRegistry? = null): Store {
         require(protocol != MailProtocol.SMTP) { "SMTP is a transport, not a store" }
         val endpoint = account.endpoint(protocol)
-        val session = session(account, protocol, secret)
+        val session = session(account, protocol, secret, sockets)
         val provider = MailSessionProperties.providerName(protocol, endpoint.tls)
         val store = if (protocol == MailProtocol.IMAP) {
             val url = URLName(provider, endpoint.host, endpoint.port, null, account.username, null)
@@ -51,9 +51,9 @@ object MailSessionFactory {
     }
 
     /** Connects an SMTP transport; the caller owns it and must close it. */
-    fun connectTransport(account: MailAccount, secret: MailSecret, trace: ProtocolTrace = ProtocolTrace.disabled()): Transport {
+    fun connectTransport(account: MailAccount, secret: MailSecret, trace: ProtocolTrace = ProtocolTrace.disabled(), sockets: SocketRegistry? = null): Transport {
         val endpoint = account.endpoint(MailProtocol.SMTP)
-        val session = session(account, MailProtocol.SMTP, secret)
+        val session = session(account, MailProtocol.SMTP, secret, sockets)
         val transport = session.getTransport(MailSessionProperties.providerName(MailProtocol.SMTP, endpoint.tls))
         trace.timed(MailProtocol.SMTP.id, "connect $endpoint ${account.auth.id}") {
             transport.connect(endpoint.host, endpoint.port, account.username, secret.reveal())

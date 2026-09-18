@@ -117,6 +117,50 @@ class ConnectionGuardTest {
     }
 
     @Test
+    fun lossIsNotRetriedOnceTheCallerForbidsRetries() {
+        var allowed = true
+        val guard = ConnectionGuard<FakeConnection>(
+            label = "fake",
+            idleTimeoutMillis = 10_000L,
+            clock = { now },
+            isAlive = { it.alive },
+            onClose = { it.closed = true; closed += it.id },
+            connect = { FakeConnection(++nextId) },
+            mayRetry = { allowed },
+        )
+        var attempts = 0
+        try {
+            guard.use { attempts++; throw IOException("reset") }
+        } catch (_: IOException) {
+        }
+        assertEquals("retries stay on while allowed", 2, attempts)
+        allowed = false
+        attempts = 0
+        try {
+            guard.use { attempts++; throw IOException("Socket closed") }
+            fail("the loss must propagate")
+        } catch (_: IOException) {
+        }
+        assertEquals("a cancelled call is not retried on a fresh connection", 1, attempts)
+        assertFalse(guard.isConnected)
+    }
+
+    @Test
+    fun anInterruptedThreadIsNotRetriedByDefault() {
+        val guard = guard()
+        var attempts = 0
+        try {
+            guard.use { attempts++; Thread.currentThread().interrupt(); throw IOException("Socket closed") }
+            fail("the loss must propagate")
+        } catch (_: IOException) {
+        } finally {
+            assertTrue("the flag is left for the caller to clear", Thread.interrupted())
+        }
+        assertEquals(1, attempts)
+        assertFalse(guard.isConnected)
+    }
+
+    @Test
     fun commandFailuresKeepTheConnection() {
         val guard = guard()
         try {

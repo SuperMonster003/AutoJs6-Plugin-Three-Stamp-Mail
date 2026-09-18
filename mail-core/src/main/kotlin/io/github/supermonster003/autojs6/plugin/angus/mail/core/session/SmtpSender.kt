@@ -23,6 +23,7 @@ class SmtpSender(
     private val account: MailAccount,
     private val secret: MailSecret,
     private val trace: ProtocolTrace = ProtocolTrace.disabled(),
+    private val sockets: SocketRegistry? = null,
 ) : Closeable {
 
     private var transport: SMTPTransport? = null
@@ -33,7 +34,7 @@ class SmtpSender(
     fun connect(): SmtpSender {
         if (!isConnected) {
             transport?.let { stale -> runCatching { stale.close() } }
-            transport = MailSessionFactory.connectTransport(account, secret, trace) as SMTPTransport
+            transport = MailSessionFactory.connectTransport(account, secret, trace, sockets) as SMTPTransport
         }
         return this
     }
