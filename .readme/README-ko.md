@@ -52,7 +52,7 @@ Angus Mail은 AutoJs6 스크립트에 전역 객체 `mail`을 제공하여 메�
 
 ******
 
-버전 1.0.0은 개발 중입니다: 저장소 뼈대, 로컬 서버 테스트를 갖춘 메일 코어, AutoJs6 플러그인 센터용 플러그인 식별 정보가 준비되었으며, Binder 계약, 스크립트 API, 설정 페이지는 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md)의 단계에 따라 진행됩니다. AutoJs6 6.8.0 (빌드 5281) 이상이 필요합니다.
+버전 1.0.0은 개발 중입니다: 저장소 뼈대, 로컬 서버 테스트를 갖춘 메일 코어, AutoJs6 플러그인 센터용 플러그인 식별 정보가 준비되었으며, Binder 계약, 스크립트 API, 설정 페이지는 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md)의 단계에 따라 진행됩니다. AutoJs6 6.8.0 (빌드 5282) 이상이 필요합니다.
 
 ******
 
@@ -75,7 +75,7 @@ Angus Mail은 AutoJs6 스크립트에 전역 객체 `mail`을 제공하여 메�
 
 ******
 
-1. AutoJs6 빌드 5281 (6.8.0) 이상이 설치된 기기에 [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases)에서 플러그인 APK를 설치합니다.
+1. AutoJs6 빌드 5282 (6.8.0) 이상이 설치된 기기에 [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases)에서 플러그인 APK를 설치합니다.
 2. AutoJs6 플러그인 센터를 열어 `Angus Mail`이 인식되는지 확인하고 활성화합니다.
 3. 계정을 준비합니다: 메일 제공자 설정에서 IMAP 또는 POP3를 켜고, 인증 코드나 앱 비밀번호 (QQ, 163, 126, Gmail, iCloud) 또는 OAuth 2.0 액세스 토큰 (Outlook.com)을 얻습니다.
 4. 스크립트에서 `mail.connect(...)`를 호출하거나, 플러그인 설정 페이지에 계정을 저장한 뒤 별칭으로 연결합니다.
@@ -135,7 +135,7 @@ service action: org.autojs.plugin.MAIL
 service category: mail
 info action: org.autojs.plugin.INFO
 aidl interface: org.autojs.plugin.mail.api.IMailPlugin
-minimum host build: 5281 (6.8.0)
+minimum host build: 5282 (6.8.0)
 ```
 
 `AngusMailPluginService`는 호스트 mail-api 계약 `org.autojs.plugin.mail.api.IMailPlugin`를 구현하고 `org.autojs.plugin.MAIL` (category `mail`)에 응답합니다. `AngusMailPluginInfoService`는 `org.autojs.plugin.INFO`에 PluginInfo로 응답합니다. `WakeActivity`를 통해 호스트가 플러그인을 활성화할 수 있습니다.
@@ -161,12 +161,13 @@ minimum host build: 5281 (6.8.0)
 _2026/09/18_
 
 - `힌트` P0 개발 미리보기: 저장소 뼈대, 로컬 서버 테스트를 갖춘 메일 코어, AutoJs6 플러그인 센터용 플러그인 식별 정보. Binder 계약, 스크립트 API, 설정 페이지는 ROADMAP.md의 단계에 따라 진행됩니다.
-- `기능` 플러그인 식별자 `angus-mail` (엔진 `mail`), INFO 서비스, Wake Activity, 호스트 발견용 `org.autojs.plugin.MAIL` 서비스 뼈대
+- `기능` 플러그인 식별자 `angus-mail` (엔진 `mail`), INFO 서비스, Wake Activity, 그리고 `org.autojs.plugin.MAIL` 서비스; 해당 `IMailPlugin` Binder 는 플러그인 정보, 기능, 공급자 및 저장된 계정 목록과 세션 봉투에 응답 (개별 작업은 P2 에서 구현)
 - `기능` Eclipse Angus Mail 기반 메일 코어: SSL 또는 STARTTLS를 쓰는 IMAP / POP3 / SMTP 세션 속성, 비밀번호와 XOAUTH2 인증, SMTP 전송과 IMAP 받은 편지함 나열을 로컬 GreenMail 서버에서 검증
 - `기능` 10개 언어의 README, 플러그인 센터 안내, 변경 로그
 - `의존성` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`)와 Angus Activation 2.0.3, Jakarta Activation API 2.1.4
 - `의존성` JVM 메일 코어 테스트용 GreenMail 2.1.13 추가 (테스트 범위만)
-- `의존성` 공유 플러그인 계약으로 `common-plugin-api.aar` (AutoJs6 모듈 `plugin-api/common-plugin-api`, 호스트 빌드 6.8.0 / 5281, MPL 2.0)를 추가하고 `locks/host-api-aars.lock`에 해시를 고정
+- `의존성` 공유 플러그인 계약으로 `common-plugin-api.aar` (AutoJs6 모듈 `plugin-api/common-plugin-api`, 호스트 빌드 6.8.0 / 5282, MPL 2.0)를 추가하고 `locks/host-api-aars.lock`에 해시를 고정
+- `의존성` 메일 Binder 계약으로 `mail-api.aar` (AutoJs6 모듈 `plugin-api/mail-api`, 호스트 빌드 6.8.0 / 5282, MPL 2.0; AIDL 인터페이스 6개, `MailContract`, `MailActions`, `MailIds`, `MailCapabilityKeys`, `MailErrorCodes`)를 추가하고 `locks/host-api-aars.lock`에 해시를 고정
 
 ##### 더 많은 릴리스 기록
 

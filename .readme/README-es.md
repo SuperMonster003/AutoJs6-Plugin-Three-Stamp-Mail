@@ -52,7 +52,7 @@ Todo el trafico de correo permanece dentro del proceso del plugin. AutoJs6 descu
 
 ******
 
-La version 1.0.0 esta en desarrollo: el esqueleto del repositorio, el nucleo de correo con sus pruebas en servidor local y la identidad del plugin para el centro de plugins de AutoJs6 estan listos; el contrato Binder, la API de script y la pagina de ajustes siguen las fases de [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Requiere AutoJs6 6.8.0 (build 5281) o posterior.
+La version 1.0.0 esta en desarrollo: el esqueleto del repositorio, el nucleo de correo con sus pruebas en servidor local y la identidad del plugin para el centro de plugins de AutoJs6 estan listos; el contrato Binder, la API de script y la pagina de ajustes siguen las fases de [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Requiere AutoJs6 6.8.0 (build 5282) o posterior.
 
 ******
 
@@ -75,7 +75,7 @@ El complemento ofrece las siguientes capacidades:
 
 ******
 
-1. Instala el APK del plugin desde [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) en un dispositivo con AutoJs6 build 5281 (6.8.0) o posterior.
+1. Instala el APK del plugin desde [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) en un dispositivo con AutoJs6 build 5282 (6.8.0) o posterior.
 2. Abre el centro de plugins de AutoJs6, comprueba que `Angus Mail` se reconoce y activalo.
 3. Prepara la cuenta: activa IMAP o POP3 en los ajustes de tu proveedor de correo y obten un codigo de autorizacion o una contrasena de aplicacion (QQ, 163, 126, Gmail, iCloud), o un token de acceso OAuth 2.0 (Outlook.com).
 4. Llama a `mail.connect(...)` en un script, o guarda la cuenta en la pagina de ajustes del plugin y conectate por alias.
@@ -135,7 +135,7 @@ service action: org.autojs.plugin.MAIL
 service category: mail
 info action: org.autojs.plugin.INFO
 aidl interface: org.autojs.plugin.mail.api.IMailPlugin
-minimum host build: 5281 (6.8.0)
+minimum host build: 5282 (6.8.0)
 ```
 
 `AngusMailPluginService` implementa el contrato mail-api del host `org.autojs.plugin.mail.api.IMailPlugin` y responde a `org.autojs.plugin.MAIL` (categoria `mail`). `AngusMailPluginInfoService` responde a `org.autojs.plugin.INFO` con PluginInfo. `WakeActivity` permite al host activar el plugin.
@@ -161,12 +161,13 @@ Los planes y el progreso del plugin se mantienen como una lista verificable en R
 _2026/09/18_
 
 - `Aviso` Vista previa de desarrollo P0: esqueleto del repositorio, nucleo de correo con pruebas en servidor local e identidad del plugin para el centro de plugins de AutoJs6. El contrato Binder, la API de script y la pagina de ajustes siguen las fases de ROADMAP.md.
-- `Función` Identidad del plugin `angus-mail` (motor `mail`) con el servicio INFO, la Wake Activity y el esqueleto del servicio `org.autojs.plugin.MAIL` para el descubrimiento por el host
+- `Función` Identidad del plugin `angus-mail` (motor `mail`) con el servicio INFO, la Wake Activity y el servicio `org.autojs.plugin.MAIL` cuyo Binder `IMailPlugin` responde la informacion del plugin, las capacidades, las listas de proveedores y cuentas guardadas y el sobre de sesion (las operaciones llegan con P2)
 - `Función` Nucleo de correo sobre Eclipse Angus Mail: propiedades de sesion IMAP / POP3 / SMTP con SSL o STARTTLS, autenticacion por contrasena y XOAUTH2, envio SMTP y listado de la bandeja de entrada IMAP, verificados en un servidor GreenMail local
 - `Función` README, instrucciones del centro de plugins y registro de cambios en 10 idiomas
 - `Dependencia` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) con Angus Activation 2.0.3 y Jakarta Activation API 2.1.4
 - `Dependencia` Se agrega GreenMail 2.1.13 para las pruebas JVM del nucleo de correo (solo ambito de pruebas)
-- `Dependencia` Se agrega `common-plugin-api.aar` (modulo de AutoJs6 `plugin-api/common-plugin-api`, build del host 6.8.0 / 5281, MPL 2.0) como contrato compartido de plugins, con hash bloqueado en `locks/host-api-aars.lock`
+- `Dependencia` Se agrega `common-plugin-api.aar` (modulo de AutoJs6 `plugin-api/common-plugin-api`, build del host 6.8.0 / 5282, MPL 2.0) como contrato compartido de plugins, con hash bloqueado en `locks/host-api-aars.lock`
+- `Dependencia` Se agrega `mail-api.aar` (modulo de AutoJs6 `plugin-api/mail-api`, build del host 6.8.0 / 5282, MPL 2.0) como contrato Binder de correo (seis interfaces AIDL, `MailContract`, `MailActions`, `MailIds`, `MailCapabilityKeys`, `MailErrorCodes`), con hash bloqueado en `locks/host-api-aars.lock`
 
 ##### Para más historial de versiones
 

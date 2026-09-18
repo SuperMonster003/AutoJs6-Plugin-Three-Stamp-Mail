@@ -33,7 +33,7 @@ class AngusMailPluginRuntimeInfoTest {
         assertEquals(1L, info.versionCode)
         assertEquals("Sep 18, 2026", info.versionDate)
         assertArrayEquals(emptyArray<String>(), info.supportedAbis)
-        assertEquals(5281L, info.requiresHostVersion)
+        assertEquals(5282L, info.requiresHostVersion)
         assertEquals(AngusMailPlugin.REQUIRED_HOST_VERSION, info.requiresHostVersion)
     }
 

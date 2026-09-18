@@ -52,7 +52,7 @@ Angus Mail 為 AutoJs6 指令碼提供全域物件 `mail`, 用於傳送郵件, �
 
 ******
 
-版本 1.0.0 處於開發階段: 儲存庫骨架, 帶本機伺服器測試的郵件核心, 以及供 AutoJs6 外掛程式中心識別的外掛程式身分已經就緒; Binder 契約, 指令碼 API 與設定頁按 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) 的階段推進. 需要 AutoJs6 6.8.0 (組建 5281) 或更高版本.
+版本 1.0.0 處於開發階段: 儲存庫骨架, 帶本機伺服器測試的郵件核心, 以及供 AutoJs6 外掛程式中心識別的外掛程式身分已經就緒; Binder 契約, 指令碼 API 與設定頁按 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) 的階段推進. 需要 AutoJs6 6.8.0 (組建 5282) 或更高版本.
 
 ******
 
@@ -75,7 +75,7 @@ Angus Mail 為 AutoJs6 指令碼提供全域物件 `mail`, 用於傳送郵件, �
 
 ******
 
-1. 在安裝了 AutoJs6 組建 5281 (6.8.0) 或更高版本的裝置上, 從 [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) 安裝外掛程式 APK.
+1. 在安裝了 AutoJs6 組建 5282 (6.8.0) 或更高版本的裝置上, 從 [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) 安裝外掛程式 APK.
 2. 開啟 AutoJs6 外掛程式中心, 確認 `Angus Mail` 已被識別並啟用它.
 3. 準備帳號: 在郵件服務商的設定中開啟 IMAP 或 POP3, 並取得授權碼或應用程式專用密碼 (QQ, 163, 126, Gmail, iCloud), 或 OAuth 2.0 存取權杖 (Outlook.com).
 4. 在指令碼中呼叫 `mail.connect(...)`, 或在外掛程式設定頁儲存帳號後以別名連線.
@@ -135,7 +135,7 @@ service action: org.autojs.plugin.MAIL
 service category: mail
 info action: org.autojs.plugin.INFO
 aidl interface: org.autojs.plugin.mail.api.IMailPlugin
-minimum host build: 5281 (6.8.0)
+minimum host build: 5282 (6.8.0)
 ```
 
 `AngusMailPluginService` 實作宿主 mail-api 契約 `org.autojs.plugin.mail.api.IMailPlugin`, 回應 `org.autojs.plugin.MAIL` (category `mail`). `AngusMailPluginInfoService` 以 PluginInfo 回應 `org.autojs.plugin.INFO`. `WakeActivity` 供宿主啟動外掛程式.
@@ -161,12 +161,13 @@ minimum host build: 5281 (6.8.0)
 _2026/09/18_
 
 - `提示` P0 開發預覽: 儲存庫骨架, 帶本機伺服器測試的郵件核心, 以及供 AutoJs6 外掛程式中心識別的外掛程式身分. Binder 契約, 指令碼 API 與設定頁按 ROADMAP.md 的階段推進.
-- `新增` 外掛程式標識 `angus-mail` (engine `mail`), 含 INFO 服務, Wake Activity 以及供宿主發現的 `org.autojs.plugin.MAIL` 服務骨架
+- `新增` 外掛程式標識 `angus-mail` (engine `mail`), 含 INFO 服務, Wake Activity 以及 `org.autojs.plugin.MAIL` 服務; 其 `IMailPlugin` Binder 應答外掛程式資訊, 能力, 服務商與已儲存帳戶列表以及工作階段信封 (具體操作隨 P2 落地)
 - `新增` 基於 Eclipse Angus Mail 的郵件核心: IMAP / POP3 / SMTP 的工作階段屬性 (SSL 或 STARTTLS), 密碼與 XOAUTH2 驗證, SMTP 寄信與 IMAP 收件匣列表, 已在本機 GreenMail 伺服器上驗證
 - `新增` 10 種語言的 README, 外掛程式中心說明與更新日誌
 - `相依性` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) 及 Angus Activation 2.0.3 與 Jakarta Activation API 2.1.4
 - `相依性` 附加 GreenMail 2.1.13 用於 JVM 郵件核心測試 (僅測試範圍)
-- `相依性` 附加 `common-plugin-api.aar` (AutoJs6 模組 `plugin-api/common-plugin-api`, 宿主組建 6.8.0 / 5281, MPL 2.0) 作為共用外掛程式契約, 並在 `locks/host-api-aars.lock` 中鎖定雜湊
+- `相依性` 附加 `common-plugin-api.aar` (AutoJs6 模組 `plugin-api/common-plugin-api`, 宿主組建 6.8.0 / 5282, MPL 2.0) 作為共用外掛程式契約, 並在 `locks/host-api-aars.lock` 中鎖定雜湊
+- `相依性` 附加 `mail-api.aar` (AutoJs6 模組 `plugin-api/mail-api`, 宿主組建 6.8.0 / 5282, MPL 2.0) 作為郵件 Binder 契約 (六個 AIDL 介面, `MailContract`, `MailActions`, `MailIds`, `MailCapabilityKeys`, `MailErrorCodes`), 並在 `locks/host-api-aars.lock` 中鎖定雜湊
 
 ##### 更多發行歷史
 

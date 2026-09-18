@@ -16,7 +16,7 @@
   "plugin_service_category": "mail",
   "plugin_info_action": "org.autojs.plugin.INFO",
   "plugin_aidl_interface": "org.autojs.plugin.mail.api.IMailPlugin",
-  "required_host_version_code": "5281",
+  "required_host_version_code": "5282",
   "required_host_version_name": "6.8.0",
   "angus_mail_version": "2.0.5",
   "android_min_sdk": "24",

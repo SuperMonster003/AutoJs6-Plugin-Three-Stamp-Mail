@@ -65,8 +65,7 @@ require(hostApiLockFile.isFile) {
     "Missing host API lock: ${hostApiLockFile.relativeTo(rootProject.projectDir)}"
 }
 val hostApiLock = hostApiLockFile.loadUniqueLock()
-// mail-api joins this list when the host contract module is staged (roadmap P1.1 / P1.3).
-val hostApiIds = listOf("common-plugin-api")
+val hostApiIds = listOf("common-plugin-api", "mail-api")
 val expectedHostApiLockKeys = setOf("format") + hostApiIds.flatMap { id -> listOf("$id.file", "$id.sha256") }
 require(hostApiLock.stringPropertyNames() == expectedHostApiLockKeys) {
     "Host API AAR lock must contain exactly these keys: ${expectedHostApiLockKeys.sorted()}"
@@ -99,6 +98,7 @@ fun lockedHostApiAar(id: String): File {
 }
 
 val commonPluginApiAar = lockedHostApiAar("common-plugin-api")
+val mailApiAar = lockedHostApiAar("mail-api")
 
 android {
     namespace = globalApplicationId
@@ -222,6 +222,7 @@ dependencies {
     coreLibraryDesugaring(libs.desugar)
 
     implementation(files(commonPluginApiAar))
+    implementation(files(mailApiAar))
     // Every IMAP / POP3 / SMTP operation (roadmap D13); the Binder layer only routes requests to it.
     implementation(project(":mail-core"))
 

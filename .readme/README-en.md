@@ -52,7 +52,7 @@ All mail traffic stays inside the plugin process. AutoJs6 discovers the plugin t
 
 ******
 
-Version 1.0.0 is in development: the repository skeleton, the mail core with its local-server tests, and the plugin identity for the AutoJs6 plugin center are in place, while the Binder contract, the script API, and the settings page follow the phases of [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Requires AutoJs6 6.8.0 (build 5281) or later.
+Version 1.0.0 is in development: the repository skeleton, the mail core with its local-server tests, and the plugin identity for the AutoJs6 plugin center are in place, while the Binder contract, the script API, and the settings page follow the phases of [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Requires AutoJs6 6.8.0 (build 5282) or later.
 
 ******
 
@@ -75,7 +75,7 @@ The plugin provides the following capabilities:
 
 ******
 
-1. Install the plugin APK from [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) on a device with AutoJs6 build 5281 (6.8.0) or later.
+1. Install the plugin APK from [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) on a device with AutoJs6 build 5282 (6.8.0) or later.
 2. Open the AutoJs6 plugin center, confirm that `Angus Mail` is recognized, and enable it.
 3. Prepare the account: turn on IMAP or POP3 in your mail provider's settings and obtain an authorization code or app password (QQ, 163, 126, Gmail, iCloud), or an OAuth 2.0 access token (Outlook.com).
 4. Call `mail.connect(...)` in a script, or save the account on the plugin's settings page and connect by alias.
@@ -135,7 +135,7 @@ service action: org.autojs.plugin.MAIL
 service category: mail
 info action: org.autojs.plugin.INFO
 aidl interface: org.autojs.plugin.mail.api.IMailPlugin
-minimum host build: 5281 (6.8.0)
+minimum host build: 5282 (6.8.0)
 ```
 
 `AngusMailPluginService` implements the host mail-api contract `org.autojs.plugin.mail.api.IMailPlugin` and answers `org.autojs.plugin.MAIL` (category `mail`). `AngusMailPluginInfoService` answers `org.autojs.plugin.INFO` with PluginInfo. `WakeActivity` lets the host activate the plugin.
@@ -161,12 +161,13 @@ The plugin's plans and progress are maintained as a checkable list in ROADMAP.md
 _2026/09/18_
 
 - `Hint` P0 development preview: repository skeleton, the mail core with local-server tests, and the plugin identity for the AutoJs6 plugin center. The Binder contract, the script API, and the settings page follow the phases of ROADMAP.md.
-- `Feature` Plugin identity `angus-mail` (engine `mail`) with the INFO service, the Wake Activity, and the `org.autojs.plugin.MAIL` service skeleton for host discovery
+- `Feature` Plugin identity `angus-mail` (engine `mail`) with the INFO service, the Wake Activity, and the `org.autojs.plugin.MAIL` service whose `IMailPlugin` Binder answers plugin info, capabilities, provider and saved-account listings, and the session envelope (operations follow in P2)
 - `Feature` Mail core on Eclipse Angus Mail: session properties for IMAP / POP3 / SMTP with SSL or STARTTLS, password and XOAUTH2 authentication, SMTP sending and IMAP inbox listing, verified against a local GreenMail server
 - `Feature` README, plugin-center instructions, and changelog in 10 languages
 - `Dependency` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) with Angus Activation 2.0.3 and Jakarta Activation API 2.1.4
 - `Dependency` GreenMail 2.1.13 added for the JVM mail core tests (test scope only)
-- `Dependency` Added `common-plugin-api.aar` (AutoJs6 module `plugin-api/common-plugin-api`, host build 6.8.0 / 5281, MPL 2.0) as the shared plugin contract, hash-locked in `locks/host-api-aars.lock`
+- `Dependency` Added `common-plugin-api.aar` (AutoJs6 module `plugin-api/common-plugin-api`, host build 6.8.0 / 5282, MPL 2.0) as the shared plugin contract, hash-locked in `locks/host-api-aars.lock`
+- `Dependency` Added `mail-api.aar` (AutoJs6 module `plugin-api/mail-api`, host build 6.8.0 / 5282, MPL 2.0) as the mail Binder contract (six AIDL interfaces, `MailContract`, `MailActions`, `MailIds`, `MailCapabilityKeys`, `MailErrorCodes`), hash-locked in `locks/host-api-aars.lock`
 
 ##### For more release history
 

@@ -52,7 +52,7 @@ Angus Mail предоставляет скриптам AutoJs6 глобальн�
 
 ******
 
-Версия 1.0.0 находится в разработке: готовы каркас репозитория, почтовое ядро с тестами на локальном сервере и идентификация плагина для центра плагинов AutoJs6; контракт Binder, скриптовый API и страница настроек выполняются по этапам [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Требуется AutoJs6 6.8.0 (сборка 5281) или новее.
+Версия 1.0.0 находится в разработке: готовы каркас репозитория, почтовое ядро с тестами на локальном сервере и идентификация плагина для центра плагинов AutoJs6; контракт Binder, скриптовый API и страница настроек выполняются по этапам [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Требуется AutoJs6 6.8.0 (сборка 5282) или новее.
 
 ******
 
@@ -75,7 +75,7 @@ Angus Mail предоставляет скриптам AutoJs6 глобальн�
 
 ******
 
-1. Установите APK плагина со страницы [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) на устройство с AutoJs6 сборки 5281 (6.8.0) или новее.
+1. Установите APK плагина со страницы [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) на устройство с AutoJs6 сборки 5282 (6.8.0) или новее.
 2. Откройте центр плагинов AutoJs6, убедитесь, что `Angus Mail` распознан, и включите его.
 3. Подготовьте учетную запись: включите IMAP или POP3 в настройках почтового провайдера и получите код авторизации или пароль приложения (QQ, 163, 126, Gmail, iCloud) либо токен доступа OAuth 2.0 (Outlook.com).
 4. Вызовите `mail.connect(...)` в скрипте или сохраните учетную запись на странице настроек плагина и подключайтесь по псевдониму.
@@ -135,7 +135,7 @@ service action: org.autojs.plugin.MAIL
 service category: mail
 info action: org.autojs.plugin.INFO
 aidl interface: org.autojs.plugin.mail.api.IMailPlugin
-minimum host build: 5281 (6.8.0)
+minimum host build: 5282 (6.8.0)
 ```
 
 `AngusMailPluginService` реализует контракт хоста mail-api `org.autojs.plugin.mail.api.IMailPlugin` и отвечает на `org.autojs.plugin.MAIL` (категория `mail`). `AngusMailPluginInfoService` отвечает на `org.autojs.plugin.INFO` объектом PluginInfo. `WakeActivity` позволяет хосту активировать плагин.
@@ -161,12 +161,13 @@ minimum host build: 5281 (6.8.0)
 _2026/09/18_
 
 - `Подсказка` Предварительная версия этапа P0: каркас репозитория, почтовое ядро с тестами на локальном сервере и идентификация плагина для центра плагинов AutoJs6. Контракт Binder, скриптовый API и страница настроек выполняются по этапам ROADMAP.md.
-- `Функция` Идентификатор плагина `angus-mail` (движок `mail`) с сервисом INFO, Wake Activity и каркасом сервиса `org.autojs.plugin.MAIL` для обнаружения хостом
+- `Функция` Идентификатор плагина `angus-mail` (движок `mail`) с сервисом INFO, Wake Activity и сервисом `org.autojs.plugin.MAIL`, чей Binder `IMailPlugin` отвечает информацией о плагине, возможностями, списками провайдеров и сохраненных учетных записей и конвертом сеанса (операции появятся в P2)
 - `Функция` Почтовое ядро на Eclipse Angus Mail: параметры сеанса IMAP / POP3 / SMTP с SSL или STARTTLS, аутентификация по паролю и XOAUTH2, отправка по SMTP и список входящих по IMAP, проверенные на локальном сервере GreenMail
 - `Функция` README, инструкции центра плагинов и журнал изменений на 10 языках
 - `Зависимость` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) вместе с Angus Activation 2.0.3 и Jakarta Activation API 2.1.4
 - `Зависимость` Добавлен GreenMail 2.1.13 для JVM-тестов почтового ядра (только тестовая область)
-- `Зависимость` Добавлен `common-plugin-api.aar` (модуль AutoJs6 `plugin-api/common-plugin-api`, сборка хоста 6.8.0 / 5281, MPL 2.0) как общий контракт плагинов с фиксацией хеша в `locks/host-api-aars.lock`
+- `Зависимость` Добавлен `common-plugin-api.aar` (модуль AutoJs6 `plugin-api/common-plugin-api`, сборка хоста 6.8.0 / 5282, MPL 2.0) как общий контракт плагинов с фиксацией хеша в `locks/host-api-aars.lock`
+- `Зависимость` Добавлен `mail-api.aar` (модуль AutoJs6 `plugin-api/mail-api`, сборка хоста 6.8.0 / 5282, MPL 2.0) как почтовый контракт Binder (шесть интерфейсов AIDL, `MailContract`, `MailActions`, `MailIds`, `MailCapabilityKeys`, `MailErrorCodes`) с фиксацией хеша в `locks/host-api-aars.lock`
 
 ##### Полная история выпусков
 

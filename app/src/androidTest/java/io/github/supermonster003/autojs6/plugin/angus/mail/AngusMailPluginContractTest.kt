@@ -14,20 +14,31 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.autojs.plugin.common.api.IPluginInfoProvider
 import org.autojs.plugin.common.api.PluginCapabilityKeys
+import org.autojs.plugin.mail.api.IMailCallCallback
+import org.autojs.plugin.mail.api.IMailPlugin
+import org.autojs.plugin.mail.api.IMailSessionCallback
+import org.autojs.plugin.mail.api.MailCapabilityKeys
+import org.autojs.plugin.mail.api.MailContract
+import org.autojs.plugin.mail.api.MailErrorCodes
+import org.json.JSONObject
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Verifies the host-facing activation and discovery contract against the installed APK: the Wake
  * Activity, the INFO service (with a real `getInfo()` round trip), and the `org.autojs.plugin.MAIL`
- * service whose Binder carries the `IMailPlugin` descriptor (placeholder until roadmap P2.5).
+ * service whose `IMailPlugin` Binder answers info, capabilities, listings and the session envelope
+ * of `mail-api.aar` (roadmap P1.3; operations themselves arrive with P2).
  */
 @RunWith(AndroidJUnit4::class)
 class AngusMailPluginContractTest {
@@ -101,19 +112,101 @@ class AngusMailPluginContractTest {
     }
 
     @Test
-    fun mailServiceIsDiscoverableAndCarriesTheContractDescriptor() {
+    fun mailServiceAnswersTheContractBinder() {
         val serviceInfo = discoverSingleService(AngusMailPlugin.SERVICE_ACTION, AngusMailPluginService::class.java.name)
         assertEquals(packageName, serviceInfo.processName)
 
         withBoundService(serviceInfo) { binder ->
             assertEquals(AngusMailPlugin.SERVICE_DESCRIPTOR, binder.interfaceDescriptor)
+            assertEquals(IMailPlugin.DESCRIPTOR, binder.interfaceDescriptor)
             assertTrue(binder.isBinderAlive)
             assertTrue(binder.pingBinder())
+
+            val plugin = IMailPlugin.Stub.asInterface(binder)
+            val info = plugin.info
+            assertEquals(AngusMailPlugin.ID, info.id)
+            assertEquals(AngusMailPlugin.ENGINE, info.engine)
+            assertEquals(AngusMailPlugin.VARIANT, info.variant)
+            assertCapabilities(requireNotNull(info.capabilities))
+            assertCapabilities(requireNotNull(plugin.capabilities))
+            assertEquals("[]", plugin.listProviders().getString(MailContract.KEY_PROVIDERS_JSON))
+            assertEquals("[]", plugin.listSavedAccounts().getString(MailContract.KEY_ACCOUNTS_JSON))
+            assertEquals(MailContract.CONTRACT_VERSION, plugin.listProviders().getInt(MailContract.KEY_CONTRACT_VERSION))
+
+            val statuses = LinkedBlockingQueue<String>()
+            val sessionCallback = object : IMailSessionCallback.Stub() {
+                override fun onStatus(status: Bundle?) {
+                    statuses.add(status?.getString(MailContract.KEY_STATUS_JSON).orEmpty())
+                }
+            }
+
+            assertNull("an empty account bundle must be refused", plugin.openSession(Bundle(), sessionCallback))
+            val refused = JSONObject(requireNotNull(statuses.poll(5, TimeUnit.SECONDS)))
+            assertEquals(MailContract.STATE_CLOSED, refused.getString(MailContract.FIELD_STATE))
+            assertEquals(MailErrorCodes.INVALID_ARGUMENT, refused.getJSONObject(MailContract.FIELD_LAST_ERROR).getString(MailContract.FIELD_ERROR_CODE))
+
+            val account = Bundle().apply {
+                putInt(MailContract.KEY_CONTRACT_VERSION, MailContract.CONTRACT_VERSION)
+                putLong(MailContract.KEY_HOST_VERSION_CODE, AngusMailPlugin.REQUIRED_HOST_VERSION)
+                putString(MailContract.KEY_ACCOUNT_JSON, """{"address":"alice@example.org","auth":"password"}""")
+                putString(MailContract.KEY_SECRET_PASSWORD, "not-a-real-secret")
+            }
+            val session = requireNotNull(plugin.openSession(account, sessionCallback)) { "a valid account bundle must open a session" }
+            assertEquals(MailContract.STATE_OPEN, JSONObject(session.status.getString(MailContract.KEY_STATUS_JSON)!!).getString(MailContract.FIELD_STATE))
+
+            val results = LinkedBlockingQueue<Pair<String, String>>()
+            val callCallback = object : IMailCallCallback.Stub() {
+                override fun onProgress(progress: Bundle?) = Unit
+
+                override fun onResult(response: Bundle?) {
+                    results.add(Thread.currentThread().name to response?.getString(MailContract.KEY_RESPONSE_JSON).orEmpty())
+                }
+            }
+            val response = call(session::call, callCallback, results, "req-1", MailContract.OP_SESSION_TEST)
+            assertFalse(response.second.getBoolean(MailContract.FIELD_OK))
+            assertEquals(MailErrorCodes.UNSUPPORTED_OPERATION, response.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
+            assertFalse(response.second.getJSONObject(MailContract.FIELD_ERROR).getBoolean(MailContract.FIELD_ERROR_RETRYABLE))
+            assertEquals("results must come from the session executor, not the Binder thread", "angus-mail-session", response.first)
+
+            val unknown = call(session::call, callCallback, results, "req-2", "messages.purge")
+            assertEquals(MailErrorCodes.INVALID_ARGUMENT, unknown.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
+
+            val closed = call(session::call, callCallback, results, "req-3", MailContract.OP_SESSION_CLOSE)
+            assertTrue(closed.second.getBoolean(MailContract.FIELD_OK))
+            val closedStatus = JSONObject(requireNotNull(statuses.poll(5, TimeUnit.SECONDS)))
+            assertEquals(MailContract.STATE_CLOSED, closedStatus.getString(MailContract.FIELD_STATE))
+            assertEquals(MailContract.STATE_CLOSED, JSONObject(session.status.getString(MailContract.KEY_STATUS_JSON)!!).getString(MailContract.FIELD_STATE))
+            session.close()
+            assertNull("no further status after an idempotent close", statuses.poll(500, TimeUnit.MILLISECONDS))
         }
+    }
+
+    private fun call(
+        submit: (Bundle, Array<android.os.ParcelFileDescriptor>?, IMailCallCallback) -> String,
+        callback: IMailCallCallback,
+        results: LinkedBlockingQueue<Pair<String, String>>,
+        id: String,
+        op: String,
+    ): Pair<String, JSONObject> {
+        val request = Bundle().apply {
+            putInt(MailContract.KEY_CONTRACT_VERSION, MailContract.CONTRACT_VERSION)
+            putString(MailContract.KEY_REQUEST_JSON, """{"id":"$id","op":"$op","args":{}}""")
+        }
+        assertEquals(id, submit(request, null, callback))
+        val (thread, json) = requireNotNull(results.poll(5, TimeUnit.SECONDS)) { "no onResult for $id" }
+        val response = JSONObject(json)
+        assertEquals(id, response.getString(MailContract.FIELD_ID))
+        return thread to response
     }
 
     private fun assertCapabilities(capabilities: Bundle) {
         assertEquals(AngusMailPlugin.REQUIRED_HOST_VERSION, capabilities.getLong(PluginCapabilityKeys.REQUIRES_HOST_VERSION))
+        assertEquals(MailContract.CONTRACT_VERSION, capabilities.getInt(MailCapabilityKeys.CONTRACT_VERSION))
+        assertArrayEquals(AngusMailPlugin.PROTOCOLS.toTypedArray(), capabilities.getStringArray(MailCapabilityKeys.PROTOCOLS))
+        assertArrayEquals(AngusMailPlugin.AUTH_MECHANISMS.toTypedArray(), capabilities.getStringArray(MailCapabilityKeys.AUTH_MECHANISMS))
+        assertArrayEquals(AngusMailPlugin.FEATURES.toTypedArray(), capabilities.getStringArray(MailCapabilityKeys.FEATURES))
+        assertEquals(AngusMailPlugin.PROVIDERS_VERSION, capabilities.getInt(MailCapabilityKeys.PROVIDERS_VERSION))
+        assertEquals(AngusMailPlugin.MAIL_LIBRARY_VERSION, capabilities.getString(MailCapabilityKeys.LIBRARY_VERSION))
     }
 
     private fun discoverSingleService(action: String, expectedClassName: String): ServiceInfo {

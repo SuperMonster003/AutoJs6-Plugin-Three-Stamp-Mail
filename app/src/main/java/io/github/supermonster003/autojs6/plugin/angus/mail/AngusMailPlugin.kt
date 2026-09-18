@@ -1,6 +1,7 @@
 package io.github.supermonster003.autojs6.plugin.angus.mail
 
 import org.autojs.plugin.common.api.PluginActions
+import org.autojs.plugin.mail.api.MailContract
 
 /**
  * Identity constants shared by the manifest, the Binder services, the documentation, and the
@@ -37,5 +38,12 @@ object AngusMailPlugin {
      * this skeleton was developed against; roadmap P1.4 replaces it with the host build that
      * ships the mail contract module.
      */
-    const val REQUIRED_HOST_VERSION = 5281L
+    const val REQUIRED_HOST_VERSION = 5282L
+
+    /** Capability values advertised through `MailCapabilityKeys`; the mail core implements exactly these. */
+    val PROTOCOLS = listOf(MailContract.PROTOCOL_IMAP, MailContract.PROTOCOL_POP3, MailContract.PROTOCOL_SMTP)
+    val AUTH_MECHANISMS = listOf(MailContract.AUTH_PASSWORD, MailContract.AUTH_XOAUTH2)
+    val FEATURES = listOf(MailContract.FEATURE_IDLE, MailContract.FEATURE_APPEND)
+    const val PROVIDERS_VERSION = 0
+    const val MAIL_LIBRARY_VERSION = "2.0.5"
 }

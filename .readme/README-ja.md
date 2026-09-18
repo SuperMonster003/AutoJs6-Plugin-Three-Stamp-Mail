@@ -52,7 +52,7 @@ Angus Mail は AutoJs6 スクリプトにグローバルオブジェクト `mail
 
 ******
 
-バージョン 1.0.0 は開発中です: リポジトリの骨組み, ローカルサーバーテスト付きのメールコア, AutoJs6 プラグインセンター向けのプラグイン識別情報が整い, Binder コントラクト, スクリプト API, 設定ページは [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) のフェーズに沿って進めます. AutoJs6 6.8.0 (ビルド 5281) 以降が必要です.
+バージョン 1.0.0 は開発中です: リポジトリの骨組み, ローカルサーバーテスト付きのメールコア, AutoJs6 プラグインセンター向けのプラグイン識別情報が整い, Binder コントラクト, スクリプト API, 設定ページは [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) のフェーズに沿って進めます. AutoJs6 6.8.0 (ビルド 5282) 以降が必要です.
 
 ******
 
@@ -75,7 +75,7 @@ Angus Mail は AutoJs6 スクリプトにグローバルオブジェクト `mail
 
 ******
 
-1. AutoJs6 ビルド 5281 (6.8.0) 以降がインストールされた端末に, [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) からプラグイン APK をインストールします.
+1. AutoJs6 ビルド 5282 (6.8.0) 以降がインストールされた端末に, [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) からプラグイン APK をインストールします.
 2. AutoJs6 のプラグインセンターを開き, `Angus Mail` が認識されていることを確認して有効化します.
 3. アカウントを準備します: メールプロバイダーの設定で IMAP または POP3 を有効にし, 認証コードやアプリパスワード (QQ, 163, 126, Gmail, iCloud), または OAuth 2.0 アクセストークン (Outlook.com) を取得します.
 4. スクリプトで `mail.connect(...)` を呼び出すか, プラグインの設定ページにアカウントを保存してエイリアスで接続します.
@@ -135,7 +135,7 @@ service action: org.autojs.plugin.MAIL
 service category: mail
 info action: org.autojs.plugin.INFO
 aidl interface: org.autojs.plugin.mail.api.IMailPlugin
-minimum host build: 5281 (6.8.0)
+minimum host build: 5282 (6.8.0)
 ```
 
 `AngusMailPluginService` はホストの mail-api コントラクト `org.autojs.plugin.mail.api.IMailPlugin` を実装し, `org.autojs.plugin.MAIL` (category `mail`) に応答します. `AngusMailPluginInfoService` は `org.autojs.plugin.INFO` に PluginInfo で応答します. `WakeActivity` によりホストがプラグインを起動できます.
@@ -161,12 +161,13 @@ minimum host build: 5281 (6.8.0)
 _2026/09/18_
 
 - `ヒント` P0 開発プレビュー: リポジトリの骨組み, ローカルサーバーテスト付きのメールコア, AutoJs6 プラグインセンター向けのプラグイン識別情報. Binder コントラクト, スクリプト API, 設定ページは ROADMAP.md のフェーズに沿って進めます.
-- `機能` プラグイン識別子 `angus-mail` (エンジン `mail`), INFO サービス, Wake Activity, ホスト検出用の `org.autojs.plugin.MAIL` サービスの骨組み
+- `機能` プラグイン識別子 `angus-mail` (エンジン `mail`), INFO サービス, Wake Activity, および `org.autojs.plugin.MAIL` サービス; その `IMailPlugin` Binder はプラグイン情報, 機能, プロバイダーと保存済みアカウントの一覧, セッションエンベロープに応答 (各操作は P2 で実装)
 - `機能` Eclipse Angus Mail 上のメールコア: SSL または STARTTLS を使う IMAP / POP3 / SMTP のセッション設定, パスワードと XOAUTH2 認証, SMTP 送信と IMAP 受信トレイ一覧をローカルの GreenMail サーバーで検証
 - `機能` 10 言語の README, プラグインセンターの説明, 更新履歴
 - `依存関係` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) と Angus Activation 2.0.3, Jakarta Activation API 2.1.4
 - `依存関係` JVM メールコアテスト用に GreenMail 2.1.13 を追加 (テストスコープのみ)
-- `依存関係` 共有プラグインコントラクトとして `common-plugin-api.aar` (AutoJs6 モジュール `plugin-api/common-plugin-api`, ホストビルド 6.8.0 / 5281, MPL 2.0) を追加し, `locks/host-api-aars.lock` でハッシュを固定
+- `依存関係` 共有プラグインコントラクトとして `common-plugin-api.aar` (AutoJs6 モジュール `plugin-api/common-plugin-api`, ホストビルド 6.8.0 / 5282, MPL 2.0) を追加し, `locks/host-api-aars.lock` でハッシュを固定
+- `依存関係` メール Binder コントラクトとして `mail-api.aar` (AutoJs6 モジュール `plugin-api/mail-api`, ホストビルド 6.8.0 / 5282, MPL 2.0; 6 つの AIDL インターフェース, `MailContract`, `MailActions`, `MailIds`, `MailCapabilityKeys`, `MailErrorCodes`) を追加し, `locks/host-api-aars.lock` でハッシュを固定
 
 ##### さらに詳しいリリース履歴
 

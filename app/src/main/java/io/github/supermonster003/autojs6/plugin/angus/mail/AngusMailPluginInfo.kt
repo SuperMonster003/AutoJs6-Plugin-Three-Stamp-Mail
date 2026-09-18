@@ -5,6 +5,8 @@ import android.os.Build
 import android.os.Bundle
 import org.autojs.plugin.common.api.PluginCapabilityKeys
 import org.autojs.plugin.common.api.PluginInfo
+import org.autojs.plugin.mail.api.MailCapabilityKeys
+import org.autojs.plugin.mail.api.MailContract
 
 /** Collects the installed package version and the localized metadata of this plugin. */
 internal fun Context.angusMailPluginRuntimeInfo(): AngusMailPluginRuntimeInfo {
@@ -54,4 +56,10 @@ internal fun AngusMailPluginRuntimeInfo.toPluginInfo(): PluginInfo {
  */
 internal fun AngusMailPluginRuntimeInfo.capabilitiesBundle(): Bundle = Bundle().apply {
     putLong(PluginCapabilityKeys.REQUIRES_HOST_VERSION, requiresHostVersion)
+    putInt(MailCapabilityKeys.CONTRACT_VERSION, MailContract.CONTRACT_VERSION)
+    putStringArray(MailCapabilityKeys.PROTOCOLS, AngusMailPlugin.PROTOCOLS.toTypedArray())
+    putStringArray(MailCapabilityKeys.AUTH_MECHANISMS, AngusMailPlugin.AUTH_MECHANISMS.toTypedArray())
+    putStringArray(MailCapabilityKeys.FEATURES, AngusMailPlugin.FEATURES.toTypedArray())
+    putInt(MailCapabilityKeys.PROVIDERS_VERSION, AngusMailPlugin.PROVIDERS_VERSION)
+    putString(MailCapabilityKeys.LIBRARY_VERSION, AngusMailPlugin.MAIL_LIBRARY_VERSION)
 }

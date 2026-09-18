@@ -52,7 +52,7 @@
 
 ******
 
-الإصدار 1.0.0 قيد التطوير: الهيكل الأساسي للمستودع, ونواة البريد مع اختباراتها على خادم محلي, وهوية المكون الإضافي لمركز المكونات الإضافية في AutoJs6 جاهزة, بينما يتبع عقد Binder وواجهة برمجة النصوص وصفحة الإعدادات مراحل [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). يتطلب AutoJs6 6.8.0 (البنية 5281) أو أحدث.
+الإصدار 1.0.0 قيد التطوير: الهيكل الأساسي للمستودع, ونواة البريد مع اختباراتها على خادم محلي, وهوية المكون الإضافي لمركز المكونات الإضافية في AutoJs6 جاهزة, بينما يتبع عقد Binder وواجهة برمجة النصوص وصفحة الإعدادات مراحل [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). يتطلب AutoJs6 6.8.0 (البنية 5282) أو أحدث.
 
 ******
 
@@ -75,7 +75,7 @@
 
 ******
 
-1. ثبت ملف APK للمكون الإضافي من [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) على جهاز يحتوي على AutoJs6 بالبنية 5281 (6.8.0) أو أحدث.
+1. ثبت ملف APK للمكون الإضافي من [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) على جهاز يحتوي على AutoJs6 بالبنية 5282 (6.8.0) أو أحدث.
 2. افتح مركز المكونات الإضافية في AutoJs6, وتأكد من التعرف على `Angus Mail`, ثم فعله.
 3. جهز الحساب: فعل IMAP أو POP3 في إعدادات مزود البريد واحصل على رمز تفويض أو كلمة مرور تطبيق (QQ و 163 و 126 و Gmail و iCloud), أو رمز وصول OAuth 2.0 (Outlook.com).
 4. استدع `mail.connect(...)` في نص برمجي, أو احفظ الحساب في صفحة إعدادات المكون الإضافي واتصل بالاسم المستعار.
@@ -135,7 +135,7 @@ service action: org.autojs.plugin.MAIL
 service category: mail
 info action: org.autojs.plugin.INFO
 aidl interface: org.autojs.plugin.mail.api.IMailPlugin
-minimum host build: 5281 (6.8.0)
+minimum host build: 5282 (6.8.0)
 ```
 
 تنفذ `AngusMailPluginService` عقد المضيف mail-api `org.autojs.plugin.mail.api.IMailPlugin` وتستجيب لـ `org.autojs.plugin.MAIL` (الفئة `mail`). تستجيب `AngusMailPluginInfoService` لـ `org.autojs.plugin.INFO` بكائن PluginInfo. تتيح `WakeActivity` للمضيف تنشيط المكون الإضافي.
@@ -161,12 +161,13 @@ minimum host build: 5281 (6.8.0)
 _2026/09/18_
 
 - `تلميح` معاينة تطوير للمرحلة P0: الهيكل الأساسي للمستودع, ونواة البريد مع اختبارات على خادم محلي, وهوية المكون الإضافي لمركز المكونات الإضافية في AutoJs6. يتبع عقد Binder وواجهة برمجة النصوص وصفحة الإعدادات مراحل ROADMAP.md.
-- `ميزة` هوية المكون الإضافي `angus-mail` (المحرك `mail`) مع خدمة INFO و Wake Activity وهيكل خدمة `org.autojs.plugin.MAIL` لاكتشاف المضيف
+- `ميزة` هوية المكون الإضافي `angus-mail` (المحرك `mail`) مع خدمة INFO و Wake Activity وخدمة `org.autojs.plugin.MAIL` التي يجيب Binder `IMailPlugin` الخاص بها بمعلومات المكون الإضافي والقدرات وقوائم المزودين والحسابات المحفوظة ومغلف الجلسة (تصل العمليات مع P2)
 - `ميزة` نواة بريد على Eclipse Angus Mail: خصائص جلسة IMAP / POP3 / SMTP مع SSL أو STARTTLS, ومصادقة بكلمة المرور و XOAUTH2, وإرسال SMTP وسرد صندوق الوارد عبر IMAP, تم التحقق منها على خادم GreenMail محلي
 - `ميزة` README وتعليمات مركز المكونات الإضافية وسجل التغييرات بعشر لغات
 - `تبعية` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) مع Angus Activation 2.0.3 و Jakarta Activation API 2.1.4
 - `تبعية` إضافة GreenMail 2.1.13 لاختبارات نواة البريد على JVM (نطاق الاختبار فقط)
-- `تبعية` إضافة `common-plugin-api.aar` (وحدة AutoJs6 `plugin-api/common-plugin-api`, بنية المضيف 6.8.0 / 5281, MPL 2.0) كعقد مشترك للمكونات الإضافية مع تثبيت التجزئة في `locks/host-api-aars.lock`
+- `تبعية` إضافة `common-plugin-api.aar` (وحدة AutoJs6 `plugin-api/common-plugin-api`, بنية المضيف 6.8.0 / 5282, MPL 2.0) كعقد مشترك للمكونات الإضافية مع تثبيت التجزئة في `locks/host-api-aars.lock`
+- `تبعية` إضافة `mail-api.aar` (وحدة AutoJs6 `plugin-api/mail-api`, بنية المضيف 6.8.0 / 5282, MPL 2.0) كعقد Binder للبريد (ست واجهات AIDL, `MailContract`, `MailActions`, `MailIds`, `MailCapabilityKeys`, `MailErrorCodes`) مع تثبيت التجزئة في `locks/host-api-aars.lock`
 
 ##### لمزيد من سجل الإصدارات
 

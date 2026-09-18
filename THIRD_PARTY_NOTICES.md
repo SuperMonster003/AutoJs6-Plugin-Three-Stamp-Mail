@@ -7,11 +7,18 @@ own licenses. Runtime dependencies are added to this list in the same commit tha
 ## AutoJs6 common plugin API
 
 - Component: `common-plugin-api.aar` (Binder contract shared by AutoJs6 and its plugins: `PluginInfo`, `IPluginInfoProvider`, `PluginActions`, `PluginCapabilityKeys`)
-- Source: <https://github.com/SuperMonster003/AutoJs6> (`plugin-api/common-plugin-api`), host build 5281 (6.8.0), commit `c0d5fecdb`, release build
+- Source: <https://github.com/SuperMonster003/AutoJs6> (`plugin-api/common-plugin-api`), host build 5282 (6.8.0), commit `34d2c8fcd`, release build (byte-identical to the c0d5fecdb build)
 - SHA-256: `ee7eb7879a53506c4cca5e2d19d3058e28df2168fb33351a52302a3b9e532e15` (pinned in `locks/host-api-aars.lock`)
 - License: Mozilla Public License 2.0
 
-The host `mail-api.aar` (roadmap P1.1) joins this list, the lock file, and `libs/` in the same commit once the host contract module exists.
+## AutoJs6 mail plugin API
+
+- Component: `mail-api.aar` (mail Binder contract of AutoJs6: `IMailPlugin`, `IMailSession`, `IMailCallCallback`, `IMailWatch`, `IMailWatchCallback`, `IMailSessionCallback`, `MailContract`, `MailActions`, `MailIds`, `MailCapabilityKeys`, `MailErrorCodes`)
+- Source: <https://github.com/SuperMonster003/AutoJs6> (`plugin-api/mail-api`), host build 5282 (6.8.0), commit `34d2c8fcd`, release build
+- SHA-256: `7b7f537a78d520231f90abf4b20f5012c919fef0f8fad03c46327cfdfe9d8821` (pinned in `locks/host-api-aars.lock`)
+- License: Mozilla Public License 2.0
+
+Both host AARs must come from the same host commit; restage and re-lock them together when the contract changes.
 
 ## Kotlin standard library
 
