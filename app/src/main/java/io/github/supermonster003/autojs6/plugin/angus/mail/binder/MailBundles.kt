@@ -2,32 +2,48 @@ package io.github.supermonster003.autojs6.plugin.angus.mail.binder
 
 import android.os.Bundle
 import android.os.RemoteException
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.SecretKind
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
+import org.autojs.plugin.mail.api.IMailCallCallback
 import org.autojs.plugin.mail.api.IMailSessionCallback
 import org.autojs.plugin.mail.api.MailContract
 import org.autojs.plugin.mail.api.MailErrorCodes
+import org.json.JSONArray
 import org.json.JSONObject
+import org.json.JSONTokener
 
 /** Bundle and envelope helpers of the plugin side; every document is built with `org.json`. */
 internal object MailBundles {
+
+    /** Key under which `onProgress` carries the redacted protocol trace lines (roadmap D28). */
+    const val FIELD_DEBUG = "debug"
+
+    /** Extra `getStatus` field: protocols with a live connection. */
+    const val FIELD_CONNECTED = "connected"
 
     fun json(key: String, document: String): Bundle = Bundle().apply {
         putInt(MailContract.KEY_CONTRACT_VERSION, MailContract.CONTRACT_VERSION)
         putString(key, document)
     }
 
-    fun status(state: String, reason: String? = null, lastError: JSONObject? = null): Bundle {
+    fun status(state: String, reason: String? = null, lastError: JSONObject? = null, connected: List<String> = emptyList()): Bundle {
         val document = JSONObject().put(MailContract.FIELD_STATE, state)
         reason?.let { document.put(MailContract.FIELD_REASON, it) }
         lastError?.let { document.put(MailContract.FIELD_LAST_ERROR, it) }
+        document.put(FIELD_CONNECTED, JSONArray(connected))
         return json(MailContract.KEY_STATUS_JSON, document.toString())
     }
 
-    fun error(code: String, message: String, retryable: Boolean = MailErrorCodes.isRetryableByDefault(code)): JSONObject {
-        return JSONObject()
+    fun error(code: String, message: String, retryable: Boolean = MailErrorCodes.isRetryableByDefault(code), details: String? = null): JSONObject {
+        val document = JSONObject()
             .put(MailContract.FIELD_ERROR_CODE, code)
             .put(MailContract.FIELD_ERROR_MESSAGE, message)
             .put(MailContract.FIELD_ERROR_RETRYABLE, retryable)
+        details?.let { document.put(MailContract.FIELD_ERROR_DETAILS, it) }
+        return document
     }
+
+    fun error(exception: MailException): JSONObject = error(exception.code, exception.message, exception.retryable, exception.details)
 
     fun failure(requestId: String?, error: JSONObject): Bundle {
         val document = JSONObject()
@@ -43,6 +59,17 @@ internal object MailBundles {
             .put(MailContract.FIELD_OK, true)
             .put(MailContract.FIELD_RESULT, result ?: JSONObject.NULL)
         return json(MailContract.KEY_RESPONSE_JSON, document.toString())
+    }
+
+    /** Wraps a result that is already a JSON document (object, array, string, number, boolean or null). */
+    fun successJson(requestId: String, resultJson: String): Bundle = success(requestId, JSONTokener(resultJson).nextValue())
+
+    /** The `onProgress` document carrying redacted trace lines; the host prints them to `console.verbose`. */
+    fun debugProgress(requestId: String, lines: List<String>): Bundle {
+        val document = JSONObject()
+            .put(MailContract.FIELD_ID, requestId)
+            .put(FIELD_DEBUG, JSONArray(lines))
+        return json(MailContract.KEY_PROGRESS_JSON, document.toString())
     }
 
     /** Returns the error document when the open-session bundle is unusable, or null when it is fine. */
@@ -69,9 +96,39 @@ internal object MailBundles {
         return null
     }
 
+    /** Which secret accompanies the account; [validateAccount] has already excluded both at once. */
+    fun secretKind(account: Bundle): SecretKind = when {
+        account.containsKey(MailContract.KEY_SECRET_PASSWORD) -> SecretKind.PASSWORD
+        account.containsKey(MailContract.KEY_SECRET_ACCESS_TOKEN) -> SecretKind.ACCESS_TOKEN
+        else -> SecretKind.NONE
+    }
+
+    /** The secret characters, or null when the key is absent; the caller wraps them in `MailSecret` at once. */
+    fun secret(account: Bundle, kind: SecretKind): String? = when (kind) {
+        SecretKind.PASSWORD -> account.getString(MailContract.KEY_SECRET_PASSWORD)
+        SecretKind.ACCESS_TOKEN -> account.getString(MailContract.KEY_SECRET_ACCESS_TOKEN)
+        SecretKind.NONE -> null
+    }
+
     fun notifyClosed(callback: IMailSessionCallback, lastError: JSONObject?, reason: String = "refused") {
         try {
             callback.onStatus(status(MailContract.STATE_CLOSED, reason, lastError))
+        } catch (_: RemoteException) {
+        }
+    }
+
+    fun deliver(callback: IMailCallCallback?, response: Bundle) {
+        callback ?: return
+        try {
+            callback.onResult(response)
+        } catch (_: RemoteException) {
+        }
+    }
+
+    fun progress(callback: IMailCallCallback?, progress: Bundle) {
+        callback ?: return
+        try {
+            callback.onProgress(progress)
         } catch (_: RemoteException) {
         }
     }
@@ -85,5 +142,14 @@ internal object MailBundles {
     fun requestOp(request: Bundle?): String? {
         val json = request?.getString(MailContract.KEY_REQUEST_JSON) ?: return null
         return runCatching { JSONObject(json).optString(MailContract.FIELD_OP).takeIf { it.isNotEmpty() } }.getOrNull()
+    }
+
+    /** The `args` object as a JSON string, `{}` when absent; null when present but not an object. */
+    fun requestArgs(request: Bundle?): String? {
+        val json = request?.getString(MailContract.KEY_REQUEST_JSON) ?: return "{}"
+        return runCatching {
+            val root = JSONObject(json)
+            if (!root.has(MailContract.FIELD_ARGS) || root.isNull(MailContract.FIELD_ARGS)) "{}" else root.getJSONObject(MailContract.FIELD_ARGS).toString()
+        }.getOrNull()
     }
 }

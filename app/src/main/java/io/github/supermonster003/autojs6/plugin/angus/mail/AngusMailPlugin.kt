@@ -1,5 +1,6 @@
 package io.github.supermonster003.autojs6.plugin.angus.mail
 
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.ProviderPresets
 import org.autojs.plugin.common.api.PluginActions
 import org.autojs.plugin.mail.api.MailContract
 
@@ -44,6 +45,7 @@ object AngusMailPlugin {
     val PROTOCOLS = listOf(MailContract.PROTOCOL_IMAP, MailContract.PROTOCOL_POP3, MailContract.PROTOCOL_SMTP)
     val AUTH_MECHANISMS = listOf(MailContract.AUTH_PASSWORD, MailContract.AUTH_XOAUTH2)
     val FEATURES = listOf(MailContract.FEATURE_IDLE, MailContract.FEATURE_APPEND)
-    const val PROVIDERS_VERSION = 0
+    /** Version of the built-in provider catalog (`mail-core/src/main/resources/providers.json`). */
+    val PROVIDERS_VERSION: Int get() = ProviderPresets.version
     const val MAIL_LIBRARY_VERSION = "2.0.5"
 }

@@ -6,17 +6,31 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailSecr
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.MessageSummary
 import jakarta.mail.FetchProfile
 import jakarta.mail.Folder
+import jakarta.mail.MessagingException
 import jakarta.mail.UIDFolder
 import org.eclipse.angus.mail.imap.IMAPFolder
 import org.eclipse.angus.mail.imap.IMAPStore
 import java.io.Closeable
 
-/** One connected IMAP store. Minimal P0.2 surface: list the inbox, report capabilities, open folders. */
-class ImapMailbox private constructor(private val store: IMAPStore) : Closeable {
+/**
+ * One connected IMAP store. P2.1 surface: capabilities, the `ID` handshake, folder access, and
+ * the inbox listing of the P0 spike; roadmap P2.3 adds the full operation set on top.
+ */
+class ImapMailbox private constructor(
+    private val store: IMAPStore,
+    private val trace: ProtocolTrace,
+) : Closeable {
 
     val isConnected: Boolean get() = store.isConnected
 
+    /** What the server answered to the `ID` command, or null when it was not sent or not supported. */
+    var serverId: Map<String, String>? = null
+        private set
+
     fun hasCapability(name: String): Boolean = store.hasCapability(name)
+
+    /** The advertised capabilities the plugin cares about, in [KNOWN_CAPABILITIES] order. */
+    fun capabilities(): List<String> = KNOWN_CAPABILITIES.filter { store.hasCapability(it) }
 
     /** Newest [limit] messages of INBOX, newest first, without marking them as read. */
     fun listInbox(limit: Int): List<MessageSummary> = withFolder(INBOX, Folder.READ_ONLY) { folder ->
@@ -34,7 +48,7 @@ class ImapMailbox private constructor(private val store: IMAPStore) : Closeable 
 
     fun <T> withFolder(name: String, mode: Int, block: (IMAPFolder) -> T): T {
         val folder = store.getFolder(name) as IMAPFolder
-        folder.open(mode)
+        trace.timed(MailProtocol.IMAP.id, "open $name ${if (mode == Folder.READ_WRITE) "rw" else "ro"}") { folder.open(mode) }
         try {
             return block(folder)
         } finally {
@@ -42,14 +56,43 @@ class ImapMailbox private constructor(private val store: IMAPStore) : Closeable 
         }
     }
 
+    /**
+     * Sends the `ID` command (RFC 2971) with [clientId]. Servers that do not advertise `ID` are
+     * skipped; a server that rejects the command does not fail the connection either, because the
+     * providers that require it (163 / 126) refuse the *next* command instead, which then surfaces
+     * as the real error.
+     */
+    private fun identify(clientId: Map<String, String>) {
+        if (clientId.isEmpty() || !store.hasCapability("ID")) return
+        try {
+            serverId = trace.timed(MailProtocol.IMAP.id, "ID ${clientId.keys.joinToString(",")}") { store.id(clientId) }
+        } catch (_: MessagingException) {
+        }
+    }
+
     override fun close() {
-        if (store.isConnected) store.close()
+        if (store.isConnected) {
+            try {
+                store.close()
+            } catch (_: MessagingException) {
+            }
+        }
     }
 
     companion object {
         const val INBOX = "INBOX"
 
-        fun connect(account: MailAccount, secret: MailSecret): ImapMailbox =
-            ImapMailbox(MailSessionFactory.connectStore(account, MailProtocol.IMAP, secret) as IMAPStore)
+        /** Capabilities reported by `session.test`; the plugin's behaviour depends on the first block. */
+        val KNOWN_CAPABILITIES: List<String> = listOf(
+            "IDLE", "UIDPLUS", "MOVE", "CONDSTORE", "QRESYNC", "ID", "ENABLE", "NAMESPACE",
+            "SPECIAL-USE", "LIST-EXTENDED", "LIST-STATUS", "UNSELECT", "CHILDREN", "XLIST",
+            "ESEARCH", "SORT", "THREAD=REFERENCES", "WITHIN", "LITERAL+", "LITERAL-", "BINARY",
+            "COMPRESS=DEFLATE", "UTF8=ACCEPT", "AUTH=PLAIN", "AUTH=XOAUTH2",
+        )
+
+        fun connect(account: MailAccount, secret: MailSecret, trace: ProtocolTrace = ProtocolTrace.disabled()): ImapMailbox {
+            val store = MailSessionFactory.connectStore(account, MailProtocol.IMAP, secret, trace) as IMAPStore
+            return ImapMailbox(store, trace).also { it.identify(account.clientId) }
+        }
     }
 }

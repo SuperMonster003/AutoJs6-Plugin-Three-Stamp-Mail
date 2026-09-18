@@ -6,15 +6,18 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailSecr
 import jakarta.activation.DataHandler
 import jakarta.activation.FileDataSource
 import jakarta.mail.Message
+import jakarta.mail.MessagingException
 import jakarta.mail.Session
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeBodyPart
 import jakarta.mail.internet.MimeMessage
 import jakarta.mail.internet.MimeMultipart
+import org.eclipse.angus.mail.smtp.SMTPTransport
+import java.io.Closeable
 import java.io.File
 import java.util.Date
 
-/** Minimal outgoing message; roadmap P2 extends it with cc / bcc / inline images / headers / priority. */
+/** Minimal outgoing message; roadmap P2.2 extends it with cc / bcc / inline images / headers / priority. */
 data class OutgoingMessage(
     val to: List<String>,
     val subject: String,
@@ -28,8 +31,34 @@ data class OutgoingMessage(
     }
 }
 
-/** Sends messages through the account's SMTP endpoint. Each call opens and closes its own transport. */
-class SmtpSender(private val account: MailAccount, private val secret: MailSecret) {
+/**
+ * Sends messages through the account's SMTP endpoint over one transport that stays connected
+ * between calls; the session's [ConnectionGuard] owns its lifetime and idle expiry.
+ */
+class SmtpSender(
+    private val account: MailAccount,
+    private val secret: MailSecret,
+    private val trace: ProtocolTrace = ProtocolTrace.disabled(),
+) : Closeable {
+
+    private var transport: SMTPTransport? = null
+
+    val isConnected: Boolean get() = transport?.isConnected == true
+
+    /** Opens the transport when it is not connected yet; returns this for chaining. */
+    fun connect(): SmtpSender {
+        if (!isConnected) {
+            transport?.let { stale -> runCatching { stale.close() } }
+            transport = MailSessionFactory.connectTransport(account, secret, trace) as SMTPTransport
+        }
+        return this
+    }
+
+    /** EHLO extensions the server advertised, in [KNOWN_EXTENSIONS] order; connects when needed. */
+    fun extensions(): List<String> {
+        val live = connect().transport!!
+        return KNOWN_EXTENSIONS.filter { live.supportsExtension(it) }
+    }
 
     /** Builds the MIME message without sending it, so tests can parse the exact bytes that would go out. */
     fun compose(message: OutgoingMessage): MimeMessage =
@@ -38,18 +67,25 @@ class SmtpSender(private val account: MailAccount, private val secret: MailSecre
     /** Sends [message] and returns its `Message-ID`. */
     fun send(message: OutgoingMessage): String {
         val mime = compose(message)
-        val transport = MailSessionFactory.connectTransport(account, secret)
-        try {
-            transport.sendMessage(mime, mime.allRecipients)
-        } finally {
-            transport.close()
+        val live = connect().transport!!
+        trace.timed(MailProtocol.SMTP.id, "send to=${mime.allRecipients.size}") {
+            live.sendMessage(mime, mime.allRecipients)
         }
         return mime.messageID
     }
 
+    override fun close() {
+        val live = transport ?: return
+        transport = null
+        try {
+            live.close()
+        } catch (_: MessagingException) {
+        }
+    }
+
     private fun compose(session: Session, message: OutgoingMessage): MimeMessage {
         val mime = MimeMessage(session)
-        mime.setFrom(InternetAddress(message.from ?: account.address))
+        mime.setFrom(message.from?.let { InternetAddress(it) } ?: InternetAddress(account.address, account.displayName, "UTF-8"))
         mime.setRecipients(Message.RecipientType.TO, message.to.map { InternetAddress(it) }.toTypedArray())
         mime.setSubject(message.subject, "UTF-8")
         mime.sentDate = Date()
@@ -83,5 +119,10 @@ class SmtpSender(private val account: MailAccount, private val secret: MailSecre
         }
         mime.saveChanges()
         return mime
+    }
+
+    companion object {
+        /** Extensions reported by `session.test`. */
+        val KNOWN_EXTENSIONS: List<String> = listOf("SIZE", "8BITMIME", "SMTPUTF8", "PIPELINING", "STARTTLS", "AUTH", "DSN", "CHUNKING", "ENHANCEDSTATUSCODES")
     }
 }

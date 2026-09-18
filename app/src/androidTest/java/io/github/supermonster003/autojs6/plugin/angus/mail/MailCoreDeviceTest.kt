@@ -130,7 +130,7 @@ class MailCoreDeviceTest {
         val subject = "AutoJs6 Angus Mail spike ${System.currentTimeMillis()}"
 
         val started = System.nanoTime()
-        val messageId = SmtpSender(account, MailSecret(secret!!)).send(OutgoingMessage(listOf(to), subject, "Sent from the P0.2 spike on API ${Build.VERSION.SDK_INT}"))
+        val messageId = SmtpSender(account, MailSecret(secret!!)).use { it.send(OutgoingMessage(listOf(to), subject, "Sent from the P0.2 spike on API ${Build.VERSION.SDK_INT}")) }
         val sendMillis = (System.nanoTime() - started) / 1_000_000
         assertTrue(messageId.isNotBlank())
 

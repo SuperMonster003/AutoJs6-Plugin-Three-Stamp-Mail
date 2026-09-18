@@ -5,6 +5,7 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAcco
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailEndpoint
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailSecret
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailTimeouts
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.TlsMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -19,7 +20,7 @@ class MailSessionPropertiesTest {
         imap = MailEndpoint("imap.example.com", 993, TlsMode.SSL),
         pop3 = MailEndpoint("pop.example.com", 110, TlsMode.STARTTLS),
         smtp = MailEndpoint("smtp.example.com", 25, TlsMode.NONE),
-        timeoutMillis = 12_345,
+        timeouts = MailTimeouts.uniform(12_345),
     )
 
     @Test

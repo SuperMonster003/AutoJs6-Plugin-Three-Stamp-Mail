@@ -20,9 +20,8 @@ object MailSessionProperties {
         val endpoint = account.endpoint(protocol)
         val provider = providerName(protocol, endpoint.tls)
         val prefix = "mail.$provider"
-        val timeout = account.timeoutMillis.toString()
         return Properties().apply {
-            // Lenient MIME handling for real-world messages (roadmap P2: charset and header fallbacks).
+            // Lenient MIME handling for real-world messages (roadmap D21: charset and header fallbacks).
             put("mail.mime.charset", "UTF-8")
             put("mail.mime.decodetext.strict", "false")
             put("mail.mime.decodefilename", "true")
@@ -39,9 +38,9 @@ object MailSessionProperties {
 
             put("$prefix.host", endpoint.host)
             put("$prefix.port", endpoint.port.toString())
-            put("$prefix.connectiontimeout", timeout)
-            put("$prefix.timeout", timeout)
-            put("$prefix.writetimeout", timeout)
+            put("$prefix.connectiontimeout", account.timeouts.connectMillis.toString())
+            put("$prefix.timeout", account.timeouts.readMillis.toString())
+            put("$prefix.writetimeout", account.timeouts.writeMillis.toString())
             put("$prefix.auth", "true")
             // Never fall back from the requested TLS mode or authentication mechanism to a weaker one.
             when (endpoint.tls) {
@@ -75,6 +74,8 @@ object MailSessionProperties {
             }
             if (protocol == MailProtocol.SMTP) {
                 put("$prefix.from", account.address)
+                // EHLO name: a fixed literal avoids the blocking reverse lookup of the device's own address.
+                put("$prefix.localhost", "localhost")
             }
         }
     }

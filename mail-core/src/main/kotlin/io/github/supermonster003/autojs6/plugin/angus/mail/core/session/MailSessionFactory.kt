@@ -28,21 +28,25 @@ object MailSessionFactory {
     }
 
     /** Connects an IMAP or POP3 store; the caller owns it and must close it. */
-    fun connectStore(account: MailAccount, protocol: MailProtocol, secret: MailSecret): Store {
+    fun connectStore(account: MailAccount, protocol: MailProtocol, secret: MailSecret, trace: ProtocolTrace = ProtocolTrace.disabled()): Store {
         require(protocol != MailProtocol.SMTP) { "SMTP is a transport, not a store" }
         val endpoint = account.endpoint(protocol)
         val session = session(account, protocol, secret)
         val store = session.getStore(MailSessionProperties.providerName(protocol, endpoint.tls))
-        store.connect(endpoint.host, endpoint.port, account.username, secret.reveal())
+        trace.timed(protocol.id, "connect $endpoint ${account.auth.id}") {
+            store.connect(endpoint.host, endpoint.port, account.username, secret.reveal())
+        }
         return store
     }
 
     /** Connects an SMTP transport; the caller owns it and must close it. */
-    fun connectTransport(account: MailAccount, secret: MailSecret): Transport {
+    fun connectTransport(account: MailAccount, secret: MailSecret, trace: ProtocolTrace = ProtocolTrace.disabled()): Transport {
         val endpoint = account.endpoint(MailProtocol.SMTP)
         val session = session(account, MailProtocol.SMTP, secret)
         val transport = session.getTransport(MailSessionProperties.providerName(MailProtocol.SMTP, endpoint.tls))
-        transport.connect(endpoint.host, endpoint.port, account.username, secret.reveal())
+        trace.timed(MailProtocol.SMTP.id, "connect $endpoint ${account.auth.id}") {
+            transport.connect(endpoint.host, endpoint.port, account.username, secret.reveal())
+        }
         return transport
     }
 }

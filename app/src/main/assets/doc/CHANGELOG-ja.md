@@ -11,6 +11,7 @@
 * `ヒント` P0 開発プレビュー: リポジトリの骨組み, ローカルサーバーテスト付きのメールコア, AutoJs6 プラグインセンター向けのプラグイン識別情報. Binder コントラクト, スクリプト API, 設定ページは ROADMAP.md のフェーズに沿って進めます.
 * `機能` プラグイン識別子 `angus-mail` (エンジン `mail`), INFO サービス, Wake Activity, および `org.autojs.plugin.MAIL` サービス; その `IMailPlugin` Binder はプラグイン情報, 機能, プロバイダーと保存済みアカウントの一覧, セッションエンベロープに応答 (各操作は P2 で実装)
 * `機能` Eclipse Angus Mail 上のメールコア: SSL または STARTTLS を使う IMAP / POP3 / SMTP のセッション設定, パスワードと XOAUTH2 認証, SMTP 送信と IMAP 受信トレイ一覧をローカルの GreenMail サーバーで検証
+* `機能` メールコアのアカウント層 (ロードマップ P2.1): Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina, Aliyun のプロバイダープリセット, プロトコルごとのタイムアウト, `tls.trustAll`, IMAP `ID` コマンド, マスク済みの `debug` トレースを備えたアカウントオプション; セッションは遅延接続し, アイドル接続を切断し, 切断後に再接続; `session.test` は Binder 経由でエンドポイントごとの機能と往復時間を返す
 * `機能` 10 言語の README, プラグインセンターの説明, 更新履歴
 * `依存関係` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) と Angus Activation 2.0.3, Jakarta Activation API 2.1.4
 * `依存関係` JVM メールコアテスト用に GreenMail 2.1.13 を追加 (テストスコープのみ)

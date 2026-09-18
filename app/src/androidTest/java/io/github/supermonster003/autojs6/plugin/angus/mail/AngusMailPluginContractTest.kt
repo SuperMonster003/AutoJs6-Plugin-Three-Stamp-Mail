@@ -129,7 +129,11 @@ class AngusMailPluginContractTest {
             assertEquals(AngusMailPlugin.VARIANT, info.variant)
             assertCapabilities(requireNotNull(info.capabilities))
             assertCapabilities(requireNotNull(plugin.capabilities))
-            assertEquals("[]", plugin.listProviders().getString(MailContract.KEY_PROVIDERS_JSON))
+            val providers = JSONObject(requireNotNull(plugin.listProviders().getString(MailContract.KEY_PROVIDERS_JSON)))
+            assertEquals(AngusMailPlugin.PROVIDERS_VERSION, providers.getInt("version"))
+            val providerIds = (0 until providers.getJSONArray("providers").length()).map { providers.getJSONArray("providers").getJSONObject(it).getString("id") }
+            assertTrue(providerIds.toString(), "qq" in providerIds && "gmail" in providerIds && "163" in providerIds)
+            assertFalse("presets never carry an account", providers.toString().contains("@"))
             assertEquals("[]", plugin.listSavedAccounts().getString(MailContract.KEY_ACCOUNTS_JSON))
             assertEquals(MailContract.CONTRACT_VERSION, plugin.listProviders().getInt(MailContract.KEY_CONTRACT_VERSION))
 
@@ -145,40 +149,82 @@ class AngusMailPluginContractTest {
             assertEquals(MailContract.STATE_CLOSED, refused.getString(MailContract.FIELD_STATE))
             assertEquals(MailErrorCodes.INVALID_ARGUMENT, refused.getJSONObject(MailContract.FIELD_LAST_ERROR).getString(MailContract.FIELD_ERROR_CODE))
 
-            val account = Bundle().apply {
-                putInt(MailContract.KEY_CONTRACT_VERSION, MailContract.CONTRACT_VERSION)
-                putLong(MailContract.KEY_HOST_VERSION_CODE, AngusMailPlugin.REQUIRED_HOST_VERSION)
-                putString(MailContract.KEY_ACCOUNT_JSON, """{"address":"alice@example.org","auth":"password"}""")
-                putString(MailContract.KEY_SECRET_PASSWORD, "not-a-real-secret")
-            }
+            val endpointless = accountBundle("""{"address":"alice@example.org","auth":"password"}""")
+            assertNull("an account without any endpoint must be refused by the mail core", plugin.openSession(endpointless, sessionCallback))
+            val noEndpoint = JSONObject(requireNotNull(statuses.poll(5, TimeUnit.SECONDS)))
+            assertEquals(MailErrorCodes.INVALID_ARGUMENT, noEndpoint.getJSONObject(MailContract.FIELD_LAST_ERROR).getString(MailContract.FIELD_ERROR_CODE))
+            assertTrue(noEndpoint.getJSONObject(MailContract.FIELD_LAST_ERROR).getString(MailContract.FIELD_ERROR_MESSAGE).contains("no imap, pop3 or smtp endpoint"))
+            assertFalse(noEndpoint.toString().contains(FAKE_SECRET))
+
+            // Loopback endpoints: nothing listens there unless the maintainer mapped GreenMail with adb reverse,
+            // so session.test either succeeds or reports CONNECT_FAILED; both prove the round trip.
+            val account = accountBundle(
+                """{"address":"alice@localhost","user":"alice","debug":true,
+                    "imap":{"host":"127.0.0.1","port":3143,"tls":"none"},
+                    "smtp":{"host":"127.0.0.1","port":3025,"tls":"none"},
+                    "timeout":{"connect":2000,"read":3000}}""",
+            )
             val session = requireNotNull(plugin.openSession(account, sessionCallback)) { "a valid account bundle must open a session" }
-            assertEquals(MailContract.STATE_OPEN, JSONObject(session.status.getString(MailContract.KEY_STATUS_JSON)!!).getString(MailContract.FIELD_STATE))
+            val openStatus = JSONObject(session.status.getString(MailContract.KEY_STATUS_JSON)!!)
+            assertEquals(MailContract.STATE_OPEN, openStatus.getString(MailContract.FIELD_STATE))
+            assertEquals("no network before the first call", 0, openStatus.getJSONArray("connected").length())
 
             val results = LinkedBlockingQueue<Pair<String, String>>()
+            val progressDocuments = LinkedBlockingQueue<String>()
             val callCallback = object : IMailCallCallback.Stub() {
-                override fun onProgress(progress: Bundle?) = Unit
+                override fun onProgress(progress: Bundle?) {
+                    progress?.getString(MailContract.KEY_PROGRESS_JSON)?.let(progressDocuments::add)
+                }
 
                 override fun onResult(response: Bundle?) {
                     results.add(Thread.currentThread().name to response?.getString(MailContract.KEY_RESPONSE_JSON).orEmpty())
                 }
             }
-            val response = call(session::call, callCallback, results, "req-1", MailContract.OP_SESSION_TEST)
-            assertFalse(response.second.getBoolean(MailContract.FIELD_OK))
-            assertEquals(MailErrorCodes.UNSUPPORTED_OPERATION, response.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
-            assertFalse(response.second.getJSONObject(MailContract.FIELD_ERROR).getBoolean(MailContract.FIELD_ERROR_RETRYABLE))
-            assertEquals("results must come from the session executor, not the Binder thread", "angus-mail-session", response.first)
+            val test = call(session::call, callCallback, results, "req-1", MailContract.OP_SESSION_TEST)
+            assertTrue(test.second.toString(), test.second.getBoolean(MailContract.FIELD_OK))
+            assertEquals("results must come from the session executor, not the Binder thread", "angus-mail-session", test.first)
+            val result = test.second.getJSONObject(MailContract.FIELD_RESULT)
+            assertEquals("alice@localhost", result.getJSONObject("account").getString("address"))
+            assertTrue(result.getJSONObject("account").getBoolean("insecure"))
+            val imap = result.getJSONObject("imap")
+            assertEquals(3143, imap.getInt("port"))
+            if (!imap.getBoolean("ok")) {
+                assertEquals(imap.toString(), MailErrorCodes.CONNECT_FAILED, imap.getJSONObject("error").getString(MailContract.FIELD_ERROR_CODE))
+                assertTrue(imap.getJSONObject("error").getBoolean(MailContract.FIELD_ERROR_RETRYABLE))
+            }
+            assertFalse("the secret never enters a document", test.second.toString().contains(FAKE_SECRET))
+            val debug = JSONObject(requireNotNull(progressDocuments.poll(1, TimeUnit.SECONDS)) { "debug:true must deliver the redacted trace before the result" })
+            assertEquals("req-1", debug.getString(MailContract.FIELD_ID))
+            val lines = debug.getJSONArray("debug")
+            val traced = (0 until lines.length()).joinToString(" | ") { lines.getString(it) }
+            assertTrue(traced, lines.length() >= 2 && traced.contains("imap connect 127.0.0.1:3143/none password"))
+            assertFalse(traced.contains(FAKE_SECRET))
 
-            val unknown = call(session::call, callCallback, results, "req-2", "messages.purge")
+            val pending = call(session::call, callCallback, results, "req-2", MailContract.OP_MESSAGES_LIST)
+            assertFalse(pending.second.getBoolean(MailContract.FIELD_OK))
+            assertEquals(MailErrorCodes.UNSUPPORTED_OPERATION, pending.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
+            assertFalse(pending.second.getJSONObject(MailContract.FIELD_ERROR).getBoolean(MailContract.FIELD_ERROR_RETRYABLE))
+
+            val unknown = call(session::call, callCallback, results, "req-3", "messages.purge")
             assertEquals(MailErrorCodes.INVALID_ARGUMENT, unknown.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
 
-            val closed = call(session::call, callCallback, results, "req-3", MailContract.OP_SESSION_CLOSE)
+            val closed = call(session::call, callCallback, results, "req-4", MailContract.OP_SESSION_CLOSE)
             assertTrue(closed.second.getBoolean(MailContract.FIELD_OK))
             val closedStatus = JSONObject(requireNotNull(statuses.poll(5, TimeUnit.SECONDS)))
             assertEquals(MailContract.STATE_CLOSED, closedStatus.getString(MailContract.FIELD_STATE))
             assertEquals(MailContract.STATE_CLOSED, JSONObject(session.status.getString(MailContract.KEY_STATUS_JSON)!!).getString(MailContract.FIELD_STATE))
+            val afterClose = call(session::call, callCallback, results, "req-5", MailContract.OP_SESSION_TEST)
+            assertEquals(MailErrorCodes.SESSION_CLOSED, afterClose.second.getJSONObject(MailContract.FIELD_ERROR).getString(MailContract.FIELD_ERROR_CODE))
             session.close()
             assertNull("no further status after an idempotent close", statuses.poll(500, TimeUnit.MILLISECONDS))
         }
+    }
+
+    private fun accountBundle(json: String): Bundle = Bundle().apply {
+        putInt(MailContract.KEY_CONTRACT_VERSION, MailContract.CONTRACT_VERSION)
+        putLong(MailContract.KEY_HOST_VERSION_CODE, AngusMailPlugin.REQUIRED_HOST_VERSION)
+        putString(MailContract.KEY_ACCOUNT_JSON, json)
+        putString(MailContract.KEY_SECRET_PASSWORD, FAKE_SECRET)
     }
 
     private fun call(
@@ -258,6 +304,7 @@ class AngusMailPluginContractTest {
     }
 
     private companion object {
+        const val FAKE_SECRET = "not-a-real-secret"
         const val PLUGIN_PERMISSION = "org.autojs.permission.PLUGIN"
         const val WAKE_ACTION = "org.autojs.plugin.action.WAKE"
         const val WAKE_ACTIVITY_META_DATA = "org.autojs.plugin.WAKE_ACTIVITY"
