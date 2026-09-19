@@ -6,11 +6,21 @@
 
     <!--
         Outbound IMAP / POP3 / SMTP connections to the mail servers a script names (roadmap D13 / D24).
-        The plugin opens no other connections, hosts no listener, and asks for no storage, notification,
-        foreground-service, or battery-optimization permission.
+        The plugin opens no other connections, hosts no listener, and asks for no storage, notification
+        or foreground-service permission.
     -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!--
+        Backs the battery-optimization guide row of the settings page only (roadmap P4.6, D27): the row
+        shows PowerManager.isIgnoringBatteryOptimizations and, when the user asks, opens the system
+        dialog. Nothing is requested on start and no feature depends on the exclusion. The BatteryLife
+        lint note concerns store policy; this plugin is sideloaded through the AutoJs6 plugin center.
+    -->
+    <uses-permission
+        android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+        tools:ignore="BatteryLife" />
 
     <queries>
         <package android:name="org.autojs.autojs6" />

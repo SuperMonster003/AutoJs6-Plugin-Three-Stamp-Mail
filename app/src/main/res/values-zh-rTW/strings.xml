@@ -34,6 +34,13 @@
     <string name="accounts_summary_send_only">僅傳送</string>
     <string name="accounts_title">已儲存帳戶</string>
     <string name="action_save">儲存</string>
+    <string name="battery_dialog_action">繼續</string>
+    <string name="battery_dialog_message">Android 可能為省電而在背景暫停應用程式, 這會中斷指令碼保持開啟的電子郵件工作階段. 排除本外掛程式後這些工作階段可以繼續; 除此之外不改變任何行為, 也從不是必需的. 下一步是系統對話方塊.</string>
+    <string name="battery_dialog_title">忽略電池最佳化?</string>
+    <string name="battery_request_failed">此裝置不提供電池最佳化畫面</string>
+    <string name="battery_summary_ignored">已排除: 系統不會在背景暫停本外掛程式的電子郵件工作階段; 點按以管理</string>
+    <string name="battery_summary_optimized">已套用: 系統可能暫停長時間執行的工作階段; 點按以申請排除</string>
+    <string name="battery_title">電池最佳化</string>
     <string name="dark_mode_dark">深色</string>
     <string name="dark_mode_light">淺色</string>
     <string name="editor_action_test">測試連線</string>
@@ -115,6 +122,7 @@
     <string name="settings_language">語言</string>
     <string name="settings_saved">應用程式設定已儲存</string>
     <string name="settings_section_appearance">外觀</string>
+    <string name="settings_section_background">背景</string>
     <string name="settings_section_information">資訊</string>
     <string name="settings_theme_color">主題色</string>
     <string name="settings_title">設定</string>

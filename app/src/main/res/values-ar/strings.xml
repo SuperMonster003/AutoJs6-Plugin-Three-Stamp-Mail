@@ -34,6 +34,13 @@
     <string name="accounts_summary_send_only">إرسال فقط</string>
     <string name="accounts_title">الحسابات المحفوظة</string>
     <string name="action_save">حفظ</string>
+    <string name="battery_dialog_action">متابعة</string>
+    <string name="battery_dialog_message">قد يوقف Android التطبيقات مؤقتا في الخلفية لتوفير الطاقة, مما قد يقطع جلسة بريد يبقيها سكربت مفتوحة. استثناء هذه الإضافة يتيح لتلك الجلسات الاستمرار; ولا يغير أي شيء آخر وليس مطلوبا أبدا. الشاشة التالية هي مربع حوار النظام.</string>
+    <string name="battery_dialog_title">هل تريد تجاهل تحسين البطارية?</string>
+    <string name="battery_request_failed">لا يوفر هذا الجهاز شاشة لتحسين البطارية</string>
+    <string name="battery_summary_ignored">مستثنى: لن يوقف النظام جلسات البريد لهذه الإضافة مؤقتا في الخلفية; انقر للإدارة</string>
+    <string name="battery_summary_optimized">مطبق: قد يوقف النظام الجلسات الطويلة مؤقتا; انقر لطلب الاستثناء</string>
+    <string name="battery_title">تحسين البطارية</string>
     <string name="dark_mode_dark">داكن</string>
     <string name="dark_mode_light">فاتح</string>
     <string name="editor_action_test">اختبار الاتصال</string>
@@ -115,6 +122,7 @@
     <string name="settings_language">اللغة</string>
     <string name="settings_saved">تم حفظ إعدادات التطبيق</string>
     <string name="settings_section_appearance">المظهر</string>
+    <string name="settings_section_background">الخلفية</string>
     <string name="settings_section_information">المعلومات</string>
     <string name="settings_theme_color">لون السمة</string>
     <string name="settings_title">الإعدادات</string>

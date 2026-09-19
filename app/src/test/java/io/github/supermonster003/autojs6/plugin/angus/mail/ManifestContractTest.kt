@@ -26,7 +26,12 @@ class ManifestContractTest {
     fun `manifest declares exactly the plugin and network permissions and queries the host package`() {
         val permissions = manifest.children("uses-permission").map { it.androidAttribute("name") }
         assertEquals(
-            listOf(PLUGIN_PERMISSION, "android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE"),
+            listOf(
+                PLUGIN_PERMISSION,
+                "android.permission.INTERNET",
+                "android.permission.ACCESS_NETWORK_STATE",
+                "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+            ),
             permissions,
         )
 

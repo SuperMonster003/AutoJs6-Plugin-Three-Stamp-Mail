@@ -3,6 +3,7 @@ package io.github.supermonster003.autojs6.plugin.angus.mail
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
@@ -220,6 +221,27 @@ class SettingsScreensDeviceTest {
                 assertTrue(texts.toString(), texts.any { it.contains("P4.2") })
             }
         }
+    }
+
+    @Test
+    fun batteryGuideShowsTheSystemStateAndTheSystemDialogIsReachable() {
+        val ignored = BatteryOptimization.isIgnored(context)
+        val expected = context.getString(if (ignored) R.string.battery_summary_ignored else R.string.battery_summary_optimized)
+        ActivityScenario.launch(AppSettingsActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val texts = activity.root().descendants().filterIsInstance<TextView>().map { it.text.toString() }.toList()
+                assertTrue(texts.toString(), context.getString(R.string.battery_title) in texts)
+                assertTrue(texts.toString(), expected in texts)
+            }
+        }
+        assertEquals(
+            PackageManager.PERMISSION_GRANTED,
+            context.packageManager.checkPermission(BatteryOptimization.PERMISSION, context.packageName),
+        )
+        val request = BatteryOptimization.exclusionRequest(context)
+        assertEquals("package:" + context.packageName, request.dataString)
+        @Suppress("DEPRECATION")
+        assertTrue("the system offers the exclusion dialog", context.packageManager.queryIntentActivities(request, 0).isNotEmpty())
     }
 
     private fun aliasBundle(alias: String): Bundle = Bundle().apply {

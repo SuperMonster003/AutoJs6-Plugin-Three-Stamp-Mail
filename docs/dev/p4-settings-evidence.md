@@ -152,6 +152,25 @@ changelogs agree with the English versions, dates and item counts and every item
 device case `SettingsScreensDeviceTest.releaseHistoryRendersTheBundledChangelog` (the screen shows
 `v1.0.0`, an entry naming `P4.2`, and not the load-failed state) passes on both devices.
 
+## P4.6 battery-optimization guide
+
+`BatteryOptimization` reads `PowerManager.isIgnoringBatteryOptimizations` and names the two system
+screens; the "Background" section of `AppSettingsActivity` shows the state as its row summary,
+explains the change in a dialog before opening `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`
+(`package:` URI), opens `ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS` instead when the plugin is
+already excluded, and re-reads the state in `onResume`. The manifest declares
+`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (D27; `tools:ignore="BatteryLife"`, the plugin is sideloaded),
+`ManifestContractTest` pins the four permissions, the README security section and the changelog
+state the reason. Nothing is requested on start and no feature depends on the exclusion.
+Device case `SettingsScreensDeviceTest.batteryGuideShowsTheSystemStateAndTheSystemDialogIsReachable`
+(row and state summary present, permission granted, `package:` URI, the system dialog resolves) passes
+on both devices. Manual round trip: on AVD API 24 and Sony API 28 the explanation dialog leads to the
+AOSP system dialog ("Ignore battery optimizations?" / "Let app always run in background?"), allowing it
+and returning shows the summary as excluded; the Redmi API 33 (MIUI) routes the same intent to its own
+"Background settings" page for the plugin, choosing "No restrictions" and returning shows the summary as
+excluded too; `dumpsys deviceidle whitelist` lists the plugin on all three afterwards (screenshots
+`build/p4/shot-*-battery*.png`, not committed).
+
 ## Credential audit
 
 - `grep` of the new sources for `Log.` / `println`: none; the store never logs.

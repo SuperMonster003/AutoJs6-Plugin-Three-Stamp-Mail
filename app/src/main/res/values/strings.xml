@@ -34,6 +34,13 @@
     <string name="accounts_summary_send_only">Send only</string>
     <string name="accounts_title">Saved accounts</string>
     <string name="action_save">Save</string>
+    <string name="battery_dialog_action">Continue</string>
+    <string name="battery_dialog_message">Android may pause apps in the background to save power, which can interrupt a mail session a script keeps open. Excluding this plugin lets those sessions continue; it changes nothing else and is never required. The next screen is the system dialog.</string>
+    <string name="battery_dialog_title">Ignore battery optimization?</string>
+    <string name="battery_request_failed">This device offers no battery optimization screen</string>
+    <string name="battery_summary_ignored">Excluded: the system will not pause this plugin\'s mail sessions in the background; tap to manage</string>
+    <string name="battery_summary_optimized">Applied: the system may pause long-running sessions; tap to ask for an exclusion</string>
+    <string name="battery_title">Battery optimization</string>
     <string name="dark_mode_dark">Dark</string>
     <string name="dark_mode_light">Light</string>
     <string name="editor_action_test">Test connection</string>
@@ -115,6 +122,7 @@
     <string name="settings_language">Language</string>
     <string name="settings_saved">Application settings saved</string>
     <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_background">Background</string>
     <string name="settings_section_information">Information</string>
     <string name="settings_theme_color">Theme color</string>
     <string name="settings_title">Settings</string>

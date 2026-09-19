@@ -34,7 +34,8 @@
     "Binder 進入點受 `org.autojs.permission.PLUGIN` 簽章權限保護, 只有 AutoJs6 能夠存取; 外掛程式不匯出其他元件.",
     "INTERNET 權限只用於指令碼指定伺服器的 IMAP, POP3 和 SMTP 連線; 外掛程式不發起其他請求, 也不收集任何資料.",
     "密碼與權杖從指令碼到外掛程式經 Binder 的專用欄位傳遞, 不會出現在記錄檔, JSON 文件, 錯誤訊息或當機報告中, 且只在工作階段生命週期內駐留記憶體. 設定頁儲存的帳號由 Android Keystore 金鑰加密, 並排除在備份之外.",
-    "連線預設使用 TLS (按服務商要求選擇 SSL 或 STARTTLS); 明文連線與自簽憑證必須為每個帳號明確宣告."
+    "連線預設使用 TLS (按服務商要求選擇 SSL 或 STARTTLS); 明文連線與自簽憑證必須為每個帳號明確宣告.",
+    "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS 權限只服務於設定頁的引導按鈕: 按鈕顯示系統是否可能在背景暫停外掛程式, 並在使用者要求時開啟系統對話方塊; 外掛程式從不自行請求, 也沒有任何功能依賴該排除."
   ],
   "p_security_permission": "請只從官方 [Releases]({{ repo_url }}/releases) 頁面或 AutoJs6 外掛中心取得外掛. 來源不明的安裝套件即使版本號相同, 也可能無法通過主程式驗證或帶來風險.",
   "h3_plugin_interface": "外掛介面",

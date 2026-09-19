@@ -34,7 +34,8 @@
     "The Binder entry points are protected by the `org.autojs.permission.PLUGIN` signature permission, so only AutoJs6 can reach them; the plugin exports no other components.",
     "The INTERNET permission serves only the IMAP, POP3, and SMTP connections to the servers a script names; the plugin makes no other requests and collects no data.",
     "Passwords and tokens travel from the script to the plugin in dedicated Binder fields, never appear in logs, JSON documents, error messages, or crash reports, and stay in memory only for the lifetime of a session. Accounts saved on the settings page are encrypted with an Android Keystore key and excluded from backups.",
-    "Connections use TLS by default (SSL or STARTTLS as the provider requires); plain connections and self-signed certificates must be requested explicitly per account."
+    "Connections use TLS by default (SSL or STARTTLS as the provider requires); plain connections and self-signed certificates must be requested explicitly per account.",
+    "The REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permission only backs the guide button on the settings page: it shows whether the system may pause the plugin in the background and, on request, opens the system dialog; the plugin never asks on its own, and no feature depends on the exclusion."
   ],
   "p_security_permission": "Only obtain the plugin from the official [Releases]({{ repo_url }}/releases) page or the AutoJs6 plugin center. Packages from unknown sources may fail host verification or carry risks even when the version number looks identical.",
   "h3_plugin_interface": "Plugin Interface",

@@ -34,6 +34,13 @@
     <string name="accounts_summary_send_only">Envoi seulement</string>
     <string name="accounts_title">Comptes enregistrés</string>
     <string name="action_save">Enregistrer</string>
+    <string name="battery_dialog_action">Continuer</string>
+    <string name="battery_dialog_message">Android peut mettre en pause les applications en arrière-plan pour économiser l\'énergie, ce qui peut interrompre une session de courrier qu\'un script garde ouverte. Exclure ce plugin laisse ces sessions se poursuivre ; rien d\'autre ne change et ce n\'est jamais obligatoire. L\'écran suivant est la boîte de dialogue du système.</string>
+    <string name="battery_dialog_title">Ignorer l\'optimisation de la batterie ?</string>
+    <string name="battery_request_failed">Cet appareil ne propose pas d\'écran d\'optimisation de la batterie</string>
+    <string name="battery_summary_ignored">Exclu : le système ne mettra pas en pause les sessions de courrier de ce plugin en arrière-plan ; touchez pour gérer</string>
+    <string name="battery_summary_optimized">Appliquée : le système peut mettre en pause les sessions longues ; touchez pour demander une exclusion</string>
+    <string name="battery_title">Optimisation de la batterie</string>
     <string name="dark_mode_dark">Sombre</string>
     <string name="dark_mode_light">Clair</string>
     <string name="editor_action_test">Tester la connexion</string>
@@ -115,6 +122,7 @@
     <string name="settings_language">Langue</string>
     <string name="settings_saved">Paramètres de l\'application enregistrés</string>
     <string name="settings_section_appearance">Apparence</string>
+    <string name="settings_section_background">Arrière-plan</string>
     <string name="settings_section_information">Informations</string>
     <string name="settings_theme_color">Couleur du thème</string>
     <string name="settings_title">Paramètres</string>

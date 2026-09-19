@@ -11,7 +11,9 @@ import android.text.style.TypefaceSpan
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.annotation.StringRes
+import io.github.supermonster003.autojs6.plugin.angus.mail.ui.SettingRow
 import io.github.supermonster003.autojs6.plugin.angus.mail.ui.buildScaffold
+import io.github.supermonster003.autojs6.plugin.angus.mail.ui.confirmDialog
 import io.github.supermonster003.autojs6.plugin.angus.mail.ui.hairline
 import io.github.supermonster003.autojs6.plugin.angus.mail.ui.inputDialog
 import io.github.supermonster003.autojs6.plugin.angus.mail.ui.sectionHeader
@@ -28,6 +30,7 @@ class AppSettingsActivity : ConfiguredActivity() {
     private lateinit var settingsStore: ApplicationSettingsStore
     private lateinit var settings: ApplicationSettings
     private lateinit var hostResult: AutoJs6HostSettingsResult
+    private var batteryRow: SettingRow? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,8 +83,48 @@ class AppSettingsActivity : ConfiguredActivity() {
         )
     }
 
-    /** Sections between appearance and information; later roadmap items add theirs here. */
-    private fun buildExtraSections(content: LinearLayout) = Unit
+    /** Sections between appearance and information: the battery-optimization guide (roadmap P4.6, D27). */
+    private fun buildExtraSections(content: LinearLayout) {
+        content.addView(sectionHeader(R.string.settings_section_background))
+        val row = settingRow(
+            title = getString(R.string.battery_title),
+            summary = batterySummary(),
+            iconResource = R.drawable.ic_battery_24,
+            onClick = ::onBatteryRowClicked,
+        )
+        batteryRow = row
+        content.addView(row.view)
+        content.addView(hairline())
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // The system dialog or list may have changed the state while this screen was paused.
+        batteryRow?.summaryView?.text = batterySummary()
+    }
+
+    private fun batterySummary(): String = getString(
+        if (BatteryOptimization.isIgnored(this)) R.string.battery_summary_ignored else R.string.battery_summary_optimized,
+    )
+
+    /** Already excluded: the system list lets the user revert; otherwise explain first, then ask. */
+    private fun onBatteryRowClicked() {
+        if (BatteryOptimization.isIgnored(this)) {
+            openBatteryScreen(BatteryOptimization.exclusionList())
+            return
+        }
+        confirmDialog(
+            getString(R.string.battery_dialog_title),
+            getString(R.string.battery_dialog_message),
+            R.string.battery_dialog_action,
+        ) { openBatteryScreen(BatteryOptimization.exclusionRequest(this)) }
+    }
+
+    private fun openBatteryScreen(intent: Intent) {
+        if (!BatteryOptimization.open(this, intent)) {
+            Toast.makeText(this, R.string.battery_request_failed, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     /** Information rows placed above the about entry: the release history (roadmap P4.5, D29). */
     private fun buildInformationRows(content: LinearLayout) {

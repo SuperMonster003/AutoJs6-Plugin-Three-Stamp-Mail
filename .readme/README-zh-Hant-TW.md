@@ -115,6 +115,7 @@ watch.on('message', m => { if (/code/i.test(m.subject)) console.log(m.text); });
 - INTERNET 權限只用於指令碼指定伺服器的 IMAP, POP3 和 SMTP 連線; 外掛程式不發起其他請求, 也不收集任何資料.
 - 密碼與權杖從指令碼到外掛程式經 Binder 的專用欄位傳遞, 不會出現在記錄檔, JSON 文件, 錯誤訊息或當機報告中, 且只在工作階段生命週期內駐留記憶體. 設定頁儲存的帳號由 Android Keystore 金鑰加密, 並排除在備份之外.
 - 連線預設使用 TLS (按服務商要求選擇 SSL 或 STARTTLS); 明文連線與自簽憑證必須為每個帳號明確宣告.
+- REQUEST_IGNORE_BATTERY_OPTIMIZATIONS 權限只服務於設定頁的引導按鈕: 按鈕顯示系統是否可能在背景暫停外掛程式, 並在使用者要求時開啟系統對話方塊; 外掛程式從不自行請求, 也沒有任何功能依賴該排除.
 
 請只從官方 [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) 頁面或 AutoJs6 外掛中心取得外掛. 來源不明的安裝套件即使版本號相同, 也可能無法通過主程式驗證或帶來風險.
 
@@ -174,6 +175,7 @@ _2026/09/19_
 - `新增` 設定頁 (路線圖 P4.2): 啟動器圖示開啟帳戶頁, 列出每個已儲存帳戶的地址, 服務商, 收信協定與驗證方式, 提供編輯, 測試連線, 設為或取消預設以及刪除; 帳戶編輯頁可按服務商預設自動填入, 也可填寫自訂 IMAP / POP3 / SMTP 伺服器及其加密方式與連接埠, 密碼或存取權杖直接從輸入欄讀入用後即清零的 `CharArray`, 編輯時留空則沿用已儲存的秘密, 儲存前可對所填伺服器執行 `session.test` 並按協定顯示結果與耗時而不寫入磁碟; 頁面跟隨 AutoJs6 宿主的主題, 夜間模式與語言, 編輯頁重建後還原除秘密外的全部欄位
 - `新增` 設定入口 (路線圖 P4.3): AutoJs6 宿主經匯出的 `org.autojs.plugin.MAIL_SETTINGS` 活動開啟帳戶頁, 該活動要求外掛程式權限, 只接受無參數的請求並立即結束; 能力集合宣告 `mailSettingsVersion` 1; 啟動器入口本身不帶該權限
 - `新增` 發行歷史 (路線圖 P4.5): 設定頁與關於頁可開啟發行歷史頁, 內容取自隨外掛程式打包的目前語言更新記錄 (無對應翻譯時回退英語), 每個版本一張卡片, 含日期與帶標籤的條目; 外掛程式不做自身的更新檢查, 更新跟隨 AutoJs6 外掛程式中心
+- `新增` 電池最佳化引導 (路線圖 P4.6): 設定頁顯示系統是否可能在背景暫停本外掛程式 (`PowerManager.isIgnoringBatteryOptimizations`), 說明影響後經 `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` 開啟系統對話方塊; 資訊清單因此宣告 `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`; 啟動時不發起任何請求, 也沒有功能依賴該排除
 - `修復` 服務商預設 (路線圖 P3.2): 163 信箱與 126 信箱會在伺服器端保存每封經 SMTP 發出的郵件, 兩者的 `autoSavesSent` 改為 true, 預設 `saveToSent` 不再向 `已发送` 追加第二份副本 (真實 163 帳戶核實: `saveToSent: false` 發出的郵件數分鐘後出現在已發送資料夾)
 - `修復` AGP 9.1 建置時的 SDK XML v4 解析警告及 JVM 單元測試組裝工作誤觸發 APK 原生程式庫對齊檢查的問題 (共用建置外掛 1.8.3)
 - `優化` 錯誤對應: POP3 伺服器在登入後因帳戶未開啟 POP 存取而拒絕信箱 (Gmail 對 STAT 回應 `[SYS/PERM] Your account is not enabled for POP access`) 時, 現在得到說明原因的 `UNSUPPORTED_OPERATION`, 而不是可重試的 `IO_FAILED` "I/O failed"

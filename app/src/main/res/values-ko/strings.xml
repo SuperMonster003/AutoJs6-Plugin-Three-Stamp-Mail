@@ -34,6 +34,13 @@
     <string name="accounts_summary_send_only">보내기 전용</string>
     <string name="accounts_title">저장된 계정</string>
     <string name="action_save">저장</string>
+    <string name="battery_dialog_action">계속</string>
+    <string name="battery_dialog_message">Android 는 전력 절약을 위해 백그라운드 앱을 중단할 수 있으며, 스크립트가 열어 둔 메일 세션이 끊길 수 있습니다. 이 플러그인을 제외하면 그 세션이 계속됩니다; 그 밖의 동작은 바뀌지 않으며 필수도 아닙니다. 다음 화면은 시스템 대화 상자입니다.</string>
+    <string name="battery_dialog_title">배터리 최적화를 무시할까요?</string>
+    <string name="battery_request_failed">이 기기에는 배터리 최적화 화면이 없습니다</string>
+    <string name="battery_summary_ignored">제외됨: 시스템이 이 플러그인의 메일 세션을 백그라운드에서 중단하지 않습니다; 탭하여 관리</string>
+    <string name="battery_summary_optimized">적용됨: 시스템이 오래 실행되는 세션을 중단할 수 있습니다; 탭하여 제외를 요청</string>
+    <string name="battery_title">배터리 최적화</string>
     <string name="dark_mode_dark">다크</string>
     <string name="dark_mode_light">라이트</string>
     <string name="editor_action_test">연결 테스트</string>
@@ -115,6 +122,7 @@
     <string name="settings_language">언어</string>
     <string name="settings_saved">앱 설정이 저장되었습니다</string>
     <string name="settings_section_appearance">모양</string>
+    <string name="settings_section_background">백그라운드</string>
     <string name="settings_section_information">정보</string>
     <string name="settings_theme_color">테마 색상</string>
     <string name="settings_title">설정</string>

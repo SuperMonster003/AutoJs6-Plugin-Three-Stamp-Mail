@@ -115,6 +115,7 @@ watch.on('message', m => { if (/code/i.test(m.subject)) console.log(m.text); });
 - INTERNET 权限只用于脚本指定服务器的 IMAP, POP3 和 SMTP 连接; 插件不发起其他请求, 也不收集任何数据.
 - 密码与令牌从脚本到插件经 Binder 的专用字段传递, 不会出现在日志, JSON 文档, 错误消息或崩溃报告中, 且只在会话生命周期内驻留内存. 设置页保存的账户由 Android Keystore 密钥加密, 并排除在备份之外.
 - 连接默认使用 TLS (按服务商要求选择 SSL 或 STARTTLS); 明文连接与自签名证书必须为每个账户显式声明.
+- REQUEST_IGNORE_BATTERY_OPTIMIZATIONS 权限只服务于设置页的引导按钮: 按钮显示系统是否可能在后台暂停插件, 并在用户要求时打开系统对话框; 插件从不自行请求, 也没有任何功能依赖该排除.
 
 请只从官方 [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) 页面或 AutoJs6 插件中心获取插件. 来源不明的安装包即使版本号相同, 也可能无法通过宿主校验或带来风险.
 
@@ -174,6 +175,7 @@ _2026/09/19_
 - `新增` 设置页 (路线图 P4.2): 启动器图标打开账户页, 列出每个已保存账户的地址, 服务商, 收信协议与认证方式, 提供编辑, 测试连接, 设为或取消默认以及删除; 账户编辑页可按服务商预设自动填充, 也可填写自定义 IMAP / POP3 / SMTP 服务器及其加密方式与端口, 密码或访问令牌直接从输入框读入用后即清零的 `CharArray`, 编辑时留空则沿用已保存的秘密, 保存前可对所填服务器执行 `session.test` 并按协议展示结果与耗时而不落盘; 页面跟随 AutoJs6 宿主的主题, 夜间模式与语言, 编辑页重建后恢复除秘密外的全部字段
 - `新增` 设置入口 (路线图 P4.3): AutoJs6 宿主经导出的 `org.autojs.plugin.MAIL_SETTINGS` 活动打开账户页, 该活动要求插件权限, 只接受无参数的请求并立即结束; 能力集合宣告 `mailSettingsVersion` 1; 启动器入口本身不带该权限
 - `新增` 发行历史 (路线图 P4.5): 设置页与关于页可打开发行历史页, 内容取自随插件打包的当前语言更新日志 (无对应翻译时回退英语), 每个版本一张卡片, 含日期与带标签的条目; 插件不做自身的更新检查, 更新跟随 AutoJs6 插件中心
+- `新增` 电池优化引导 (路线图 P4.6): 设置页显示系统是否可能在后台暂停本插件 (`PowerManager.isIgnoringBatteryOptimizations`), 说明影响后经 `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` 打开系统对话框; 清单因此声明 `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`; 启动时不发起任何请求, 也没有功能依赖该排除
 - `修复` 服务商预设 (路线图 P3.2): 163 邮箱与 126 邮箱会在服务器端保存每封经 SMTP 发出的邮件, 两者的 `autoSavesSent` 改为 true, 默认 `saveToSent` 不再向 `已发送` 追加第二份副本 (真实 163 账户核实: `saveToSent: false` 发出的邮件数分钟后出现在已发送文件夹)
 - `修复` AGP 9.1 构建时的 SDK XML v4 解析警告及 JVM 单元测试组装任务误触发 APK 原生库对齐检查的问题 (共享构建插件 1.8.3)
 - `优化` 错误映射: POP3 服务器在登录后因账户未开启 POP 访问而拒绝邮箱 (Gmail 对 STAT 答 `[SYS/PERM] Your account is not enabled for POP access`) 时, 现在得到说明原因的 `UNSUPPORTED_OPERATION`, 而不是可重试的 `IO_FAILED` "I/O failed"

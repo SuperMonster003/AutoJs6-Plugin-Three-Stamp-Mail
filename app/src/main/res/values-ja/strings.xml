@@ -34,6 +34,13 @@
     <string name="accounts_summary_send_only">送信のみ</string>
     <string name="accounts_title">保存済みアカウント</string>
     <string name="action_save">保存</string>
+    <string name="battery_dialog_action">続行</string>
+    <string name="battery_dialog_message">Android は省電力のためバックグラウンドのアプリを一時停止することがあり, スクリプトが開いたままにしているメールセッションが中断されることがあります. このプラグインを除外するとそれらのセッションを継続できます; それ以外の動作は変わらず, 必須でもありません. 次の画面はシステムのダイアログです.</string>
+    <string name="battery_dialog_title">電池の最適化を無視しますか?</string>
+    <string name="battery_request_failed">この端末には電池の最適化の画面がありません</string>
+    <string name="battery_summary_ignored">除外済み: システムはこのプラグインのメールセッションをバックグラウンドで一時停止しません; タップして管理</string>
+    <string name="battery_summary_optimized">適用中: システムは長時間のセッションを一時停止することがあります; タップして除外を申請</string>
+    <string name="battery_title">電池の最適化</string>
     <string name="dark_mode_dark">ダーク</string>
     <string name="dark_mode_light">ライト</string>
     <string name="editor_action_test">接続をテスト</string>
@@ -115,6 +122,7 @@
     <string name="settings_language">言語</string>
     <string name="settings_saved">アプリ設定を保存しました</string>
     <string name="settings_section_appearance">外観</string>
+    <string name="settings_section_background">バックグラウンド</string>
     <string name="settings_section_information">情報</string>
     <string name="settings_theme_color">テーマ色</string>
     <string name="settings_title">設定</string>

@@ -34,6 +34,13 @@
     <string name="accounts_summary_send_only">Только отправка</string>
     <string name="accounts_title">Сохранённые учётные записи</string>
     <string name="action_save">Сохранить</string>
+    <string name="battery_dialog_action">Продолжить</string>
+    <string name="battery_dialog_message">Android может приостанавливать приложения в фоне ради экономии энергии, что прерывает почтовый сеанс, который держит открытым скрипт. Исключение этого плагина позволяет таким сеансам продолжаться; больше ничего не меняется, и это никогда не обязательно. Следующий экран - системный диалог.</string>
+    <string name="battery_dialog_title">Игнорировать оптимизацию батареи?</string>
+    <string name="battery_request_failed">На этом устройстве нет экрана оптимизации батареи</string>
+    <string name="battery_summary_ignored">Исключён: система не будет приостанавливать почтовые сеансы этого плагина в фоне; нажмите, чтобы изменить</string>
+    <string name="battery_summary_optimized">Применяется: система может приостанавливать длительные сеансы; нажмите, чтобы запросить исключение</string>
+    <string name="battery_title">Оптимизация батареи</string>
     <string name="dark_mode_dark">Темная</string>
     <string name="dark_mode_light">Светлая</string>
     <string name="editor_action_test">Проверить подключение</string>
@@ -115,6 +122,7 @@
     <string name="settings_language">Язык</string>
     <string name="settings_saved">Настройки приложения сохранены</string>
     <string name="settings_section_appearance">Оформление</string>
+    <string name="settings_section_background">Фоновая работа</string>
     <string name="settings_section_information">Информация</string>
     <string name="settings_theme_color">Цвет темы</string>
     <string name="settings_title">Настройки</string>
