@@ -53,7 +53,7 @@ class ManifestContractTest {
 
         val activities = application.children("activity").associateBy { it.androidAttribute("name") }
         assertEquals(
-            setOf(".settings.AccountsActivity", ".settings.AccountEditorActivity", ".AppSettingsActivity", ".AboutActivity", ".MailSettingsActivity", ".WakeActivity"),
+            setOf(".settings.AccountsActivity", ".settings.AccountEditorActivity", ".AppSettingsActivity", ".AboutActivity", ".ReleaseHistoryActivity", ".MailSettingsActivity", ".WakeActivity"),
             activities.keys,
         )
         val wake = activities.getValue(".WakeActivity")
@@ -92,6 +92,7 @@ class ManifestContractTest {
             ".settings.AccountEditorActivity" to ".settings.AccountsActivity",
             ".AppSettingsActivity" to ".settings.AccountsActivity",
             ".AboutActivity" to ".AppSettingsActivity",
+            ".ReleaseHistoryActivity" to ".AppSettingsActivity",
         )
         chain.forEach { (name, parent) ->
             val activity = activities.getValue(name)

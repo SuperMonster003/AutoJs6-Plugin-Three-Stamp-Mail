@@ -108,6 +108,9 @@
     <string name="navigation_back">返回</string>
     <string name="open_link_failed">无法打开链接</string>
     <string name="plugin_description">通过 IMAP, POP3 和 SMTP 收发, 搜索和监听邮件</string>
+    <string name="release_history_load_failed">无法加载版本历史</string>
+    <string name="release_history_summary">查看应用内置的版本历史</string>
+    <string name="release_history_title">版本历史</string>
     <string name="settings_dark_mode">暗色模式</string>
     <string name="settings_language">语言</string>
     <string name="settings_saved">应用设置已保存</string>

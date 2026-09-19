@@ -108,6 +108,9 @@
     <string name="navigation_back">戻る</string>
     <string name="open_link_failed">リンクを開けませんでした</string>
     <string name="plugin_description">IMAP, POP3, SMTP でメールを送受信, 検索, 監視する</string>
+    <string name="release_history_load_failed">バージョン履歴を読み込めませんでした</string>
+    <string name="release_history_summary">アプリに含まれるバージョン履歴を表示します</string>
+    <string name="release_history_title">バージョン履歴</string>
     <string name="settings_dark_mode">ダークモード</string>
     <string name="settings_language">言語</string>
     <string name="settings_saved">アプリ設定を保存しました</string>

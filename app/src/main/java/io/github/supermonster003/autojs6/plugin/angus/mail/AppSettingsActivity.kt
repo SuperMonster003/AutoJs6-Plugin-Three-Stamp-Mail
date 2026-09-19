@@ -83,8 +83,17 @@ class AppSettingsActivity : ConfiguredActivity() {
     /** Sections between appearance and information; later roadmap items add theirs here. */
     private fun buildExtraSections(content: LinearLayout) = Unit
 
-    /** Information rows placed above the about entry; later roadmap items add theirs here. */
-    private fun buildInformationRows(content: LinearLayout) = Unit
+    /** Information rows placed above the about entry: the release history (roadmap P4.5, D29). */
+    private fun buildInformationRows(content: LinearLayout) {
+        content.addView(
+            settingRow(
+                title = getString(R.string.release_history_title),
+                summary = getString(R.string.release_history_summary),
+                iconResource = R.drawable.ic_article_24,
+                onClick = { startActivity(Intent(this, ReleaseHistoryActivity::class.java)) },
+            ).view,
+        )
+    }
 
     // region Appearance dialogs
 

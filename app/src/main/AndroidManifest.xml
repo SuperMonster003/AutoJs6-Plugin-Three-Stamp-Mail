@@ -79,6 +79,13 @@
             android:parentActivityName=".AppSettingsActivity"
             android:theme="@style/Theme.AngusMail" />
 
+        <activity
+            android:name=".ReleaseHistoryActivity"
+            android:exported="false"
+            android:label="@string/release_history_title"
+            android:parentActivityName=".AppSettingsActivity"
+            android:theme="@style/Theme.AngusMail" />
+
         <!--
             Parameterless settings entry for the host (roadmap P4.3): forwards to AccountsActivity and
             finishes. It carries the plugin permission so only AutoJs6 can start it, which is why the

@@ -139,6 +139,19 @@ still resolves exactly one WAKE activity. Screenshots (`build/p4/shot-*.png`, no
 accounts empty state and editor on the AVD (API 24) and the Sony (API 28) in light mode, on the
 Redmi (API 33) in night mode; provider dialog and the QQ preset prefill on the AVD.
 
+## P4.5 release history
+
+`ReleaseHistoryActivity` (copied from OpenCC) renders the bundled `assets/doc/CHANGELOG-<lang>.md` of
+the current locale as one card per version: `ReleaseHistoryAssetPolicy` maps `zh` by script / region
+to Hans, Hant-TW or Hant-HK (incl. MO), ar / es / fr / ja / ko / ru to their files and everything
+else to English; `ReleaseHistoryParser` reads `# vX.Y.Z`, `###### date` and `` * `tag` text `` lines.
+Rows open it from the information section of `AppSettingsActivity` and from `AboutActivity`; the
+manifest chains it to `AppSettingsActivity`. The plugin performs no update check of its own (D29).
+JVM `ReleaseHistoryTest` (3 cases: locale mapping and asset existence, dialect parsing, the ten bundled
+changelogs agree with the English versions, dates and item counts and every item carries a tag);
+device case `SettingsScreensDeviceTest.releaseHistoryRendersTheBundledChangelog` (the screen shows
+`v1.0.0`, an entry naming `P4.2`, and not the load-failed state) passes on both devices.
+
 ## Credential audit
 
 - `grep` of the new sources for `Log.` / `println`: none; the store never logs.

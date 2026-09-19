@@ -67,7 +67,16 @@ class AboutActivity : ConfiguredActivity() {
     }
 
     /** Rows above the project links; later roadmap items add theirs here. */
-    private fun buildLinkRows(content: LinearLayout) = Unit
+    private fun buildLinkRows(content: LinearLayout) {
+        content.addView(
+            settingRow(
+                title = getString(R.string.release_history_title),
+                summary = getString(R.string.release_history_summary),
+                iconResource = R.drawable.ic_article_24,
+                onClick = { startActivity(Intent(this, ReleaseHistoryActivity::class.java)) },
+            ).view,
+        )
+    }
 
     private fun headerView(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL

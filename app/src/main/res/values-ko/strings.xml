@@ -108,6 +108,9 @@
     <string name="navigation_back">뒤로</string>
     <string name="open_link_failed">링크를 열 수 없습니다</string>
     <string name="plugin_description">IMAP, POP3, SMTP로 메일을 보내고 받고 검색하고 감시합니다</string>
+    <string name="release_history_load_failed">버전 기록을 불러올 수 없습니다</string>
+    <string name="release_history_summary">앱에 포함된 버전 기록을 확인합니다</string>
+    <string name="release_history_title">버전 기록</string>
     <string name="settings_dark_mode">다크 모드</string>
     <string name="settings_language">언어</string>
     <string name="settings_saved">앱 설정이 저장되었습니다</string>

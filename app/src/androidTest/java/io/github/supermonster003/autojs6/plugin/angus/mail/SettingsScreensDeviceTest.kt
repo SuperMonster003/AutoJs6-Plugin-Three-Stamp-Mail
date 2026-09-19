@@ -210,6 +210,18 @@ class SettingsScreensDeviceTest {
         }
     }
 
+    @Test
+    fun releaseHistoryRendersTheBundledChangelog() {
+        ActivityScenario.launch(ReleaseHistoryActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val texts = activity.root().descendants().filterIsInstance<TextView>().map { it.text.toString() }.toList()
+                assertTrue(texts.toString(), "v1.0.0" in texts)
+                assertFalse(texts.toString(), context.getString(R.string.release_history_load_failed) in texts)
+                assertTrue(texts.toString(), texts.any { it.contains("P4.2") })
+            }
+        }
+    }
+
     private fun aliasBundle(alias: String): Bundle = Bundle().apply {
         putInt(MailContract.KEY_CONTRACT_VERSION, MailContract.CONTRACT_VERSION)
         putLong(MailContract.KEY_HOST_VERSION_CODE, AngusMailPlugin.REQUIRED_HOST_VERSION)

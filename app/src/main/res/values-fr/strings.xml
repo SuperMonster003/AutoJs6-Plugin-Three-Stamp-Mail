@@ -108,6 +108,9 @@
     <string name="navigation_back">Retour</string>
     <string name="open_link_failed">Impossible d\'ouvrir le lien</string>
     <string name="plugin_description">Envoie, reçoit, recherche et surveille le courrier via IMAP, POP3 et SMTP</string>
+    <string name="release_history_load_failed">Impossible de charger l\'historique des versions</string>
+    <string name="release_history_summary">Consulter l\'historique des versions inclus dans l\'application</string>
+    <string name="release_history_title">Historique des versions</string>
     <string name="settings_dark_mode">Mode sombre</string>
     <string name="settings_language">Langue</string>
     <string name="settings_saved">Paramètres de l\'application enregistrés</string>

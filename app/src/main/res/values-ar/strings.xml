@@ -108,6 +108,9 @@
     <string name="navigation_back">رجوع</string>
     <string name="open_link_failed">تعذر فتح الرابط</string>
     <string name="plugin_description">يرسل البريد ويستقبله ويبحث فيه ويراقبه عبر IMAP و POP3 و SMTP</string>
+    <string name="release_history_load_failed">تعذر تحميل سجل الإصدارات</string>
+    <string name="release_history_summary">عرض سجل الإصدارات المضمن في التطبيق</string>
+    <string name="release_history_title">سجل الإصدارات</string>
     <string name="settings_dark_mode">الوضع الداكن</string>
     <string name="settings_language">اللغة</string>
     <string name="settings_saved">تم حفظ إعدادات التطبيق</string>

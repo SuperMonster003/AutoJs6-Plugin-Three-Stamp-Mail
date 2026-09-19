@@ -108,6 +108,9 @@
     <string name="navigation_back">Back</string>
     <string name="open_link_failed">Could not open the link</string>
     <string name="plugin_description">Sends, receives, searches, and watches mail over IMAP, POP3, and SMTP</string>
+    <string name="release_history_load_failed">Unable to load the version history</string>
+    <string name="release_history_summary">Read the version history included with this app</string>
+    <string name="release_history_title">Version history</string>
     <string name="settings_dark_mode">Dark mode</string>
     <string name="settings_language">Language</string>
     <string name="settings_saved">Application settings saved</string>
