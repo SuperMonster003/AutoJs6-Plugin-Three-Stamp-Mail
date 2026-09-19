@@ -1,11 +1,15 @@
 package io.github.supermonster003.autojs6.plugin.angus.mail.core.session
 
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.AuthMethod
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccount
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailSecret
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.TlsMode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.MimeLeniency
+import jakarta.mail.AuthenticationFailedException
 import jakarta.mail.Authenticator
+import jakarta.mail.Folder
+import jakarta.mail.MessagingException
 import jakarta.mail.PasswordAuthentication
 import jakarta.mail.Session
 import jakarta.mail.Store
@@ -52,7 +56,42 @@ object MailSessionFactory {
         trace.timed(protocol.id, "connect $endpoint ${account.auth.id}") {
             store.connect(endpoint.host, endpoint.port, account.username, secret.reveal())
         }
+        if (protocol == MailProtocol.POP3 && account.auth == AuthMethod.XOAUTH2) verifyPop3OAuthLogin(store, trace)
         return store
+    }
+
+    /**
+     * Angus Mail 2.0.5 loses a refused POP3 `AUTH XOAUTH2`: the server answers the refusal as a
+     * SASL continuation (`+ <base64 JSON>`, Gmail does so per the XOAUTH2 specification), the
+     * authenticator turns it into an `EOFException` that `Protocol.Authenticator.authenticate`
+     * catches and ignores, and the store reports itself connected while the server still waits
+     * for the SASL exchange to finish, so the first real command fails with `-ERR bad command`
+     * (observed as `IO_FAILED Open failed` in the P6 provider matrix). A `STAT` right after the
+     * login (the INBOX open) tells the two apart; the "not enabled for POP" refusal of a valid
+     * token keeps its own mapping.
+     */
+    private fun verifyPop3OAuthLogin(store: Store, trace: ProtocolTrace) {
+        try {
+            trace.timed(MailProtocol.POP3.id, "verify xoauth2 login") {
+                val inbox = store.getFolder("INBOX")
+                inbox.open(Folder.READ_ONLY)
+                inbox.close(false)
+            }
+        } catch (e: MessagingException) {
+            if (e.chain().any { it.message?.contains("not enabled for POP", ignoreCase = true) == true }) throw e
+            runCatching { store.close() }
+            throw AuthenticationFailedException("the server did not accept the access token", e)
+        }
+    }
+
+    private fun Throwable.chain(): List<Throwable> {
+        val out = ArrayList<Throwable>()
+        var current: Throwable? = this
+        while (current != null && out.size < 8 && current !in out) {
+            out += current
+            current = (current as? MessagingException)?.nextException ?: current.cause
+        }
+        return out
     }
 
     /** Connects an SMTP transport; the caller owns it and must close it. */

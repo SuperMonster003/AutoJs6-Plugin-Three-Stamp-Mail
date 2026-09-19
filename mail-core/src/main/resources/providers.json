@@ -60,7 +60,7 @@
       "requiresClientId": false,
       "idlePush": false,
       "docsUrl": "https://service.mail.qq.com/",
-      "notes": "Server-side SEARCH with non-ASCII text is unreliable; the plugin falls back to client-side filtering. IMAP IDLE is accepted but the server pushes nothing while a client idles (verified 2026-09-19: no untagged response within 10 minutes of a delivery, after SELECT or EXAMINE), so watches poll unless mode 'idle' is asked for."
+      "notes": "Text SEARCH with non-ASCII arguments answers OK with no hits instead of an error, so the default fallback 'client' never triggers: search Chinese text with fallback 'always'. The server rewrites the Message-ID of outgoing mail (a search by messageId finds nothing) and the ENVELOPE To display name (the raw To header keeps the sent one). IMAP CREATE is refused, or the folder vanishes within seconds; the copies the server files in Sent Messages for SMTP-sent mail are listed but stay unaddressable by UID for a while (UID FETCH answers OK without data, STORE answers NO System busy!). Custom keywords are accepted but not stored. IMAP IDLE is accepted but the server pushes nothing while a client idles (verified 2026-09-19: no untagged response within 10 minutes of a delivery, after SELECT or EXAMINE), so watches poll unless mode 'idle' is asked for; new mail becomes visible to a fresh EXAMINE 15-40 s after delivery."
     },
     {
       "id": "163",
@@ -76,7 +76,7 @@
       "requiresClientId": true,
       "idlePush": false,
       "docsUrl": "https://help.mail.163.com/",
-      "notes": "The IMAP server answers Unsafe Login to SELECT and EXAMINE on every connection that has not sent the ID command; the plugin identifies each connection it opens. The server keeps a copy of every message sent through SMTP in the sent folder (it appears with a delay of up to a few minutes), and SEARCH by SUBJECT or FROM answers OK without hits for just-delivered mail. The IMAP server has no IDLE (the command answers BAD), so watches poll."
+      "notes": "The IMAP server answers Unsafe Login to SELECT and EXAMINE on every connection that has not sent the ID command; the plugin identifies each connection it opens. The server keeps a copy of every message sent through SMTP in the sent folder (it appears with a delay of up to a few minutes), and text SEARCH (SUBJECT, FROM, BODY, HEADER Message-ID) answers OK without hits for recent mail while SINCE works: search with fallback 'always'. Spaces in the sender display name come back as underscores. Custom keywords are accepted but not stored. The IMAP server has no IDLE (the command answers BAD), so watches poll. yeah.net uses the same servers policy on imap / pop / smtp.yeah.net (its IMAP does advertise IDLE)."
     },
     {
       "id": "126",
@@ -92,7 +92,7 @@
       "requiresClientId": true,
       "idlePush": false,
       "docsUrl": "https://help.mail.126.com/",
-      "notes": "Same servers policy as 163 Mail: every IMAP connection has to send the ID command before SELECT or EXAMINE; the plugin identifies each connection it opens. The server keeps a copy of every message sent through SMTP in the sent folder (verified with a real account), and SEARCH by SUBJECT or FROM answers OK without hits for just-delivered mail. The IMAP server has no IDLE (the command answers BAD), so watches poll."
+      "notes": "Same servers policy as 163 Mail: every IMAP connection has to send the ID command before SELECT or EXAMINE; the plugin identifies each connection it opens. The server keeps a copy of every message sent through SMTP in the sent folder (verified with a real account). Text SEARCH answered correctly, including Chinese subjects, in the 2026-09-19 matrix, unlike 163; use fallback 'always' when a search must not miss recent mail. Spaces in the sender display name come back as underscores. Custom keywords are accepted but not stored. The IMAP server has no IDLE (the command answers BAD), so watches poll."
     },
     {
       "id": "icloud",
@@ -137,7 +137,7 @@
       "requiresClientId": false,
       "idlePush": false,
       "docsUrl": "https://help.sina.com.cn/",
-      "notes": "The server does not keep a copy of mail sent through SMTP (the plugin appends one to the sent folder), and it answers NO to every IMAP CREATE: folders can only be made in the web UI, so createFolder fails with SERVER_ERROR. IMAP IDLE is accepted but nothing is pushed and the server closes the connection after 60 s of idling (verified 2026-09-19), so watches poll."
+      "notes": "The server does not keep a copy of mail sent through SMTP (the plugin appends one to the sent folder), and it answers NO to every IMAP CREATE: folders can only be made in the web UI, so createFolder fails with SERVER_ERROR. IMAP SEARCH accepts only ALL, SINCE and flag keys; every text key (SUBJECT, FROM, BODY, TEXT, HEADER) answers BAD, so text searches always run on the client (the default fallback). Folder roles come from the folder names (no SPECIAL-USE or XLIST). Custom keywords are accepted but not stored. IMAP IDLE is not advertised; the command is accepted but nothing is pushed and the server closes the connection after 60 s of idling (verified 2026-09-19), so watches poll."
     },
     {
       "id": "aliyun",
