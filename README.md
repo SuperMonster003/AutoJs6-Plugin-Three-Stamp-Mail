@@ -170,6 +170,7 @@ _2026/09/19_
 - `新增` Binder 会话控制 (路线图 P2.5): 只有已安装且与本插件同签名的 AutoJs6 宿主能打开会话或列出已保存账户 (否则 `SecurityException`, 规则与 MCP Server 插件一致); 请求与响应信封不超过 `MAX_ENVELOPE_BYTES`, 错误消息不超过 `MAX_ERROR_MESSAGE_BYTES`; 每个会话顺序执行调用, 执行中的调用之后最多排队 `MAX_QUEUED_CALLS` 个, 再多则 `LIMIT_EXCEEDED`; `cancel` 立即应答排队中的调用, 并通过关闭套接字打断执行中的调用, 服务器无响应时不再等到读超时; `close` 让全部待处理调用应答 `SESSION_CLOSED`; `getStatus` 报告 `queued` 与 `active`; 操作表标明每个操作支持的收信协议, POP3 账户在解析参数前即被拒绝; 能力集宣告 `append` 与 `clientSearchFallback`
 - `新增` 10 种语言的 README, 插件中心说明与更新日志
 - `新增` 已保存账户存储 (路线图 P4.1): 在插件内保存的账户把非秘密的账户文档与经 Android Keystore 主密钥 AES-256-GCM 加密的密码或访问令牌存在一起; 认证数据绑定别名, 秘密类型与账户文档, 在磁盘上被改动或移动的记录不再能解密; 记录存于 `noBackupFilesDir` (本已排除在备份之外), 在文件锁下原子写入, 秘密只经过用后即清零的 `CharArray` / `ByteArray` 缓冲; 别名去除首尾空白, 经 NFC 规范化且不区分大小写
+- `新增` 已保存账户会话 (路线图 P4.3): `openSession` 接受别名形态 (`accountAlias`) 并在插件进程内解密秘密, `mail.connect('alias')` 因此不经 Binder 传递任何凭据; `listSavedAccounts` 返回每个已保存账户的别名, 地址, 用户名, 服务商, 认证方式, 收信协议, 端点与默认标记, 不含任何秘密; 能力集合新增 `savedAccounts`
 - `修复` 服务商预设 (路线图 P3.2): 163 邮箱与 126 邮箱会在服务器端保存每封经 SMTP 发出的邮件, 两者的 `autoSavesSent` 改为 true, 默认 `saveToSent` 不再向 `已发送` 追加第二份副本 (真实 163 账户核实: `saveToSent: false` 发出的邮件数分钟后出现在已发送文件夹)
 - `修复` AGP 9.1 构建时的 SDK XML v4 解析警告及 JVM 单元测试组装任务误触发 APK 原生库对齐检查的问题 (共享构建插件 1.8.3)
 - `优化` 错误映射: POP3 服务器在登录后因账户未开启 POP 访问而拒绝邮箱 (Gmail 对 STAT 答 `[SYS/PERM] Your account is not enabled for POP access`) 时, 现在得到说明原因的 `UNSUPPORTED_OPERATION`, 而不是可重试的 `IO_FAILED` "I/O failed"

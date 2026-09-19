@@ -113,7 +113,7 @@ internal object MailBundles {
         if (alias == null && json == null) {
             return error(MailErrorCodes.INVALID_ARGUMENT, "account JSON or alias is required")
         }
-        if (alias != null && json != null) {
+        if (alias != null && (json != null || account.containsKey(MailContract.KEY_SECRET_PASSWORD) || account.containsKey(MailContract.KEY_SECRET_ACCESS_TOKEN))) {
             return error(MailErrorCodes.INVALID_ARGUMENT, "account alias excludes inline account fields")
         }
         if (json != null) {

@@ -49,11 +49,11 @@ object AngusMailPlugin {
     val AUTH_MECHANISMS = listOf(MailContract.AUTH_PASSWORD, MailContract.AUTH_XOAUTH2)
 
     /**
-     * Features the plugin implements today: `messages.append` (P2.2) and the client-side filter
-     * fallback of `messages.search` (P2.3 / P2.4). `idle` returns with the watches of P5,
-     * `savedAccounts` with P4, `backgroundWatch` with P8.
+     * Features the plugin implements today: `messages.append` (P2.2), the client-side filter
+     * fallback of `messages.search` (P2.3 / P2.4) and saved accounts behind `openSession(alias)` /
+     * `listSavedAccounts` (P4). `idle` returns with the watches of P5, `backgroundWatch` with P8.
      */
-    val FEATURES = listOf(MailContract.FEATURE_APPEND, MailContract.FEATURE_CLIENT_SEARCH_FALLBACK)
+    val FEATURES = listOf(MailContract.FEATURE_APPEND, MailContract.FEATURE_CLIENT_SEARCH_FALLBACK, MailContract.FEATURE_SAVED_ACCOUNTS)
     /** Version of the built-in provider catalog (`mail-core/src/main/resources/providers.json`). */
     val PROVIDERS_VERSION: Int get() = ProviderPresets.version
     const val MAIL_LIBRARY_VERSION = "2.0.5"

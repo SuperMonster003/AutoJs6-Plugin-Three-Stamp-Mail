@@ -12,6 +12,9 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.SecretKi
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorCode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.session.MailSession
+import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStore
+import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStores
+import io.github.supermonster003.autojs6.plugin.angus.mail.store.SavedAccountsDocument
 import io.github.supermonster003.autojs6.plugin.angus.mail.toPluginInfo
 import org.autojs.plugin.common.api.PluginInfo
 import org.autojs.plugin.mail.api.IMailPlugin
@@ -20,17 +23,19 @@ import org.autojs.plugin.mail.api.IMailSessionCallback
 import org.autojs.plugin.mail.api.MailContract
 
 /**
- * `IMailPlugin` implementation (roadmap P1.3 / P2.5). The metadata methods (`getInfo`,
+ * `IMailPlugin` implementation (roadmap P1.3 / P2.5 / P4.3). The metadata methods (`getInfo`,
  * `getCapabilities`, `listProviders`) answer any caller that holds the plugin permission;
  * `openSession` and `listSavedAccounts` go through the [CallerGuard] first and throw
  * `SecurityException` for anything but the installed same-signer AutoJs6 host. `openSession`
- * validates the bundle, parses the account JSON through the mail core, and returns a
+ * validates the bundle, parses the account JSON through the mail core (or resolves a saved-account
+ * alias inside this process, so the secret never crosses the Binder), and returns a
  * [MailSessionBinder] bound to the caller's UID; no network happens before the first `call`
- * (contract B.3). Saved-account aliases arrive with P4.
+ * (contract B.3). `listSavedAccounts` renders the [AccountStore] without secrets.
  */
 internal class MailPluginBinder(
     private val context: Context,
     private val guard: CallerGuard,
+    private val accounts: AccountStore = AccountStores.of(context),
 ) : IMailPlugin.Stub() {
 
     override fun getInfo(): PluginInfo = context.angusMailPluginRuntimeInfo().toPluginInfo()
@@ -44,19 +49,9 @@ internal class MailPluginBinder(
             return null
         }
         account!!
-        val json = account.getString(MailContract.KEY_ACCOUNT_JSON)
-        if (json == null) {
-            callback?.let { MailBundles.notifyClosed(it, MailBundles.error(MailErrorCode.ACCOUNT_NOT_FOUND, "saved accounts are not available yet (roadmap P4)", retryable = false)) }
-            return null
-        }
-        val kind = MailBundles.secretKind(account)
-        val secretText = MailBundles.secret(account, kind)
         val session = try {
-            if (kind != SecretKind.NONE && secretText.isNullOrEmpty()) {
-                throw MailException.invalidArgument("the secret must not be empty")
-            }
-            val parsed = MailAccountOptions.parse(json, kind, defaults())
-            MailSession(parsed, MailSecret(secretText ?: ""))
+            val alias = account.getString(MailContract.KEY_ACCOUNT_ALIAS)
+            if (alias != null) openSavedAccount(alias) else openInlineAccount(account)
         } catch (e: MailException) {
             callback?.let { MailBundles.notifyClosed(it, MailBundles.error(e)) }
             return null
@@ -64,11 +59,28 @@ internal class MailPluginBinder(
         return MailSessionBinder(session, callback, guard, ownerUid)
     }
 
+    private fun openInlineAccount(account: Bundle): MailSession {
+        val json = requireNotNull(account.getString(MailContract.KEY_ACCOUNT_JSON))
+        val kind = MailBundles.secretKind(account)
+        val secretText = MailBundles.secret(account, kind)
+        if (kind != SecretKind.NONE && secretText.isNullOrEmpty()) {
+            throw MailException.invalidArgument("the secret must not be empty")
+        }
+        val parsed = MailAccountOptions.parse(json, kind, defaults())
+        return MailSession(parsed, MailSecret(secretText ?: ""))
+    }
+
+    /** The alias form (roadmap P4.3): the record's document is normalized like an inline one, the secret is decrypted here and copied into the session only. */
+    private fun openSavedAccount(alias: String): MailSession = accounts.withSecret(alias) { saved, secret ->
+        val parsed = MailAccountOptions.parse(saved.accountJson, saved.secretKind, defaults())
+        MailSession(parsed, MailSecret(secret))
+    }
+
     override fun listProviders(): Bundle = MailBundles.json(MailContract.KEY_PROVIDERS_JSON, ProviderPresets.toJson())
 
     override fun listSavedAccounts(): Bundle {
         guard.enforceHost()
-        return MailBundles.json(MailContract.KEY_ACCOUNTS_JSON, "[]")
+        return MailBundles.json(MailContract.KEY_ACCOUNTS_JSON, SavedAccountsDocument.render(accounts.list()))
     }
 
     /** The IMAP `ID` payload for providers that require it (163 / 126): names this plugin, never the account. */
