@@ -33,6 +33,7 @@
 * `优化` 错误映射: POP3 服务器在登录后因账户未开启 POP 访问而拒绝邮箱 (Gmail 对 STAT 答 `[SYS/PERM] Your account is not enabled for POP access`) 时, 现在得到说明原因的 `UNSUPPORTED_OPERATION`, 而不是可重试的 `IO_FAILED` "I/O failed"
 * `优化` 服务商预设: Sina 邮箱补上已发送文件夹名 (`已发送`), 并注明服务器不保存已发邮件副本且拒绝 IMAP CREATE (文件夹只能在网页端创建); 126 邮箱服务器保存已发邮件副本已用真实账户验证
 * `优化` 服务商预设: Yahoo Mail 与 Aliyun Mail 的说明注明这两个预设未经真实账户核实 (项目无法获得测试账户), 其已发送副本行为按公开文档推定.
+* `优化` 秘密审计 (邮件路线图 P6): 对邮件内核与应用搜索日志语句, 控制台输出, Jakarta 调试开关以及每一处秘密被实体化的位置; 结果 (`docs/dev/p6-secret-audit.md`) 由 `SecretAuditTest` 强制执行: 任何日志或调试语句都会使构建失败, `reveal()` 被固定在三处 Jakarta 认证调用, 并检查 Jakarta 会话永不调试, 账户 JSON 中的秘密被拒绝且不回显, 值对象, 异常映射器与协议摘要在秘密传播的每种形式下都将其掩盖
 * `依赖` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) 及 Angus Activation 2.0.3 与 Jakarta Activation API 2.1.4
 * `依赖` 附加 GreenMail 2.1.13 用于 JVM 邮件核心测试 (仅测试范围)
 * `依赖` 附加 `common-plugin-api.aar` (AutoJs6 模块 `plugin-api/common-plugin-api`, 宿主构建 6.8.0 / 5282, MPL 2.0) 作为共享插件契约, 并在 `locks/host-api-aars.lock` 中锁定哈希
