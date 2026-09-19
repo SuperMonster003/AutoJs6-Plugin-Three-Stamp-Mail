@@ -45,6 +45,10 @@ object MailSessionProperties {
             put("$prefix.connectiontimeout", account.timeouts.connectMillis.toString())
             put("$prefix.timeout", account.timeouts.readMillis.toString())
             put("$prefix.writetimeout", account.timeouts.writeMillis.toString())
+            // One shared timer for the write timeouts of every socket; without it Angus creates a
+            // thread pool per socket that outlives a TLS connection aborted underneath the TLS
+            // layer (cancel, watch stop), see WriteTimeouts.
+            put("$prefix.executor.writetimeout", WriteTimeouts.EXECUTOR)
             put("$prefix.auth", "true")
             // Never fall back from the requested TLS mode or authentication mechanism to a weaker one.
             when (endpoint.tls) {
