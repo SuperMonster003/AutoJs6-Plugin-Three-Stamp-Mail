@@ -283,7 +283,7 @@ class ImapMailbox private constructor(
                     server
                 } else {
                     fallback = SearchResult.FALLBACK_CLIENT
-                    clientSearch(folder, args.query, candidates, upper)
+                    clientSearch(folder, args.query, candidates, upper, args.limit)
                 }
             }
         }
@@ -546,7 +546,13 @@ class ImapMailbox private constructor(
         null
     }
 
-    private fun clientSearch(folder: IMAPFolder, query: CompiledQuery, candidates: Array<Message>?, upper: Int): List<Message> {
+    /**
+     * The client-side filter over the newest `MAX_CLIENT_FILTER` candidates: envelopes (and headers
+     * when the term needs them) come in one batch fetch; a `body` / `text` term then costs the
+     * server one or two fetches per candidate, so the scan runs newest first and stops once
+     * [limit] messages match, which is exactly the page [search] keeps (roadmap P6 baseline).
+     */
+    private fun clientSearch(folder: IMAPFolder, query: CompiledQuery, candidates: Array<Message>?, upper: Int, limit: Int): List<Message> {
         val window = candidates?.filter { it.messageNumber <= upper }?.sortedBy { it.messageNumber }?.takeLast(MailLimits.MAX_CLIENT_FILTER)
             ?: folder.getMessages(maxOf(1, upper - MailLimits.MAX_CLIENT_FILTER + 1), upper).toList()
         if (window.isEmpty()) return emptyList()
@@ -559,7 +565,17 @@ class ImapMailbox private constructor(
         }
         folder.fetch(window.toTypedArray(), profile)
         val term = query.clientTerm ?: return window
-        return trace.timed(MailProtocol.IMAP.id, "client filter ${window.size}") { window.filter { message -> runCatching { term.match(message) }.getOrDefault(false) } }
+        val hits = ArrayList<Message>()
+        var scanned = 0
+        trace.timed(MailProtocol.IMAP.id, "client filter ${window.size}") {
+            for (message in window.asReversed()) {
+                if (hits.size >= limit) break
+                scanned++
+                if (runCatching { term.match(message) }.getOrDefault(false)) hits += message
+            }
+        }
+        if (scanned < window.size) trace.record(MailProtocol.IMAP.id, "client filter stopped after $scanned of ${window.size} candidates: $limit matched")
+        return hits
     }
 
     private fun envelopes(folder: IMAPFolder, messages: Array<Message>): List<MessageDocument> {

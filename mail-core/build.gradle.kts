@@ -47,6 +47,19 @@ dependencies {
     testRuntimeOnly(libs.slf4j.nop)
 }
 
+// Test runtime classpath as a file, for the out-of-process helpers of the P6 performance baseline
+// (`PerfMailServer` started by `.python/run_performance_baseline.py` with the same jars the tests use).
+tasks.register("writeTestClasspath") {
+    dependsOn("testClasses")
+    val classpath = sourceSets["test"].runtimeClasspath
+    val output = layout.buildDirectory.file("test-classpath.txt")
+    inputs.files(classpath)
+    outputs.file(output)
+    doLast {
+        output.get().asFile.writeText(classpath.files.joinToString(File.pathSeparator) { it.absolutePath })
+    }
+}
+
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
 }

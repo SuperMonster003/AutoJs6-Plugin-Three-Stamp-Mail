@@ -78,9 +78,12 @@ object MailSessionProperties {
                 AuthMethod.XOAUTH2 -> put("$prefix.auth.mechanisms", "XOAUTH2")
             }
             if (protocol == MailProtocol.IMAP) {
-                // Fetch bodies in chunks and never flip the SEEN flag as a side effect of reading.
+                // Fetch bodies in chunks (one FETCH per chunk, so the chunk size bounds both the memory a
+                // download holds and the round trips it costs: 1 MiB is 51 round trips for a 50 MiB
+                // attachment where the Angus default of 16 KiB would be 3200, roadmap P6 performance
+                // baseline) and never flip the SEEN flag as a side effect of reading.
                 put("$prefix.partialfetch", "true")
-                put("$prefix.fetchsize", "65536")
+                put("$prefix.fetchsize", "1048576")
                 put("$prefix.peek", "true")
             }
             if (protocol == MailProtocol.SMTP) {
