@@ -24,7 +24,7 @@
     "AutoJs6 빌드 {{ required_host_version_code }} ({{ required_host_version_name }}) 이상이 설치된 기기에 [Releases]({{ repo_url }}/releases)에서 플러그인 APK를 설치합니다.",
     "AutoJs6 플러그인 센터를 열어 `Angus Mail`이 인식되는지 확인하고 활성화합니다.",
     "계정을 준비합니다: 메일 제공자 설정에서 IMAP 또는 POP3를 켜고, 인증 코드나 앱 비밀번호 (QQ, 163, 126, Gmail, iCloud) 또는 OAuth 2.0 액세스 토큰 (Outlook.com)을 얻습니다.",
-    "스크립트에서 `mail.connect(...)`를 호출하거나, 플러그인 설정 페이지에 계정을 저장한 뒤 별칭으로 연결합니다."
+    "스크립트에서 `mail.connect(...)`를 호출하거나, 플러그인 설정 페이지 (플러그인의 런처 아이콘 또는 AutoJs6 개발자 옵션 > 메일 계정 설정) 에 계정을 저장한 뒤 별칭으로 연결합니다."
   ],
   "h3_quick_start": "빠른 시작",
   "p_quick_start_intro": "보고서를 보내고, 첨부 파일이 있는 읽지 않은 메일을 읽고, 인증 코드를 기다리는 스크립트",

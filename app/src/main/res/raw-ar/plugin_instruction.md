@@ -7,6 +7,6 @@
 1. ثبت ملف APK للمكون الإضافي من [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) على جهاز يحتوي على AutoJs6 بالبنية 5282 (6.8.0) أو أحدث.
 2. افتح مركز المكونات الإضافية في AutoJs6, وتأكد من التعرف على `Angus Mail`, ثم فعله.
 3. جهز الحساب: فعل IMAP أو POP3 في إعدادات مزود البريد واحصل على رمز تفويض أو كلمة مرور تطبيق (QQ و 163 و 126 و Gmail و iCloud), أو رمز وصول OAuth 2.0 (Outlook.com).
-4. استدع `mail.connect(...)` في نص برمجي, أو احفظ الحساب في صفحة إعدادات المكون الإضافي واتصل بالاسم المستعار.
+4. استدع `mail.connect(...)` في نص برمجي, أو احفظ الحساب في صفحة إعدادات المكون الإضافي (أيقونته في المشغل, أو AutoJs6 > خيارات المطور > إعدادات حسابات البريد) واتصل بالاسم المستعار.
 
 راجع [README المشروع](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail) و [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) للاطلاع على دليل الاتصال والتقدم الحالي.

@@ -24,7 +24,7 @@
     "在安裝了 AutoJs6 組建 {{ required_host_version_code }} ({{ required_host_version_name }}) 或更高版本的裝置上, 從 [Releases]({{ repo_url }}/releases) 安裝插件 APK.",
     "開啟 AutoJs6 插件中心, 確認 `Angus Mail` 已被識別並啟用它.",
     "準備帳戶: 在郵件服務商的設定中開啟 IMAP 或 POP3, 並取得授權碼或應用程式專用密碼 (QQ, 163, 126, Gmail, iCloud), 或 OAuth 2.0 存取權杖 (Outlook.com).",
-    "在腳本中呼叫 `mail.connect(...)`, 或在插件設定頁儲存帳戶後以別名連線."
+    "在腳本中呼叫 `mail.connect(...)`, 或在插件設定頁 (插件的啟動器圖示, 或 AutoJs6 開發者選項 > 電郵帳戶設定) 儲存帳戶後以別名連線."
   ],
   "h3_quick_start": "快速開始",
   "p_quick_start_intro": "一個寄送報表, 讀取帶附件的未讀郵件並等待驗證碼的腳本",

@@ -24,7 +24,7 @@
     "Instala el APK del plugin desde [Releases]({{ repo_url }}/releases) en un dispositivo con AutoJs6 build {{ required_host_version_code }} ({{ required_host_version_name }}) o posterior.",
     "Abre el centro de plugins de AutoJs6, comprueba que `Angus Mail` se reconoce y activalo.",
     "Prepara la cuenta: activa IMAP o POP3 en los ajustes de tu proveedor de correo y obten un codigo de autorizacion o una contrasena de aplicacion (QQ, 163, 126, Gmail, iCloud), o un token de acceso OAuth 2.0 (Outlook.com).",
-    "Llama a `mail.connect(...)` en un script, o guarda la cuenta en la pagina de ajustes del plugin y conectate por alias."
+    "Llama a `mail.connect(...)` en un script, o guarda la cuenta en la pagina de ajustes del plugin (su icono en el lanzador, o AutoJs6 > Opciones del desarrollador > Ajustes de cuentas de correo) y conectate por alias."
   ],
   "h3_quick_start": "Inicio rapido",
   "p_quick_start_intro": "Un script que envia un informe, lee el correo no leido con adjuntos y espera un codigo de verificacion",
