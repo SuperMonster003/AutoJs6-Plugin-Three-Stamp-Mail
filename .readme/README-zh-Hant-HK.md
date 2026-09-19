@@ -183,6 +183,7 @@ _2026/09/19_
 - `修復` AGP 9.1 構建時的 SDK XML v4 解析警告及 JVM 單元測試組裝任務誤觸發 APK 原生程式庫對齊檢查的問題 (共用構建外掛 1.8.3)
 - `修復` 帳戶編輯器 (路線圖 P4.7): 整個表單退出 Android 自動填充框架, 密碼管理器不再索取授權碼; 此前 HyperOS (API 35) 會在儲存後關閉編輯器時彈出 "自動儲存帳號密碼".
 - `修復` QQ, Sina, 163 與 126 的新郵件監聽 (郵件路線圖 P5 裝置矩陣): 服務商預設新增 `idlePush` (預設表版本 2), 這四家上 `mode: auto` 從一開始就輪詢而不再進入 IDLE, 因為 QQ 與 Sina 接受 IMAP IDLE 卻在客戶端閒置期間從不推送 (真實帳戶, 2026-09-19: 10 分鐘內沒有任何未標記回應; Sina 還會在 60 s 後斷開連線), 而 163 與 126 根本沒有 IDLE; 明確的 `mode: 'idle'` 仍會進入 IDLE. 矩陣本身 (QQ 在 API 24 模擬器與兩部 Sony 手機, 163 在一部 Redmi: 終止插件進程, 斷網, Wi-Fi 切流動網絡, 強制 Doze) 記錄於 `docs/dev/p5-watch-evidence.md`, 配套冒煙腳本 `docs/smoke/watch.js` 與驅動 `.python/run_watch_matrix.py`; 同一矩陣還表明 Doze 會凍結背景應用程式的網絡 (監聽的重連超時, Android 9 上新郵件在喚醒後約四分鐘才報告), 因此插件現在在裝置離開 Doze 的瞬間重連其監聽, 設定頁的電池優化引導文案說明了該排除的用途
+- `修復` TLS 矩陣 (郵件路線圖 P6): 隱式 SSL, STARTTLS (經 GreenMail 前置的 STARTTLS 代理), 明文, 帶 / 不帶 `tls.trustAll` 的自簽證書, 主機名不匹配的受信證書, 端口模式錯配以及不提供升級的端口, 現已對 IMAP / POP3 / SMTP 逐一測試 (`TlsMatrixTest`, `docs/dev/p6-tls-matrix.md`); 測試發現 Angus 的 POP3 存儲把缺失的 STLS 升級與握手前超時報告為認證失敗, 錯誤映射器現改為 `TLS_FAILED` 與 `TIMEOUT` 而非 `AUTH_FAILED`; `TlsDeviceTest` 在 API 24 / 28 / 33 上確認郵件核心以平台預設設定即可連接僅 TLS 1.2 的伺服器, 並自 API 29 起協商 TLS 1.3
 - `優化` 錯誤映射: POP3 伺服器在登入後因帳戶未開啟 POP 存取而拒絕郵箱 (Gmail 對 STAT 答 `[SYS/PERM] Your account is not enabled for POP access`) 時, 現在得到說明原因的 `UNSUPPORTED_OPERATION`, 而不是可重試的 `IO_FAILED` "I/O failed"
 - `優化` 服務商預設: Sina 郵箱補上已發送資料夾名 (`已发送`), 並註明伺服器不保存已發郵件副本且拒絕 IMAP CREATE (資料夾只能在網頁端建立); 126 郵箱伺服器保存已發郵件副本已用真實帳戶驗證
 - `優化` 服務商預設: Yahoo Mail 與 Aliyun Mail 的說明註明這兩個預設未經真實帳戶核實 (項目無法取得測試帳戶), 其已發送副本行為按公開文檔推定.

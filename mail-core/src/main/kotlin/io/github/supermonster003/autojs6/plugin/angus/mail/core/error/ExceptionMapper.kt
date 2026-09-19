@@ -60,7 +60,13 @@ class ExceptionMapper(private val redactor: Redactor) {
 
     private fun classify(chain: List<Throwable>): Classified {
         val auth = chain.find<AuthenticationFailedException>()
-        if (auth != null) return Classified(MailErrorCode.AUTH_FAILED, "authentication failed")
+        if (auth != null) {
+            // Angus's POP3 store folds every EOF of the connect phase into AuthenticationFailedException(message):
+            // the missing STLS upgrade and a timed-out greeting arrive here before any credential was sent (P6 TLS matrix).
+            if (auth.mentionsStarttls()) return Classified(MailErrorCode.TLS_FAILED, "the server does not offer the required STARTTLS upgrade", retryable = false)
+            if (auth.message.orEmpty().contains("timed out", ignoreCase = true)) return Classified(MailErrorCode.TIMEOUT, "the server did not answer in time")
+            return Classified(MailErrorCode.AUTH_FAILED, "authentication failed")
+        }
         chain.find<SinkFailedException>()?.let { return Classified(MailErrorCode.IO_FAILED, it.message ?: "the download destination could not be written", retryable = false) }
         if (chain.any { it is SSLException || it is CertificateException }) {
             return Classified(MailErrorCode.TLS_FAILED, "TLS handshake failed", retryable = false)

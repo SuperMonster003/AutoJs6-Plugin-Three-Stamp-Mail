@@ -56,6 +56,14 @@ class ExceptionMapperTest {
         assertEquals(MailErrorCode.TLS_FAILED, starttls.code)
         assertFalse(starttls.retryable)
         assertEquals(MailErrorCode.TLS_FAILED, mapper.map(MessagingException("STLS command not supported")).code)
+        // Angus's POP3 store wraps the EOF of a missing STLS upgrade and of a timed-out greeting in AuthenticationFailedException.
+        val pop3Stls = mapper.map(AuthenticationFailedException("STLS required but not supported"))
+        assertEquals(MailErrorCode.TLS_FAILED, pop3Stls.code)
+        assertFalse(pop3Stls.retryable)
+        val pop3Timeout = mapper.map(AuthenticationFailedException("Read timed out"))
+        assertEquals(MailErrorCode.TIMEOUT, pop3Timeout.code)
+        assertTrue(pop3Timeout.retryable)
+        assertEquals(MailErrorCode.AUTH_FAILED, mapper.map(AuthenticationFailedException("[AUTH] Invalid credentials")).code)
     }
 
     @Test
