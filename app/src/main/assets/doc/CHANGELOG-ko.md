@@ -28,6 +28,7 @@
 * `수정` 계정 편집기 (로드맵 P4.7): 폼 전체를 Android 자동 완성 프레임워크에서 제외하여 비밀번호 관리자가 인증 코드를 저장하려고 하지 않습니다. 이전에는 HyperOS (API 35) 에서 저장 후 편집기를 닫을 때 "계정과 비밀번호 저장" 시트가 나타났습니다.
 * `개선` 오류 매핑: 계정의 POP 액세스가 비활성화되어 로그인 후 메일함을 거부하는 POP3 서버 (Gmail은 STAT에 `[SYS/PERM] Your account is not enabled for POP access`로 응답)에 대해 재시도 가능한 `IO_FAILED` "I/O failed" 대신 원인을 밝히는 메시지가 담긴 `UNSUPPORTED_OPERATION`을 반환합니다
 * `개선` 제공자 프리셋: Sina Mail에 보낸편지함 폴더 이름 (`已发送`)을 추가하고, 서버가 보낸 메일 사본을 보관하지 않으며 IMAP CREATE를 거부한다는 점 (폴더는 웹 UI에서만 생성 가능)을 명시했습니다. 126 Mail 서버의 보낸 메일 사본은 실제 계정으로 검증되었습니다
+* `개선` 제공자 프리셋: Yahoo Mail 과 Aliyun Mail 의 메모에 이 프리셋이 실제 계정으로 검증되지 않았음 (프로젝트에 테스트 계정이 없음) 을 명시하며, 보낸 편지 사본 동작은 공개 문서를 따릅니다.
 * `의존성` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`)와 Angus Activation 2.0.3, Jakarta Activation API 2.1.4
 * `의존성` JVM 메일 코어 테스트용 GreenMail 2.1.13 추가 (테스트 범위만)
 * `의존성` 공유 플러그인 계약으로 `common-plugin-api.aar` (AutoJs6 모듈 `plugin-api/common-plugin-api`, 호스트 빌드 6.8.0 / 5282, MPL 2.0)를 추가하고 `locks/host-api-aars.lock`에 해시를 고정

@@ -406,3 +406,12 @@ Profiles read `QQ_USER_NAME_A` / `QQ_AUTH_CODE_A`, `QQ_USER_NAME_B` / `QQ_AUTH_C
 profiles pick the `163` or `126` preset from the address domain and point yeah.net addresses at
 `imap.yeah.net` / `smtp.yeah.net`; the Gmail token from the OAuth Playground is valid for about
 one hour.
+
+## Unverifiable presets (2026-09-19)
+
+The maintainer confirmed on 2026-09-19 that no Yahoo Mail or Aliyun Mail account can be provided.
+Their presets therefore stay as documented (`yahoo`: `autoSavesSent = true`, sent folder `Sent`;
+`aliyun`: `autoSavesSent = false`, no sent folder) with a note in `providers.json` that they are
+unverified against a real account, and they are excluded from the P6 provider matrix. Every other
+preset's sent-copy behavior was verified on a real account (QQ, 163, 126, Sina, Gmail) as recorded
+above and in the P3 evidence.

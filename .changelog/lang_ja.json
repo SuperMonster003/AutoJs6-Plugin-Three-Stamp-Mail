@@ -33,7 +33,8 @@
       ],
       "improvement": [
         "エラーマッピング: アカウントの POP アクセスが無効なためログイン後にメールボックスを拒否する POP3 サーバー (Gmail は STAT に `[SYS/PERM] Your account is not enabled for POP access` と応答) に対して, 再試行可能な `IO_FAILED` \"I/O failed\" ではなく原因を示すメッセージ付きの `UNSUPPORTED_OPERATION` を返すようにしました",
-        "プロバイダープリセット: Sina Mail に送信済みフォルダー名 (`已发送`) を追加し, サーバーが送信済みメールのコピーを保持せず IMAP CREATE を拒否する (フォルダーはウェブ UI でのみ作成可能) ことを注記しました. 126 Mail のサーバー側送信済みコピーは実アカウントで検証済みです"
+        "プロバイダープリセット: Sina Mail に送信済みフォルダー名 (`已发送`) を追加し, サーバーが送信済みメールのコピーを保持せず IMAP CREATE を拒否する (フォルダーはウェブ UI でのみ作成可能) ことを注記しました. 126 Mail のサーバー側送信済みコピーは実アカウントで検証済みです",
+        "プロバイダープリセット: Yahoo Mail と Aliyun Mail の注記に, これらのプリセットが実アカウントで未検証であること (プロジェクトにテストアカウントがない) を明記し, 送信済みコピーの挙動は公開ドキュメントに従います."
       ],
       "dependency": [
         "Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) と Angus Activation 2.0.3, Jakarta Activation API 2.1.4",

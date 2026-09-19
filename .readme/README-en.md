@@ -181,6 +181,7 @@ _2026/09/19_
 - `Fix` Account editor (roadmap P4.7): the whole form now stays out of the Android Autofill framework, so no password manager offers to capture the authorization code; HyperOS on API 35 otherwise raised its "save account and password" sheet when the editor closed after saving.
 - `Improvement` Error mapping: a POP3 server that refuses the mailbox after login because POP access is disabled for the account (Gmail answers STAT with `[SYS/PERM] Your account is not enabled for POP access`) now yields `UNSUPPORTED_OPERATION` with a message naming the cause instead of a retryable `IO_FAILED` "I/O failed"
 - `Improvement` Provider presets: Sina Mail names its sent folder (`已发送`) and notes that the server keeps no copy of sent mail and refuses IMAP CREATE (folders exist only through the web UI); the 126 Mail server copy of sent mail is now verified with a real account
+- `Improvement` Provider presets: the Yahoo Mail and Aliyun Mail notes now state that these presets are unverified against a real account (none is available to the project), so their sent-copy behavior follows public documentation.
 - `Dependency` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) with Angus Activation 2.0.3 and Jakarta Activation API 2.1.4
 - `Dependency` GreenMail 2.1.13 added for the JVM mail core tests (test scope only)
 - `Dependency` Added `common-plugin-api.aar` (AutoJs6 module `plugin-api/common-plugin-api`, host build 6.8.0 / 5282, MPL 2.0) as the shared plugin contract, hash-locked in `locks/host-api-aars.lock`

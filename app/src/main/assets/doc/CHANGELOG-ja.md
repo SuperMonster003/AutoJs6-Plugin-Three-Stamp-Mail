@@ -28,6 +28,7 @@
 * `修正` アカウントエディター (ロードマップ P4.7): フォーム全体を Android の自動入力フレームワークから除外し, パスワードマネージャーが認証コードの保存を求めなくなりました. これまで HyperOS (API 35) では保存後にエディターを閉じると "アカウントとパスワードを保存" のシートが表示されていました.
 * `改善` エラーマッピング: アカウントの POP アクセスが無効なためログイン後にメールボックスを拒否する POP3 サーバー (Gmail は STAT に `[SYS/PERM] Your account is not enabled for POP access` と応答) に対して, 再試行可能な `IO_FAILED` "I/O failed" ではなく原因を示すメッセージ付きの `UNSUPPORTED_OPERATION` を返すようにしました
 * `改善` プロバイダープリセット: Sina Mail に送信済みフォルダー名 (`已发送`) を追加し, サーバーが送信済みメールのコピーを保持せず IMAP CREATE を拒否する (フォルダーはウェブ UI でのみ作成可能) ことを注記しました. 126 Mail のサーバー側送信済みコピーは実アカウントで検証済みです
+* `改善` プロバイダープリセット: Yahoo Mail と Aliyun Mail の注記に, これらのプリセットが実アカウントで未検証であること (プロジェクトにテストアカウントがない) を明記し, 送信済みコピーの挙動は公開ドキュメントに従います.
 * `依存関係` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) と Angus Activation 2.0.3, Jakarta Activation API 2.1.4
 * `依存関係` JVM メールコアテスト用に GreenMail 2.1.13 を追加 (テストスコープのみ)
 * `依存関係` 共有プラグインコントラクトとして `common-plugin-api.aar` (AutoJs6 モジュール `plugin-api/common-plugin-api`, ホストビルド 6.8.0 / 5282, MPL 2.0) を追加し, `locks/host-api-aars.lock` でハッシュを固定

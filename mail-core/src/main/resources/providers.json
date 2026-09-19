@@ -118,7 +118,7 @@
       "sentFolder": "Sent",
       "requiresClientId": false,
       "docsUrl": "https://help.yahoo.com/kb/SLN4724.html",
-      "notes": "SMTP also accepts STARTTLS on port 587."
+      "notes": "SMTP also accepts STARTTLS on port 587. Unverified against a real account (none is available to the project): autoSavesSent and the sent folder follow Yahoo's public documentation."
     },
     {
       "id": "sina",
@@ -148,7 +148,7 @@
       "sentFolder": null,
       "requiresClientId": false,
       "docsUrl": "https://help.aliyun.com/",
-      "notes": "Personal edition."
+      "notes": "Personal edition. Unverified against a real account (none is available to the project): the server-side sent copy is unconfirmed, so autoSavesSent stays false and no sent folder is named."
     }
   ]
 }

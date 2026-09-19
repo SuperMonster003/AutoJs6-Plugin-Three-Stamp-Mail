@@ -33,7 +33,8 @@
       ],
       "improvement": [
         "Asignacion de errores: un servidor POP3 que rechaza el buzon tras iniciar sesion porque el acceso POP esta desactivado para la cuenta (Gmail responde a STAT con `[SYS/PERM] Your account is not enabled for POP access`) ahora produce `UNSUPPORTED_OPERATION` con un mensaje que indica la causa en lugar de un `IO_FAILED` \"I/O failed\" reintentable",
-        "Preajustes de proveedores: Sina Mail nombra su carpeta de enviados (`已发送`) e indica que el servidor no guarda copia del correo enviado y rechaza IMAP CREATE (las carpetas solo se crean en la interfaz web); la copia en el servidor del correo enviado de 126 Mail queda verificada con una cuenta real"
+        "Preajustes de proveedores: Sina Mail nombra su carpeta de enviados (`已发送`) e indica que el servidor no guarda copia del correo enviado y rechaza IMAP CREATE (las carpetas solo se crean en la interfaz web); la copia en el servidor del correo enviado de 126 Mail queda verificada con una cuenta real",
+        "Preajustes de proveedores: las notas de Yahoo Mail y Aliyun Mail indican ahora que estos preajustes no se han verificado con una cuenta real (el proyecto no dispone de ninguna), por lo que su comportamiento de copia de enviados sigue la documentación pública."
       ],
       "dependency": [
         "Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) con Angus Activation 2.0.3 y Jakarta Activation API 2.1.4",

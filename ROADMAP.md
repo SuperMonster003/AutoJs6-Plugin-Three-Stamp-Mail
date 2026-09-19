@@ -432,7 +432,7 @@ MailErrorCodes.kt           附录 B.4 的错误码字符串常量
 ## P6: 健壮性, 安全, 兼容矩阵, 性能与体积
 
 - [ ] (测试) 敌意输入 (`docs/dev/p6-hostile-input.md`): 超长 / 嵌套过深的 MIME, 20000 个收件人的信头, 无 `Content-Type` 的部件, 非法 base64, 递归 `message/rfc822`, 文件名含 `../` / NUL / 2000 字符, `Content-Disposition` 与 `Content-Type` 文件名冲突, 声明大小与实际不符的附件, 超过上限的 JSON 信封, 非法 UTF-8 主题; 全部返回明确错误码且不崩溃, 宿主不留半写入文件.
-- [ ] (测试) 服务商兼容矩阵 (`docs/dev/p6-provider-matrix.md`): QQ / 163 / 126 / Gmail (App Password) / Outlook.com (XOAUTH2 令牌, 可用时) / iCloud (App Password) / Aliyun 各跑 发信 / 列表 / 中文搜索 (服务器与客户端回退) / 正文 / 附件 / 标记 / 移动 / IDLE; 记录每家的特殊行为 (163 `ID` 命令, QQ 的已发送文件夹名, Gmail 的 `[Gmail]/` 前缀与标签语义, iCloud 的文件夹层级分隔符) 并回填附录 C.
+- [ ] (测试) 服务商兼容矩阵 (`docs/dev/p6-provider-matrix.md`): QQ / 163 / 126 / Gmail (App Password) / Outlook.com (XOAUTH2 令牌, 可用时) / iCloud (App Password) 各跑 发信 / 列表 / 中文搜索 (服务器与客户端回退) / 正文 / 附件 / 标记 / 移动 / IDLE; 记录每家的特殊行为 (163 `ID` 命令, QQ 的已发送文件夹名, Gmail 的 `[Gmail]/` 前缀与标签语义, iCloud 的文件夹层级分隔符) 并回填附录 C. (Yahoo / Aliyun 不进矩阵: 维护者 2026-09-19 确认无法提供有效账户, 两家预设在附录 C 与 `providers.json` notes 标注为未核实.)
 - [ ] (测试) TLS 矩阵: SSL 993 / 995 / 465, STARTTLS 143 / 110 / 587, 明文 (仅 GreenMail), 自签证书 (GreenMail 自签 + `tls.trustAll`), 证书主机名不匹配 -> `TLS_FAILED`; API 24 上 TLS 1.2 默认启用确认.
 - [ ] (测试) 字符集矩阵: GB18030 / GBK / GB2312 / Big5 / ISO-2022-JP / EUC-KR / UTF-8 / 未声明 的正文与主题与文件名夹具, 断言解码结果.
 - [ ] (插件) 秘密审计: 全仓库 `grep` 日志语句与异常构造, 确认无 `password` / `accessToken` / 授权码进入 `Log` / JSON / `toString` / 异常消息; Jakarta `mail.debug` 强制关闭且不可由脚本打开 (D28 允许的调试输出仅限脱敏后的协议摘要).
@@ -694,9 +694,9 @@ mail.searchAsync({ subject: '发票', since: '2026-09-01' }).then(list => consol
 | `163` | imap.163.com:993 ssl | pop.163.com:995 ssl | smtp.163.com:465 ssl | 授权码 | 每条 IMAP 连接需 `ID` 命令; 服务器自动保存已发送到 `已发送` (2026-09-19 真实账户核实: `saveToSent: false` 发出的邮件数分钟后出现在该文件夹, 此前预设误标为不自动保存, 导致每封双份); SEARCH SUBJECT / FROM 对刚投递的邮件答 OK 但 0 命中 (`since` 正常), 脚本用 `fallback: 'always'`; `UID EXPUNGE` 答 BAD; STATUS 不给 UIDNEXT; yeah.net 用 imap / smtp.yeah.net, 其余同 |
 | `126` | imap.126.com:993 ssl | pop.126.com:995 ssl | smtp.126.com:465 ssl | 授权码 | 同 163 (含自动保存已发送, 按同一 NetEase 策略推定, 无 126 测试账户) |
 | `icloud` | imap.mail.me.com:993 ssl | - | smtp.mail.me.com:587 starttls | App-Specific Password | 无 POP3 |
-| `yahoo` | imap.mail.yahoo.com:993 ssl | pop.mail.yahoo.com:995 ssl | smtp.mail.yahoo.com:465 ssl | App Password | |
+| `yahoo` | imap.mail.yahoo.com:993 ssl | pop.mail.yahoo.com:995 ssl | smtp.mail.yahoo.com:465 ssl | App Password | 未核实: 维护者 2026-09-19 确认无法提供测试账户, `autoSavesSent = true` / `Sent` 按公开文档推定, `providers.json` notes 已标注 |
 | `sina` | imap.sina.com:993 ssl | pop.sina.com:995 ssl | smtp.sina.com:465 ssl | 授权码 | |
-| `aliyun` | imap.aliyun.com:993 ssl | pop3.aliyun.com:995 ssl | smtp.aliyun.com:465 ssl | 密码 | 个人版 |
+| `aliyun` | imap.aliyun.com:993 ssl | pop3.aliyun.com:995 ssl | smtp.aliyun.com:465 ssl | 密码 | 个人版; 未核实: 维护者 2026-09-19 确认无法提供测试账户, `autoSavesSent = false` 且不指定已发送文件夹, `providers.json` notes 已标注 |
 
 每个预设记录: `autoSavesSent`, `sentFolder`, `requiresClientId`, `authHint`, `docsUrl` (帮助页).
 
@@ -888,6 +888,7 @@ mail.searchAsync({ subject: '发票', since: '2026-09-01' }).then(list => consol
 - 完成: P4.1-P4.7 全部 (P4.1 `1ceaf62` build 20, P4.3 Binder `670e219` 24, P4.2 `1cd3415` 26, P4.3 入口 `bfba030` 27, P4.5 `2cec907` 28, P4.6 `a43c48f` 29, P4.4 文档与 P4.7 见本次末两笔, build 30-31; 宿主 `8a29b9e28` (P4.4 入口) 与 `f1a554349` (P4.7 冒烟用例), 均未推送). 插件侧: `store/` AES-GCM Keystore 账户存储, OpenCC View 套件的账户页 / 编辑器 / 设置 / 关于 / 发行历史, `MailSettingsActivity` 入口, 电池优化引导, 真实账户设备矩阵与凭据审计; 宿主侧: 开发者选项 "邮件账户设置" (通用 `OfficialPluginSettingsLauncher`), `savedAccountScript` 冒烟用例, 协议文档 capabilities 段. 决策 D36 (View 套件而非 Compose), D37 (宿主入口放开发者选项, 复用 AI 插件的检查与引导).
 - 教训: 设备测试取字符串要用插件屏幕实际的语言 (`AppConfiguration.wrap`), 系统 locale 与宿主语言可能不同; connected 套件不能假设已装插件的存储为空; HyperOS (API 35) 的智能密码管理会经 Autofill 框架在含密码字段的表单关闭时索取账号密码, 秘密表单必须整表退出自动填充; 冒烟脚本报告不要原样带 `test()` 结果 (含账户文档); Gradle connected 运行会卸载插件 (连同保存的账户), 需要留存记录时用 `am instrument` 直接跑 (`run_settings_real_account.py`); `uiautomator dump` 在 Sony API 28 上答 null root, 手动验证靠截图坐标; 宿主开发者选项由 "关于" 页长按应用图标进入; `ViewCompat` 没有 `IMPORTANT_FOR_AUTOFILL_*` 常量, 用 `View` 的常量加 SDK 判断; 共享设备 (Xiaomi 968e9f18) 同时被其他会话用于其他插件的测试, 后续矩阵只用四台.
 - 未做: Yahoo / Aliyun 的 `autoSavesSent` (无测试账户); 插件中心本插件条目的通用 settings 入口 (D37 留给维护者); Xiaomi API 35 上自动填充修复后的复测 (设备被其他会话占用, 修复由 API 26+ 的断言在其余三台覆盖).
+- 补充 (同日, 维护者答复): Yahoo / Aliyun 无法提供有效测试账户, 两家的 `autoSavesSent` 核实项关闭为 "不可核实" (预设保留公开文档推定值; 附录 C 表, `providers.json` notes, P6 兼容矩阵条目与 `docs/dev/p2-core-evidence.md` 均已标注, build 32); 其他待决策事项 (D37 插件中心通用入口等) 暂缓, 不阻塞后续阶段.
 - 下次会话建议起点: P5 新邮件监听 (`IMailWatch` / IDLE 与轮询, 宿主 `MailWatch` 事件).
 
 ### 2026-09-19 (第十一次会话, P3.2)
