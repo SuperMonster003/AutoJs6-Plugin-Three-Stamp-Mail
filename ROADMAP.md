@@ -898,6 +898,13 @@ mail.searchAsync({ subject: '发票', since: '2026-09-01' }).then(list => consol
 - 补充 (同日, 维护者答复): Yahoo / Aliyun 无法提供有效测试账户, 两家的 `autoSavesSent` 核实项关闭为 "不可核实" (预设保留公开文档推定值; 附录 C 表, `providers.json` notes, P6 兼容矩阵条目与 `docs/dev/p2-core-evidence.md` 均已标注, build 32); 其他待决策事项 (D37 插件中心通用入口等) 暂缓, 不阻塞后续阶段.
 - 下次会话建议起点: P5 新邮件监听 (`IMailWatch` / IDLE 与轮询, 宿主 `MailWatch` 事件).
 
+### 2026-09-19/20 (第十四次会话, P6 全部)
+
+- 完成: P6 全部 (build 37 `be68c33` 秘密审计, 38 `a93a6f1` 敌意输入 / D39, 39 `70b3989` TLS 矩阵, 40 `abfaa76` 字符集矩阵, 41 `41ce17c` 服务商矩阵 (含 POP3 XOAUTH2 登录核实), 42 `32d11c0` 性能基线 / D40 `fetchsize` 1 MiB / 客户端过滤早停, 43 `c32b64a` 生命周期矩阵 / `WriteTimeouts` 共享写超时定时器, 44 `54be6ef` 体积 / R8 规则收窄; 本次 build 45 仅本条记录). 证据 `docs/dev/p6-*.md` 八篇 (secret-audit, hostile-input, tls-matrix, charset-matrix, provider-matrix, performance-baseline, lifecycle-matrix, size); 宿主本次未改动.
+- 教训: GreenMail 每条 FETCH / SEARCH 为 O(所选文件夹邮件数), 大邮箱基线要把大附件放单独文件夹且以往返次数为服务器无关指标; `mail.imap.fetchsize` 64 KiB 使大附件吞吐受 RTT 而非带宽限制 (D40); 经运行意图在后台宿主里跑的脚本是缓存空进程, Android 9 约 30 分钟连同被绑定的插件一起杀掉, 长时监听须开宿主前台服务 (PC 端 `run-as` + `am start-foreground-service --user 0`); QQ 的 IDLE 连接约 15 分钟被服务器断开一次 (`error(CONNECT_FAILED)`, 同 generation 重连); Angus 为每个套接字自建写超时线程池, TLS 连接被 cancel / watch stop 从底层关闭后 Conscrypt 不再关闭包装层, 每连接漏一线程, 以 `mail.<protocol>.executor.writetimeout` 交共享定时器解决 (JVM 的 JSSE 不复现, 只有真机线程清单能发现); R8 会把 `META-INF/services/<接口>` 文件名改为混淆名, 受测 release 构建的测试 APK 共用应用的 AndroidX 类, 须在仅测试规则里保留; API 33 上 shell 不能写宿主 files 目录 (脚本与进度改放 `/sdcard/Download`), 其他会话重装宿主会丢失全文件访问权 (`appops set org.autojs.autojs6 MANAGE_EXTERNAL_STORAGE allow`); Java `@argfile` 中反斜杠是转义符 (类路径用正斜杠); 长文本用 Write 工具而非 Bash heredoc; 后台 Bash 任务可超过 10 分钟, 以文件尾巴轮询.
+- 未做: Gmail / Outlook.com / iCloud 列 (无账户或令牌过期, 各矩阵已标注); AVD API 24 未跑性能与生命周期 (真机 API 28 / 33 已覆盖); 生命周期矩阵仅 Redmi API 33 一台; 体积项未裁 AppCompat 资源 (`resources.arsc` 766 KB, 非本项范围).
+- 下次会话建议起点: P7 (文档, changelog 与发布 gate).
+
 ### 2026-09-19 (第十三次会话, P5 全部)
 
 - 完成: P5 全部 (插件 `9a7c46d` build 33 `IdleWatcher`, `a813f2b` 34 `PollWatcher`, `977a6df` 35 `MailWatchBinder`, 本次 build 36 设备矩阵 / D38 `idlePush` / 冒烟脚本与驱动; 宿主 `ade3bd21c` (`MailWatch` / `MailWatchRunner` / `client.watch` / `mail.watch` 与 JVM 测试) 与 `d37b764e3` (协议文档与 changelog), 本次再补协议文档一笔 (预设规则与脚本线程规则), 均未推送). 证据 `docs/dev/p5-watch-evidence.md`; 预设表版本 2; README 监听条目 (10 语言) 与电池优化引导文案按矩阵结论改写.
