@@ -3,6 +3,7 @@ package io.github.supermonster003.autojs6.plugin.angus.mail
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccountOptions
 import org.autojs.plugin.common.api.PluginCapabilityKeys
 import org.autojs.plugin.common.api.PluginInfo
 import org.autojs.plugin.mail.api.MailCapabilityKeys
@@ -26,6 +27,23 @@ internal fun Context.angusMailPluginRuntimeInfo(): AngusMailPluginRuntimeInfo {
         versionName = packageInfo.versionName.orEmpty(),
         versionCode = versionCode,
         versionDate = getString(R.string.plugin_version_date),
+    )
+}
+
+/**
+ * Values the app supplies for what an account document leaves out: the IMAP `ID` payload for
+ * providers that require it (163 / 126) names this plugin and its version, never the account.
+ * Shared by the Binder sessions and the connection test of the settings page.
+ */
+internal fun Context.angusMailAccountDefaults(): MailAccountOptions.Defaults {
+    val info = angusMailPluginRuntimeInfo()
+    return MailAccountOptions.Defaults(
+        clientId = mapOf(
+            "name" to "AutoJs6-Plugin-Angus-Mail",
+            "version" to info.versionName,
+            "vendor" to AngusMailPlugin.AUTHOR,
+            "support-email" to AngusMailPlugin.SUPPORT_EMAIL,
+        ),
     )
 }
 

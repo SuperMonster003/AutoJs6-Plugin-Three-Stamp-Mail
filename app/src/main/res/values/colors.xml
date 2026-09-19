@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="mail_accent">#1D4ED8</color>
+    <color name="mail_brand_primary">#1D4ED8</color>
+    <color name="mail_window_background">#FAFAFC</color>
+    <color name="mail_system_bar">#FAFAFC</color>
+    <color name="mail_surface">#FFFFFF</color>
+    <color name="mail_surface_variant">#EFF1F5</color>
+    <color name="mail_text_primary">#191C20</color>
+    <color name="mail_text_secondary">#666B74</color>
+    <color name="mail_divider">#E7E9EE</color>
+    <color name="mail_outline">#D3D7DE</color>
+    <color name="mail_error">#C62828</color>
+    <color name="mail_success">#2E7D32</color>
+</resources>

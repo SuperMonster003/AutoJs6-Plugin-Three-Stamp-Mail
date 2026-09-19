@@ -1,21 +1,23 @@
-# P4 settings and account store evidence (P4.1 account store, P4.3 alias sessions)
+# P4 settings and account store evidence (P4.1 account store, P4.2 settings screens, P4.3 alias sessions)
 
-Evidence for roadmap P4.1 (the encrypted saved-account store) and P4.3 (`openSession` by
-alias, `listSavedAccounts`, the `savedAccounts` capability) collected on 2026-09-19 in this
-repository (Gradle 9.5.0, AGP 9.3.2, Kotlin 2.3.20, JDK 21, Windows 11). The settings page
-(P4.2), the host entry (P4.4), the release history (P4.5) and the battery-optimization guide
-(P4.6) extend this file as they land.
+Evidence for roadmap P4.1 (the encrypted saved-account store), P4.2 (the settings screens) and
+P4.3 (`openSession` by alias, `listSavedAccounts`, the `savedAccounts` capability) collected on
+2026-09-19 in this repository (Gradle 9.5.0, AGP 9.3.2, Kotlin 2.3.20, JDK 21, Windows 11). The
+host entry (P4.4), the release history (P4.5) and the battery-optimization guide (P4.6) extend
+this file as they land.
 
-No real account is involved in this phase: every device test uses a throw-away directory under
-`noBackupFilesDir`, a test Keystore alias and a scripted loopback IMAP server, so the store of the
-installed plugin is never touched and no log line carries a secret.
+No real account is involved in this phase: the store tests use a throw-away directory under
+`noBackupFilesDir` and a test Keystore alias, the screen test uses the installed plugin's store
+under a throw-away `ui-smoke-*` alias that is removed afterwards, and every server is a scripted
+loopback IMAP or SMTP server (`ScriptedServers.kt`), so no log line carries a secret.
 
 ## Devices
 
 | Serial | Device | Android | Role |
 | --- | --- | --- | --- |
 | emulator-5554 | AVD_API_24 (x86) | 7.0 (API 24) | oldest supported API, Keystore AES-GCM |
-| bek749scrwv4wo8h | Redmi 22120RN86C | 13 (API 33) | current Keystore implementation |
+| bek749scrwv4wo8h | Redmi 22120RN86C | 13 (API 33) | current Keystore implementation; night-mode screenshots |
+| BH900ASK9E | Sony G8441 | 9 (API 28) | light-mode screenshots of the settings screens only |
 
 ## P4.1 `AccountStore` (plugin `store/` package)
 
@@ -95,6 +97,36 @@ Regression on the AVD after the change: `AngusMailPluginContractTest` (4) and
 `MailSessionBinderTest` (3) pass; the installed service still answers `[]` for an empty store
 and the capability array equals `AngusMailPlugin.FEATURES`.
 
+## P4.2 settings screens
+
+Programmatic Android Views on the OpenCC UI kit (`ui/` package; decision D36, no Compose):
+`AccountsActivity` (launcher entry, card list, popup menu with edit / test / default / remove),
+`AccountEditorActivity` (form + collapsible IMAP / POP3 / SMTP server blocks, `ConnectionTester`
+running `MailSession.test` on one worker thread with `abort` as cancel), `AppSettingsActivity`
+and `AboutActivity` (host-following language, night mode and theme colour through
+`AutoJs6HostSettingsContract`). `AccountFormPolicy` is pure Kotlin (`AccountFormTest`, 6 cases:
+preset prefill, validation of alias / address / host / port / receive endpoint, JSON that omits
+endpoints equal to the preset and `receive` for send-only accounts, round trip from JSON).
+
+Secret handling in the editor: the password / token field has `isSaveEnabled = false`, is never
+written to `onSaveInstanceState`, is read with `TextUtils.getChars` into a `CharArray` that
+`ConnectionTester` and `AccountStore.put` wipe, and is cleared after a save; editing an account
+with the field left empty copies the stored secret inside `withSecret` and never shows it.
+
+Device test `SettingsScreensDeviceTest` (`:app:connectedDebugAndroidTest`, in-process
+`ActivityScenario` against the installed plugin's real store, 2026-09-19):
+
+| Case | AVD API 24 | Redmi API 33 | Checks |
+| --- | --- | --- | --- |
+| `editorSavesTestsAndReopensAnAccountWithoutExposingTheSecret` | 2.87 s | 6.75 s | a custom-server form pointing at scripted loopback IMAP and SMTP servers (`tls: none`) is typed with the secret; `recreate()` restores alias and hosts but leaves the secret field empty; "Test connection" makes the IMAP server record a `LOGIN` with the secret and the SMTP server an `AUTH`, the result dialog names IMAP and SMTP and does not contain the secret; "Save" closes the editor, the store holds the alias with `secretKind = PASSWORD`, the parsed document keeps address, display name, both ports and `receive = imap`, and `withSecret` returns the typed secret; reopening the editor for the alias shows the alias, an empty secret field with the keep-helper, and saving a changed display name keeps the stored secret; the accounts page lists the alias and address and no view contains the secret; `MailPluginBinder.openSession(alias)` + `session.test` answers `ok` through the scripted IMAP server without the secret in the response, `close` reports `closed` |
+
+The whole connected suite (14 cases: `AccountStoreDeviceTest` 3, `AngusMailPluginContractTest` 4,
+`MailCoreDeviceTest` 3, `MailSessionBinderTest` 3, `SettingsScreensDeviceTest` 1) passes on both
+devices after the manifest gained the four activities; `wakeActivityFollowsTheHostActivationContract`
+still resolves exactly one WAKE activity. Screenshots (`build/p4/shot-*.png`, not committed):
+accounts empty state and editor on the AVD (API 24) and the Sony (API 28) in light mode, on the
+Redmi (API 33) in night mode; provider dialog and the QQ preset prefill on the AVD.
+
 ## Credential audit
 
 - `grep` of the new sources for `Log.` / `println`: none; the store never logs.
@@ -102,12 +134,17 @@ and the capability array equals `AngusMailPlugin.FEATURES`.
   cipher failures are fixed strings; `EncryptedAccountStoreTest.storageFailuresNeverLeakTheirText`
   proves a storage exception text does not reach the caller.
 - `AccountEnvelope.toString` / `SavedAccount.toString` print alias and sizes only.
+- The settings screens (`settings/`, `ui/`) contain no `Log.` / `println`; toasts, snackbars and
+  dialogs show alias, address, host, port, error code and message only; `ConnectionTestDialog`
+  renders `SessionTestResult` (no credential field exists on it); `SettingsScreensDeviceTest`
+  asserts the secret is absent from the result dialog, the accounts page and the Binder response.
 
 ## Reproducing
 
 ```
 ./gradlew :app:testDebugUnitTest --tests "io.github.supermonster003.autojs6.plugin.angus.mail.store.*"
 ANDROID_SERIAL=<serial> ./gradlew :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=io.github.supermonster003.autojs6.plugin.angus.mail.AccountStoreDeviceTest"
+ANDROID_SERIAL=<serial> ./gradlew :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=io.github.supermonster003.autojs6.plugin.angus.mail.SettingsScreensDeviceTest"
 ```
 
 The connected run uninstalls the plugin from the device afterwards; reinstall

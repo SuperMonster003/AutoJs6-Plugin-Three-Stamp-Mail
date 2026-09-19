@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Theme of the settings screens (roadmap P4.2). The palette is resolved at runtime by
+         AppThemePalette (host theme color, night mode); these attributes cover the framework and
+         Material widgets the kit does not tint itself. -->
+    <style name="Theme.AngusMail" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/mail_brand_primary</item>
+        <item name="colorAccent">@color/mail_accent</item>
+        <item name="colorSurface">@color/mail_surface</item>
+        <item name="colorSurfaceVariant">@color/mail_surface_variant</item>
+        <item name="colorOutline">@color/mail_outline</item>
+        <item name="colorError">@color/mail_error</item>
+        <item name="colorOnSurface">@color/mail_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/mail_text_secondary</item>
+        <item name="android:textColorPrimary">@color/mail_text_primary</item>
+        <item name="android:textColorSecondary">@color/mail_text_secondary</item>
+        <item name="android:colorAccent">@color/mail_accent</item>
+        <item name="android:navigationBarColor">@color/mail_system_bar</item>
+        <item name="android:statusBarColor">@color/mail_system_bar</item>
+        <item name="android:windowBackground">@color/mail_window_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="AppToolbarTitle" parent="TextAppearance.AppCompat.Title">
+        <item name="android:textSize">20sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="AppToolbarSubtitle" parent="TextAppearance.AppCompat.Subhead">
+        <item name="android:textSize">13sp</item>
+    </style>
+</resources>

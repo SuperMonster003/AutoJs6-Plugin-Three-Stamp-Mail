@@ -226,6 +226,10 @@ dependencies {
     // Every IMAP / POP3 / SMTP operation (roadmap D13); the Binder layer only routes requests to it.
     implementation(project(":mail-core"))
 
+    // The settings screens (roadmap P4.2): AppCompat activities and Material components, built in code.
+    implementation(libs.appcompat)
+    implementation(libs.material)
+
     testImplementation(libs.junit)
 
     androidTestImplementation(libs.test.runner)

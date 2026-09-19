@@ -3,6 +3,7 @@ package io.github.supermonster003.autojs6.plugin.angus.mail.binder
 import android.content.Context
 import android.os.Bundle
 import io.github.supermonster003.autojs6.plugin.angus.mail.AngusMailPlugin
+import io.github.supermonster003.autojs6.plugin.angus.mail.angusMailAccountDefaults
 import io.github.supermonster003.autojs6.plugin.angus.mail.angusMailPluginRuntimeInfo
 import io.github.supermonster003.autojs6.plugin.angus.mail.capabilitiesBundle
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccountOptions
@@ -83,16 +84,5 @@ internal class MailPluginBinder(
         return MailBundles.json(MailContract.KEY_ACCOUNTS_JSON, SavedAccountsDocument.render(accounts.list()))
     }
 
-    /** The IMAP `ID` payload for providers that require it (163 / 126): names this plugin, never the account. */
-    private fun defaults(): MailAccountOptions.Defaults {
-        val info = context.angusMailPluginRuntimeInfo()
-        return MailAccountOptions.Defaults(
-            clientId = mapOf(
-                "name" to "AutoJs6-Plugin-Angus-Mail",
-                "version" to info.versionName,
-                "vendor" to AngusMailPlugin.AUTHOR,
-                "support-email" to AngusMailPlugin.SUPPORT_EMAIL,
-            ),
-        )
-    }
+    private fun defaults(): MailAccountOptions.Defaults = context.angusMailAccountDefaults()
 }

@@ -42,6 +42,43 @@
             android:name="org.autojs.plugin.info.AUTHOR"
             android:value="@string/plugin_author" />
 
+        <!--
+            The settings screens (roadmap P4.2). AccountsActivity is the launcher entry; the editor,
+            the application settings and the about screen chain back to it through parentActivityName.
+        -->
+        <activity
+            android:name=".settings.AccountsActivity"
+            android:exported="true"
+            android:label="@string/accounts_title"
+            android:theme="@style/Theme.AngusMail">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".settings.AccountEditorActivity"
+            android:exported="false"
+            android:label="@string/editor_title_add"
+            android:parentActivityName=".settings.AccountsActivity"
+            android:theme="@style/Theme.AngusMail"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".AppSettingsActivity"
+            android:exported="false"
+            android:label="@string/settings_title"
+            android:parentActivityName=".settings.AccountsActivity"
+            android:theme="@style/Theme.AngusMail" />
+
+        <activity
+            android:name=".AboutActivity"
+            android:exported="false"
+            android:label="@string/about_title"
+            android:parentActivityName=".AppSettingsActivity"
+            android:theme="@style/Theme.AngusMail" />
+
         <activity
             android:name=".WakeActivity"
             android:excludeFromRecents="true"
@@ -82,6 +119,21 @@
                 android:name="requiresHostVersion"
                 android:value="5282" />
         </service>
+
+        <!--
+            AppCompat / Material pull in auto-start components; this plugin exposes no provider and no
+            receiver (ManifestContractTest and the installed-package contract test enforce it).
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            tools:ignore="MissingClass"
+            tools:node="remove" />
+
+        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            tools:ignore="MissingClass"
+            tools:node="remove" />
 
     </application>
 

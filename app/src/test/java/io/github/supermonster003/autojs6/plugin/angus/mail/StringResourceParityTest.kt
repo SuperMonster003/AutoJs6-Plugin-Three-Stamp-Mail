@@ -18,7 +18,10 @@ class StringResourceParityTest {
     @Test
     fun `every locale defines the same translatable strings in sorted order`() {
         val reference = strings("values")
-        assertEquals(setOf("plugin_description"), reference.keys)
+        assertTrue("the plugin description must stay", "plugin_description" in reference.keys)
+        assertTrue("the settings screens ship their strings (roadmap P4.2)", reference.keys.any { it.startsWith("accounts_") })
+        assertEquals("values strings must be sorted by name", reference.keys.sorted(), reference.keys.toList())
+        assertTrue("no string may carry a secret-looking default", reference.values.none { it.contains("password=", ignoreCase = true) })
         LOCALE_DIRECTORIES.forEach { directory ->
             val localized = strings(directory)
             assertEquals("$directory must define the same keys as values", reference.keys, localized.keys)
@@ -57,7 +60,9 @@ class StringResourceParityTest {
 
     private fun strings(directory: String): Map<String, String> {
         val document = parse(resourceRoot.resolve("$directory/strings.xml"))
-        return document.elements("string").associate { it.getAttribute("name") to it.textContent }
+        return LinkedHashMap<String, String>().also { map ->
+            document.elements("string").forEach { element -> map[element.getAttribute("name")] = element.textContent }
+        }
     }
 
     private fun parse(path: Path): Element {

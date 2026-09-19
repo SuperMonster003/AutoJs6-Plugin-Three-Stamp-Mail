@@ -51,8 +51,12 @@ class ManifestContractTest {
         assertEquals("@string/plugin_author", metaData["org.autojs.plugin.info.AUTHOR"])
         assertEquals("0", metaData["org.autojs.plugin.contract.NATIVE_PAGE_ALIGNMENT"])
 
-        val wake = application.children("activity").single()
-        assertEquals(".WakeActivity", wake.androidAttribute("name"))
+        val activities = application.children("activity").associateBy { it.androidAttribute("name") }
+        assertEquals(
+            setOf(".settings.AccountsActivity", ".settings.AccountEditorActivity", ".AppSettingsActivity", ".AboutActivity", ".WakeActivity"),
+            activities.keys,
+        )
+        val wake = activities.getValue(".WakeActivity")
         assertEquals("true", wake.androidAttribute("exported"))
         assertEquals("true", wake.androidAttribute("excludeFromRecents"))
         assertEquals("true", wake.androidAttribute("finishOnTaskLaunch"))
@@ -62,8 +66,42 @@ class ManifestContractTest {
         assertEquals(listOf("org.autojs.plugin.action.WAKE"), filter.children("action").map { it.androidAttribute("name") })
         assertEquals(listOf("android.intent.category.DEFAULT"), filter.children("category").map { it.androidAttribute("name") })
 
-        assertTrue("no receivers until a roadmap phase needs one", application.children("receiver").isEmpty())
-        assertTrue("no content providers", application.children("provider").isEmpty())
+        // AppCompat / Material contribute auto-start components; the manifest only removes them.
+        val removals = (application.children("receiver") + application.children("provider"))
+        assertEquals(
+            listOf("androidx.startup.InitializationProvider", "androidx.profileinstaller.ProfileInstallReceiver").sorted(),
+            removals.map { it.androidAttribute("name") }.sorted(),
+        )
+        removals.forEach { component -> assertEquals("remove", component.getAttributeNS(TOOLS_NAMESPACE, "node")) }
+    }
+
+    @Test
+    fun `settings screens follow the launcher and parent chain conventions`() {
+        val activities = manifest.child("application").children("activity").associateBy { it.androidAttribute("name") }
+
+        val accounts = activities.getValue(".settings.AccountsActivity")
+        assertEquals("true", accounts.androidAttribute("exported"))
+        assertNull("the launcher entry carries no permission", accounts.androidAttributeOrNull("permission"))
+        assertEquals("@style/Theme.AngusMail", accounts.androidAttribute("theme"))
+        assertEquals("@string/accounts_title", accounts.androidAttribute("label"))
+        val launcher = accounts.child("intent-filter")
+        assertEquals(listOf("android.intent.action.MAIN"), launcher.children("action").map { it.androidAttribute("name") })
+        assertEquals(listOf("android.intent.category.LAUNCHER"), launcher.children("category").map { it.androidAttribute("name") })
+
+        val chain = mapOf(
+            ".settings.AccountEditorActivity" to ".settings.AccountsActivity",
+            ".AppSettingsActivity" to ".settings.AccountsActivity",
+            ".AboutActivity" to ".AppSettingsActivity",
+        )
+        chain.forEach { (name, parent) ->
+            val activity = activities.getValue(name)
+            assertEquals("$name must stay internal", "false", activity.androidAttribute("exported"))
+            assertEquals("$name parent", parent, activity.androidAttribute("parentActivityName"))
+            assertEquals("$name theme", "@style/Theme.AngusMail", activity.androidAttribute("theme"))
+            assertTrue("$name needs a label", activity.androidAttribute("label").startsWith("@string/"))
+            assertTrue("$name declares no intent filter", activity.children("intent-filter").isEmpty())
+        }
+        assertEquals("adjustResize", activities.getValue(".settings.AccountEditorActivity").androidAttribute("windowSoftInputMode"))
     }
 
     @Test
@@ -108,6 +146,7 @@ class ManifestContractTest {
 
     private companion object {
         const val ANDROID_NAMESPACE = "http://schemas.android.com/apk/res/android"
+        const val TOOLS_NAMESPACE = "http://schemas.android.com/tools"
         const val PLUGIN_PERMISSION = "org.autojs.permission.PLUGIN"
     }
 }

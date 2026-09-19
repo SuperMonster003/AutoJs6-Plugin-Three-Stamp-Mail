@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.AngusMail" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/mail_brand_primary</item>
+        <item name="colorAccent">@color/mail_accent</item>
+        <item name="colorSurface">@color/mail_surface</item>
+        <item name="colorSurfaceVariant">@color/mail_surface_variant</item>
+        <item name="colorOutline">@color/mail_outline</item>
+        <item name="colorError">@color/mail_error</item>
+        <item name="colorOnSurface">@color/mail_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/mail_text_secondary</item>
+        <item name="android:textColorPrimary">@color/mail_text_primary</item>
+        <item name="android:textColorSecondary">@color/mail_text_secondary</item>
+        <item name="android:colorAccent">@color/mail_accent</item>
+        <item name="android:navigationBarColor">@color/mail_system_bar</item>
+        <item name="android:statusBarColor">@color/mail_system_bar</item>
+        <item name="android:windowBackground">@color/mail_window_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
