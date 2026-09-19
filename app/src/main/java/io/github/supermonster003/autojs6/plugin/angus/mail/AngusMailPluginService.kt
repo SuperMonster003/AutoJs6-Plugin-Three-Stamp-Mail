@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.IBinder
 import io.github.supermonster003.autojs6.plugin.angus.mail.binder.HostCallerGuard
 import io.github.supermonster003.autojs6.plugin.angus.mail.binder.MailPluginBinder
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.MimeLeniency
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStores
 
 /**
@@ -19,6 +20,12 @@ class AngusMailPluginService : Service() {
 
     private val binder: IBinder by lazy {
         MailPluginBinder(applicationContext, HostCallerGuard(applicationContext), AccountStores.of(applicationContext))
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        // Some Jakarta MIME leniency switches are read once when the Jakarta class loads (roadmap P6 hostile input).
+        MimeLeniency.install()
     }
 
     override fun onBind(intent: Intent?): IBinder = binder

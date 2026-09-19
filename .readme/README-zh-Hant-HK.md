@@ -187,6 +187,7 @@ _2026/09/19_
 - `優化` 服務商預設: Sina 郵箱補上已發送資料夾名 (`已发送`), 並註明伺服器不保存已發郵件副本且拒絕 IMAP CREATE (資料夾只能在網頁端建立); 126 郵箱伺服器保存已發郵件副本已用真實帳戶驗證
 - `優化` 服務商預設: Yahoo Mail 與 Aliyun Mail 的說明註明這兩個預設未經真實帳戶核實 (項目無法取得測試帳戶), 其已發送副本行為按公開文檔推定.
 - `優化` 秘密審計 (郵件路線圖 P6): 對郵件核心與應用程式搜尋日誌語句, 控制台輸出, Jakarta 偵錯開關以及每一處秘密被實體化的位置; 結果 (`docs/dev/p6-secret-audit.md`) 由 `SecretAuditTest` 強制執行: 任何日誌或偵錯語句都會使構建失敗, `reveal()` 被固定在三處 Jakarta 認證呼叫, 並檢查 Jakarta 會話永不偵錯, 帳戶 JSON 中的秘密被拒絕且不回顯, 值物件, 異常映射器與協定摘要在秘密傳播的每種形式下都將其遮蔽
+- `優化` 敵意輸入 (郵件路線圖 P6): 無論郵件攜帶什麼, 郵件文檔現在都有界 (四個地址列表合計 500 項, 地址與顯示名截至 320 字元, 主題 / 標識 / 信頭值截至 4096 字元, `headers` 映射至多 64 KiB, MIME 樹深度至多 32 且部件至多 256, 未知大小的正文按內聯預算截讀), 單封敵意郵件不再能以 `LIMIT_EXCEEDED` 封死整頁列表; 損壞的 base64, 未知傳輸編碼, 無 boundary 或空的 multipart 改為寬鬆解碼而不再被誤判為斷線; 過深或無法解析的 multipart 作為一個葉子保持可下載; `HostileInputTest` 與 `HostileInputGreenMailTest` (17 例, `docs/dev/p6-hostile-input.md`) 覆蓋超深 / 超寬 MIME, 20000 收件人, 信頭炸彈, 缺失 Content-Type, 非法 base64, 遞歸 `message/rfc822`, 敵意檔案名, 大小不符與非法 UTF-8
 - `依賴` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) 及 Angus Activation 2.0.3 與 Jakarta Activation API 2.1.4
 - `依賴` 附加 GreenMail 2.1.13 用於 JVM 郵件核心測試 (僅測試範圍)
 - `依賴` 附加 `common-plugin-api.aar` (AutoJs6 模組 `plugin-api/common-plugin-api`, 宿主組建 6.8.0 / 5282, MPL 2.0) 作為共用插件契約, 並在 `locks/host-api-aars.lock` 中鎖定雜湊

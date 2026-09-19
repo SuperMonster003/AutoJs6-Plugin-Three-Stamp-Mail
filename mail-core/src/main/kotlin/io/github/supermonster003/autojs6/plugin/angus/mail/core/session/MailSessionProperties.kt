@@ -4,6 +4,7 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.AuthMeth
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccount
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.TlsMode
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.MimeLeniency
 import java.util.Properties
 
 /**
@@ -30,6 +31,8 @@ object MailSessionProperties {
             put("mail.mime.encodefilename", "true")
             put("mail.mime.parameters.strict", "false")
             put("mail.mime.address.strict", "false")
+            // Hostile multiparts (roadmap P6): the session-level switches of MimeLeniency.
+            MimeLeniency.apply(this)
 
             if (protocol == MailProtocol.SMTP) {
                 put("mail.transport.protocol", provider)

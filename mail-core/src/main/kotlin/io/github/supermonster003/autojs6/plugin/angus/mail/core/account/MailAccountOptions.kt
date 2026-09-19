@@ -3,6 +3,7 @@ package io.github.supermonster003.autojs6.plugin.angus.mail.core.account
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.MailLimits
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorCode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.MimeLeniency
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.MailJson
 import jakarta.mail.internet.AddressException
 import jakarta.mail.internet.InternetAddress
@@ -25,6 +26,10 @@ enum class SecretKind { NONE, PASSWORD, ACCESS_TOKEN }
  * fields inside the JSON are rejected outright so that a misrouted credential can never be logged.
  */
 object MailAccountOptions {
+
+    init {
+        MimeLeniency.install()
+    }
 
     object Fields {
         const val PROVIDER = "provider"

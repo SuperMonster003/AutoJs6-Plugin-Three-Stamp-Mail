@@ -4,6 +4,7 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAcco
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailSecret
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.TlsMode
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.MimeLeniency
 import jakarta.mail.Authenticator
 import jakarta.mail.PasswordAuthentication
 import jakarta.mail.Session
@@ -16,6 +17,10 @@ import jakarta.mail.URLName
  * session is private to one account and protocol; nothing is cached in the JVM-wide default session.
  */
 object MailSessionFactory {
+
+    init {
+        MimeLeniency.install()
+    }
 
     fun session(account: MailAccount, protocol: MailProtocol, secret: MailSecret, sockets: SocketRegistry? = null): Session {
         MailcapRegistry.ensureRegistered()

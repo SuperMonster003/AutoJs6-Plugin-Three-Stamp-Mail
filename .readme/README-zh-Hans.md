@@ -187,6 +187,7 @@ _2026/09/19_
 - `优化` 服务商预设: Sina 邮箱补上已发送文件夹名 (`已发送`), 并注明服务器不保存已发邮件副本且拒绝 IMAP CREATE (文件夹只能在网页端创建); 126 邮箱服务器保存已发邮件副本已用真实账户验证
 - `优化` 服务商预设: Yahoo Mail 与 Aliyun Mail 的说明注明这两个预设未经真实账户核实 (项目无法获得测试账户), 其已发送副本行为按公开文档推定.
 - `优化` 秘密审计 (邮件路线图 P6): 对邮件内核与应用搜索日志语句, 控制台输出, Jakarta 调试开关以及每一处秘密被实体化的位置; 结果 (`docs/dev/p6-secret-audit.md`) 由 `SecretAuditTest` 强制执行: 任何日志或调试语句都会使构建失败, `reveal()` 被固定在三处 Jakarta 认证调用, 并检查 Jakarta 会话永不调试, 账户 JSON 中的秘密被拒绝且不回显, 值对象, 异常映射器与协议摘要在秘密传播的每种形式下都将其掩盖
+- `优化` 敌意输入 (邮件路线图 P6): 无论邮件携带什么, 邮件文档现在都有界 (四个地址列表合计 500 项, 地址与显示名截至 320 字符, 主题 / 标识 / 信头值截至 4096 字符, `headers` 映射至多 64 KiB, MIME 树深度至多 32 且部件至多 256, 未知大小的正文按内联预算截读), 单封敌意邮件不再能以 `LIMIT_EXCEEDED` 封死整页列表; 损坏的 base64, 未知传输编码, 无 boundary 或空的 multipart 改为宽松解码而不再被误判为断线; 过深或无法解析的 multipart 作为一个叶子保持可下载; `HostileInputTest` 与 `HostileInputGreenMailTest` (17 例, `docs/dev/p6-hostile-input.md`) 覆盖超深 / 超宽 MIME, 20000 收件人, 信头炸弹, 缺失 Content-Type, 非法 base64, 递归 `message/rfc822`, 敌意文件名, 大小不符与非法 UTF-8
 - `依赖` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) 及 Angus Activation 2.0.3 与 Jakarta Activation API 2.1.4
 - `依赖` 附加 GreenMail 2.1.13 用于 JVM 邮件核心测试 (仅测试范围)
 - `依赖` 附加 `common-plugin-api.aar` (AutoJs6 模块 `plugin-api/common-plugin-api`, 宿主构建 6.8.0 / 5282, MPL 2.0) 作为共享插件契约, 并在 `locks/host-api-aars.lock` 中锁定哈希

@@ -29,6 +29,10 @@ import kotlinx.serialization.json.JsonPrimitive
  */
 object OutgoingMessageParser {
 
+    init {
+        MimeLeniency.install()
+    }
+
     object Fields {
         const val MESSAGE = "message"
         const val SAVE_TO_SENT = "saveToSent"
@@ -208,7 +212,7 @@ object OutgoingMessageParser {
     fun sanitizeFileName(name: String): String {
         val cleaned = name.map { if (it == '/' || it == '\\' || it < ' ' || it == '\u007f') '_' else it }.joinToString("").trim()
         val bounded = if (cleaned.length > MAX_FILE_NAME_LENGTH) cleaned.take(MAX_FILE_NAME_LENGTH) else cleaned
-        return bounded.ifEmpty { "attachment" }
+        return if (bounded.isEmpty() || bounded.all { it == '.' }) "attachment" else bounded
     }
 
     private fun JsonObject.addresses(field: String): List<MailAddressSpec> {

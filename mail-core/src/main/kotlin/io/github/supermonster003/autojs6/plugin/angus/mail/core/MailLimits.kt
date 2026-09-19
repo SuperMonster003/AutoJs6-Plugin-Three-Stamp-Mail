@@ -63,4 +63,22 @@ object MailLimits {
 
     /** Consecutive failed IDLEs (refused, or dropped within `IDLE_HEALTHY_MS`) before a watch switches to polling. */
     const val IDLE_FAILURE_LIMIT = 3
+
+    // Incoming mail documents (roadmap P6 hostile input, D39): one message document always fits the
+    // response envelope, whatever the message carries. Not contract constants, the plugin owns them.
+
+    /** Deepest multipart nesting the MIME tree walks; a multipart nested deeper is one downloadable leaf. */
+    const val MAX_MIME_DEPTH = 32
+
+    /** Leaves the MIME tree enumerates per message; later parts are neither listed nor downloadable. */
+    const val MAX_MIME_PARTS = 256
+
+    /** Longest subject, header value, message id or declared file name kept in a message document (UTF-16 units). */
+    const val MAX_HEADER_VALUE_CHARS = 4096
+
+    /** UTF-8 bytes of names and values the `headers` map of a message document holds; a header that does not fit is dropped. */
+    const val MAX_HEADERS_BYTES = 64 * 1024
+
+    /** Longest address, display name, content id or header name kept in a message document (UTF-16 units); the four address lists of a document share `MAX_RECIPIENTS`. */
+    const val MAX_ADDRESS_CHARS = 320
 }

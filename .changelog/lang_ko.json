@@ -39,7 +39,8 @@
         "오류 매핑: 계정의 POP 액세스가 비활성화되어 로그인 후 메일함을 거부하는 POP3 서버 (Gmail은 STAT에 `[SYS/PERM] Your account is not enabled for POP access`로 응답)에 대해 재시도 가능한 `IO_FAILED` \"I/O failed\" 대신 원인을 밝히는 메시지가 담긴 `UNSUPPORTED_OPERATION`을 반환합니다",
         "제공자 프리셋: Sina Mail에 보낸편지함 폴더 이름 (`已发送`)을 추가하고, 서버가 보낸 메일 사본을 보관하지 않으며 IMAP CREATE를 거부한다는 점 (폴더는 웹 UI에서만 생성 가능)을 명시했습니다. 126 Mail 서버의 보낸 메일 사본은 실제 계정으로 검증되었습니다",
         "제공자 프리셋: Yahoo Mail 과 Aliyun Mail 의 메모에 이 프리셋이 실제 계정으로 검증되지 않았음 (프로젝트에 테스트 계정이 없음) 을 명시하며, 보낸 편지 사본 동작은 공개 문서를 따릅니다.",
-        "비밀 정보 감사 (메일 로드맵 P6): 메일 코어와 앱에서 로그 문, 콘솔 출력, Jakarta 디버그 스위치, 비밀 정보가 실체화되는 모든 위치를 검색함. 그 결과 (`docs/dev/p6-secret-audit.md`) 는 `SecretAuditTest` 가 강제함: 로그나 디버그 문이 있으면 빌드가 실패하고, `reveal()` 은 세 곳의 Jakarta 인증 호출에 고정되며, Jakarta 세션이 결코 디버그하지 않는지, 계정 JSON 안의 비밀 정보가 되돌려 보여지지 않고 거부되는지, 값 객체, 예외 매퍼, 프로토콜 추적이 비밀 정보를 전달되는 모든 형태로 가리는지 검사함"
+        "비밀 정보 감사 (메일 로드맵 P6): 메일 코어와 앱에서 로그 문, 콘솔 출력, Jakarta 디버그 스위치, 비밀 정보가 실체화되는 모든 위치를 검색함. 그 결과 (`docs/dev/p6-secret-audit.md`) 는 `SecretAuditTest` 가 강제함: 로그나 디버그 문이 있으면 빌드가 실패하고, `reveal()` 은 세 곳의 Jakarta 인증 호출에 고정되며, Jakarta 세션이 결코 디버그하지 않는지, 계정 JSON 안의 비밀 정보가 되돌려 보여지지 않고 거부되는지, 값 객체, 예외 매퍼, 프로토콜 추적이 비밀 정보를 전달되는 모든 형태로 가리는지 검사함",
+        "적대적 입력 (메일 로드맵 P6): 메일이 무엇을 담고 있든 메시지 문서는 이제 유계임 (네 주소 목록은 합계 500 항목, 주소와 표시 이름은 320 자, 제목 / 식별자 / 헤더 값은 4096 자, `headers` 맵은 64 KiB, MIME 트리는 깊이 32 와 256 파트, 크기를 알 수 없는 본문은 인라인 예산까지만 읽음) 으로, 적대적 메일 한 통이 `LIMIT_EXCEEDED` 로 목록 페이지 전체를 막을 수 없음. 손상된 base64, 알 수 없는 전송 인코딩, boundary 가 없거나 비어 있는 multipart 는 연결 끊김으로 오인되지 않고 관대하게 디코딩됨. 너무 깊거나 파싱할 수 없는 multipart 는 하나의 리프로 다운로드 가능함. `HostileInputTest` 와 `HostileInputGreenMailTest` (17 건, `docs/dev/p6-hostile-input.md`) 가 깊고 넓은 MIME, 20000 수신자, 헤더 폭탄, Content-Type 누락, 잘못된 base64, 재귀적 `message/rfc822`, 적대적 파일 이름, 크기 불일치, 잘못된 UTF-8 을 다룸"
       ],
       "dependency": [
         "Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`)와 Angus Activation 2.0.3, Jakarta Activation API 2.1.4",

@@ -53,6 +53,11 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.withType<Test>().configureEach {
     useJUnit()
+    // The static Jakarta switches of MimeLeniency (roadmap P6): a test class may load Jakarta before any mail-core object installs them.
+    systemProperty("mail.mime.ignoreunknownencoding", "true")
+    systemProperty("mail.mime.decodetext.strict", "false")
+    systemProperty("mail.mime.parameters.strict", "false")
+    systemProperty("mail.mime.decodefilename", "true")
     testLogging {
         events("failed", "skipped")
         showStackTraces = true
