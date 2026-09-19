@@ -46,4 +46,21 @@ object MailLimits {
 
     /** Longest redacted trace line (roadmap D28: command name, response code, first 200 characters). */
     const val MAX_TRACE_LINE_LENGTH = 200
+
+    // Watches (roadmap D17 / P5); not contract constants, the plugin owns them.
+
+    /** First reconnect delay of a watch after a connection loss; doubles per attempt with jitter. */
+    const val WATCH_BACKOFF_MIN_MS = 1_000L
+
+    /** Longest reconnect delay of a watch. */
+    const val WATCH_BACKOFF_MAX_MS = 5L * 60 * 1000
+
+    /** Longest `pollIntervalMs` a watch accepts; larger values are clamped. */
+    const val MAX_POLL_INTERVAL_MS = 60L * 60 * 1000
+
+    /** An IDLE that ends in a connection loss sooner than this counts as a failed IDLE. */
+    const val IDLE_HEALTHY_MS = 60_000L
+
+    /** Consecutive failed IDLEs (refused, or dropped within `IDLE_HEALTHY_MS`) before a watch switches to polling. */
+    const val IDLE_FAILURE_LIMIT = 3
 }

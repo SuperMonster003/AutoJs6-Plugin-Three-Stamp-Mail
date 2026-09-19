@@ -176,6 +176,7 @@ _2026/09/19_
 - `新增` 设置入口 (路线图 P4.3): AutoJs6 宿主经导出的 `org.autojs.plugin.MAIL_SETTINGS` 活动打开账户页, 该活动要求插件权限, 只接受无参数的请求并立即结束; 能力集合宣告 `mailSettingsVersion` 1; 启动器入口本身不带该权限
 - `新增` 发行历史 (路线图 P4.5): 设置页与关于页可打开发行历史页, 内容取自随插件打包的当前语言更新日志 (无对应翻译时回退英语), 每个版本一张卡片, 含日期与带标签的条目; 插件不做自身的更新检查, 更新跟随 AutoJs6 插件中心
 - `新增` 电池优化引导 (路线图 P4.6): 设置页显示系统是否可能在后台暂停本插件 (`PowerManager.isIgnoringBatteryOptimizations`), 说明影响后经 `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` 打开系统对话框; 清单因此声明 `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`; 启动时不发起任何请求, 也没有功能依赖该排除
+- `新增` 新邮件监听, IMAP IDLE (路线图 P5): 邮件内核以独立连接用 `IMAPFolder.idle` 监听文件夹, 每 24 分钟续期一次 IDLE, 新邮件按 UID 抓取 (信封, 或按需正文) 且只报一次, 断线后按指数退避重连 (1 s 起, 上限 5 min, 带抖动), 文件夹 UIDVALIDITY 变化时报 `resync`; 服务器无 IDLE 或 IDLE 连续失败 3 次则切换为轮询并发 `mode` 事件; 每个会话最多 `MAX_WATCHES_PER_SESSION` 个监听, 会话关闭时一并关闭
 - `修复` 服务商预设 (路线图 P3.2): 163 邮箱与 126 邮箱会在服务器端保存每封经 SMTP 发出的邮件, 两者的 `autoSavesSent` 改为 true, 默认 `saveToSent` 不再向 `已发送` 追加第二份副本 (真实 163 账户核实: `saveToSent: false` 发出的邮件数分钟后出现在已发送文件夹)
 - `修复` AGP 9.1 构建时的 SDK XML v4 解析警告及 JVM 单元测试组装任务误触发 APK 原生库对齐检查的问题 (共享构建插件 1.8.3)
 - `修复` 账户编辑器 (路线图 P4.7): 整个表单退出 Android 自动填充框架, 密码管理器不再索取授权码; 此前 HyperOS (API 35) 会在保存后关闭编辑器时弹出 "自动保存账号密码".

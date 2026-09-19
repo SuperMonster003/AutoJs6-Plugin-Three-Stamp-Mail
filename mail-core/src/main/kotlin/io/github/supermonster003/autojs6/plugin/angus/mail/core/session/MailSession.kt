@@ -25,6 +25,11 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.UidsResult
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.toDocument
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.OutgoingMessage
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.query.MessageArgs
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.WatchConfig
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.WatchListener
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.WatchOptions
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.Watcher
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.Watchers
 import jakarta.mail.Flags
 import java.io.Closeable
 import java.io.OutputStream
@@ -348,9 +353,33 @@ class MailSession(
         listOf(imapGuard, pop3Guard, smtpGuard).forEach { it.drop() }
     }
 
+    // ------------------------------------------------------------------ watches (P5)
+
+    private val watchLock = Any()
+    private val watchers = ArrayList<Watcher>()
+
+    /** Watches of this session that have not closed yet. */
+    val watchCount: Int get() = synchronized(watchLock) { watchers.count { !it.isClosed } }
+
+    /**
+     * Creates a new-mail watch on its own store connection (roadmap D15 / P5); the caller starts
+     * it and receives its events on the watcher's thread. At most `MAX_WATCHES_PER_SESSION`
+     * watches may be open at once; [close] stops them all. Thread-safe (the Binder calls it from
+     * its own thread while the worker may be inside a call).
+     */
+    fun watch(options: WatchOptions, listener: WatchListener, config: WatchConfig = WatchConfig()): Watcher = synchronized(watchLock) {
+        ensureOpen()
+        watchers.removeAll { it.isClosed }
+        if (watchers.size >= MailLimits.MAX_WATCHES_PER_SESSION) {
+            throw MailException(MailErrorCode.LIMIT_EXCEEDED, "the session already has ${MailLimits.MAX_WATCHES_PER_SESSION} watches (MAX_WATCHES_PER_SESSION)", retryable = false).also { lastError = it }
+        }
+        Watchers.open(account, secret, options, listener, config).also { watchers += it }
+    }
+
     override fun close() {
         if (isClosed) return
         isClosed = true
+        synchronized(watchLock) { watchers.toList() }.forEach { runCatching { it.stop(Watcher.REASON_SESSION_CLOSED) } }
         listOf(imapGuard, pop3Guard, smtpGuard).forEach { runCatching { it.close() } }
         secret.clear()
     }

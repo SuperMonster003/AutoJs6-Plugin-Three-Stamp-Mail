@@ -89,6 +89,59 @@ class ImapMailbox private constructor(
 
     fun folderExists(name: String): Boolean = trace.timed(MailProtocol.IMAP.id, "exists $name") { store.getFolder(name).exists() }
 
+    // ------------------------------------------------------------------ watches (P5)
+
+    /** Opens [name] and leaves it open for a watch's IDLE loop (roadmap P5); the caller closes it with `close(false)`. */
+    fun openFolder(name: String, mode: Int): IMAPFolder {
+        val folder = store.getFolder(name) as IMAPFolder
+        trace.timed(MailProtocol.IMAP.id, "open $name ${if (mode == Folder.READ_WRITE) "rw" else "ro"}") { folder.open(mode) }
+        return folder
+    }
+
+    /** `UIDVALIDITY` of the open [folder], or -1 when the server did not report it. */
+    fun uidValidity(folder: IMAPFolder): Long = runCatching { folder.uidValidity }.getOrDefault(-1L)
+
+    /**
+     * The UID a watch starts after: `UIDNEXT - 1` when the server reports `UIDNEXT`, else the UID
+     * of the last message, or 0 for an empty folder. Everything above it arrived later.
+     */
+    fun highestUid(folder: IMAPFolder): Long {
+        val next = runCatching { folder.uidNext }.getOrDefault(-1L)
+        if (next > 0) return next - 1
+        val count = folder.messageCount
+        return if (count > 0) folder.getUID(folder.getMessage(count)) else 0L
+    }
+
+    /**
+     * True when the newest message of the open [folder] has a UID above [uid]. Angus keeps the
+     * count from the untagged `EXISTS` responses of any command (and sends a `NOOP` when the
+     * connection was quiet for a second), so a watch calls this after every fetch to close the
+     * window in which a message arrives while the previous batch is being fetched.
+     */
+    fun hasMessagesAfter(folder: IMAPFolder, uid: Long): Boolean {
+        val count = folder.messageCount
+        return count > 0 && folder.getUID(folder.getMessage(count)) > uid
+    }
+
+    /**
+     * Messages of the open [folder] with a UID above [afterUid] (`UID FETCH afterUid+1:*`),
+     * oldest first, as envelopes or, with [fetchBody], as the full documents of `messages.get`
+     * (bodies are peeked, so nothing is marked read). A watch calls it after every IDLE wake-up
+     * and after a reconnect, so the same message is never reported twice (roadmap D17).
+     */
+    fun messagesAfter(folder: IMAPFolder, afterUid: Long, fetchBody: Boolean): List<MessageDocument> {
+        // `n:*` also returns the last message when every UID is below n (RFC 3501), hence the filter.
+        val found = trace.timed(MailProtocol.IMAP.id, "uids after $afterUid") {
+            folder.getMessagesByUID(afterUid + 1, UIDFolder.LASTUID).filter { folder.getUID(it) > afterUid }.sortedBy { folder.getUID(it) }
+        }
+        if (found.isEmpty()) return emptyList()
+        val messages = found.toTypedArray()
+        if (!fetchBody) return envelopes(folder, messages)
+        messages.forEach { (it as? IMAPMessage)?.setPeek(true) }
+        trace.timed(MailProtocol.IMAP.id, "fetch full ${messages.size}") { folder.fetch(messages, FULL_PROFILE) }
+        return messages.map { MessageMapper.full(it, folder.fullName, JsonPrimitive(folder.getUID(it))) }
+    }
+
     /**
      * The first folder that carries the special-use attribute [attribute] (RFC 6154, e.g. `\Sent`)
      * in the server's `LIST` reply, or null. Servers without SPECIAL-USE return no attributes.
