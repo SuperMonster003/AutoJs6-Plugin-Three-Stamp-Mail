@@ -16,6 +16,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.supermonster003.autojs6.plugin.angus.mail.binder.CallerGuard
 import io.github.supermonster003.autojs6.plugin.angus.mail.binder.MailPluginBinder
 import io.github.supermonster003.autojs6.plugin.angus.mail.settings.AccountsActivity
+import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStores
 import org.autojs.plugin.common.api.IPluginInfoProvider
 import org.autojs.plugin.common.api.PluginCapabilityKeys
 import org.autojs.plugin.mail.api.IMailCallCallback
@@ -24,6 +25,7 @@ import org.autojs.plugin.mail.api.IMailSessionCallback
 import org.autojs.plugin.mail.api.MailCapabilityKeys
 import org.autojs.plugin.mail.api.MailContract
 import org.autojs.plugin.mail.api.MailErrorCodes
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -203,7 +205,13 @@ class AngusMailPluginContractTest {
     fun mailBinderAnswersTheSessionEnvelope() {
         val plugin = MailPluginBinder(context, CallerGuard.trusting())
         assertCapabilities(requireNotNull(plugin.info.capabilities))
-        assertEquals("[]", plugin.listSavedAccounts().getString(MailContract.KEY_ACCOUNTS_JSON))
+        val listed = JSONArray(plugin.listSavedAccounts().getString(MailContract.KEY_ACCOUNTS_JSON))
+        assertEquals(AccountStores.of(context).list().size, listed.length())
+        for (index in 0 until listed.length()) {
+            val entry = listed.getJSONObject(index)
+            assertTrue(entry.toString(), entry.has("alias") && entry.has("address"))
+            assertFalse(entry.toString(), entry.has("password") || entry.has("accessToken") || entry.has("secret"))
+        }
         run {
             val statuses = LinkedBlockingQueue<String>()
             val sessionCallback = object : IMailSessionCallback.Stub() {

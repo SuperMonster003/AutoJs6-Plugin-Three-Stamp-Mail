@@ -4,10 +4,12 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.view.ViewCompat
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -54,6 +56,10 @@ class SettingsScreensDeviceTest {
     private val context: Context
         get() = InstrumentationRegistry.getInstrumentation().targetContext
 
+    /** Resources in the language the plugin's screens render (may differ from the system locale). */
+    private val strings: Context
+        get() = AppConfiguration.wrap(context)
+
     private val store: AccountStore
         get() = AccountStores.of(context)
 
@@ -76,22 +82,27 @@ class SettingsScreensDeviceTest {
                 imap = EndpointFields(true, "127.0.0.1", imap.port.toString(), TlsMode.NONE),
                 smtp = EndpointFields(true, "127.0.0.1", smtp.port.toString(), TlsMode.NONE),
             )
-            val aliasHint = context.getString(R.string.editor_field_alias)
-            val secretHint = context.getString(R.string.editor_field_password)
-            val testLabel = context.getString(R.string.editor_action_test)
-            val saveLabel = context.getString(R.string.action_save)
+            val aliasHint = strings.getString(R.string.editor_field_alias)
+            val secretHint = strings.getString(R.string.editor_field_password)
+            val testLabel = strings.getString(R.string.editor_action_test)
+            val saveLabel = strings.getString(R.string.action_save)
 
             ActivityScenario.launch<AccountEditorActivity>(AccountEditorActivity.intent(context, null)).use { scenario ->
                 scenario.onActivity { activity ->
                     activity.replaceForm(form)
                     activity.field(secretHint).editText!!.setText(SECRET)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        // No password manager may capture the authorization code (HyperOS API 35 otherwise prompts).
+                        assertFalse("the secret field stays out of autofill", ViewCompat.isImportantForAutofill(activity.field(secretHint).editText!!))
+                        assertFalse("the address field stays out of autofill", ViewCompat.isImportantForAutofill(activity.field(strings.getString(R.string.editor_field_address)).editText!!))
+                    }
                 }
 
                 // Recreation (rotation, process restore) keeps every typed value except the secret.
                 scenario.recreate()
                 scenario.onActivity { activity ->
                     assertEquals(alias, activity.field(aliasHint).editText!!.text.toString())
-                    assertEquals("127.0.0.1", activity.fields(context.getString(R.string.editor_field_host)).first().editText!!.text.toString())
+                    assertEquals("127.0.0.1", activity.fields(strings.getString(R.string.editor_field_host)).first().editText!!.text.toString())
                     assertEquals("", activity.field(secretHint).editText!!.text.toString())
                     activity.field(secretHint).editText!!.setText(SECRET)
                 }
@@ -129,8 +140,8 @@ class SettingsScreensDeviceTest {
                 scenario.onActivity { activity ->
                     assertEquals(alias, activity.field(aliasHint).editText!!.text.toString())
                     assertEquals("", activity.field(secretHint).editText!!.text.toString())
-                    assertEquals(context.getString(R.string.editor_secret_keep_helper), activity.field(secretHint).helperText)
-                    activity.field(context.getString(R.string.editor_field_name)).editText!!.setText("Alice Again")
+                    assertEquals(strings.getString(R.string.editor_secret_keep_helper), activity.field(secretHint).helperText)
+                    activity.field(strings.getString(R.string.editor_field_name)).editText!!.setText("Alice Again")
                     activity.clickable(saveLabel).performClick()
                 }
                 waitUntil("the editor closes after the edit") { scenario.state == Lifecycle.State.DESTROYED }
@@ -217,7 +228,7 @@ class SettingsScreensDeviceTest {
             scenario.onActivity { activity ->
                 val texts = activity.root().descendants().filterIsInstance<TextView>().map { it.text.toString() }.toList()
                 assertTrue(texts.toString(), "v1.0.0" in texts)
-                assertFalse(texts.toString(), context.getString(R.string.release_history_load_failed) in texts)
+                assertFalse(texts.toString(), strings.getString(R.string.release_history_load_failed) in texts)
                 assertTrue(texts.toString(), texts.any { it.contains("P4.2") })
             }
         }
@@ -226,11 +237,11 @@ class SettingsScreensDeviceTest {
     @Test
     fun batteryGuideShowsTheSystemStateAndTheSystemDialogIsReachable() {
         val ignored = BatteryOptimization.isIgnored(context)
-        val expected = context.getString(if (ignored) R.string.battery_summary_ignored else R.string.battery_summary_optimized)
+        val expected = strings.getString(if (ignored) R.string.battery_summary_ignored else R.string.battery_summary_optimized)
         ActivityScenario.launch(AppSettingsActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 val texts = activity.root().descendants().filterIsInstance<TextView>().map { it.text.toString() }.toList()
-                assertTrue(texts.toString(), context.getString(R.string.battery_title) in texts)
+                assertTrue(texts.toString(), strings.getString(R.string.battery_title) in texts)
                 assertTrue(texts.toString(), expected in texts)
             }
         }

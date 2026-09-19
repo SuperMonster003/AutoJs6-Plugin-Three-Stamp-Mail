@@ -178,6 +178,7 @@ _2026/09/19_
 - `機能` 電池の最適化の案内 (ロードマップ P4.6): 設定画面はシステムがバックグラウンドでこのプラグインを一時停止しうるかを表示し (`PowerManager.isIgnoringBatteryOptimizations`), 変更点を説明したうえで `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` によりシステムのダイアログを開く; そのためマニフェストは `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` を宣言; 起動時には何も要求せず, この除外に依存する機能もない
 - `修正` プロバイダープリセット (ロードマップ P3.2): 163 Mail と 126 Mail は SMTP で送信したすべてのメールをサーバー側で保存するため, 両者の `autoSavesSent` を true にし, 既定の `saveToSent` が `已发送` に 2 通目のコピーを追加しないようにしました (実際の 163 アカウントで確認: `saveToSent: false` で送信したメールが数分後に送信済みフォルダーに現れました)
 - `修正` 共有ビルドプラグイン 1.8.3 により, AGP 9.1 での SDK XML v4 解析警告と, JVM 単体テストの組み立て時に APK ネイティブライブラリのアラインメント検証が誤って実行される問題
+- `修正` アカウントエディター (ロードマップ P4.7): フォーム全体を Android の自動入力フレームワークから除外し, パスワードマネージャーが認証コードの保存を求めなくなりました. これまで HyperOS (API 35) では保存後にエディターを閉じると "アカウントとパスワードを保存" のシートが表示されていました.
 - `改善` エラーマッピング: アカウントの POP アクセスが無効なためログイン後にメールボックスを拒否する POP3 サーバー (Gmail は STAT に `[SYS/PERM] Your account is not enabled for POP access` と応答) に対して, 再試行可能な `IO_FAILED` "I/O failed" ではなく原因を示すメッセージ付きの `UNSUPPORTED_OPERATION` を返すようにしました
 - `改善` プロバイダープリセット: Sina Mail に送信済みフォルダー名 (`已发送`) を追加し, サーバーが送信済みメールのコピーを保持せず IMAP CREATE を拒否する (フォルダーはウェブ UI でのみ作成可能) ことを注記しました. 126 Mail のサーバー側送信済みコピーは実アカウントで検証済みです
 - `依存関係` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) と Angus Activation 2.0.3, Jakarta Activation API 2.1.4

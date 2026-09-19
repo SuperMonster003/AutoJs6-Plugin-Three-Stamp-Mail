@@ -178,6 +178,7 @@ _2026/09/19_
 - `기능` 배터리 최적화 안내 (로드맵 P4.6): 설정 화면은 시스템이 백그라운드에서 이 플러그인을 중단할 수 있는지 표시하고 (`PowerManager.isIgnoringBatteryOptimizations`), 무엇이 바뀌는지 설명한 뒤 `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` 로 시스템 대화 상자를 엶; 따라서 매니페스트는 `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` 를 선언; 시작 시 아무것도 요청하지 않으며 이 제외에 의존하는 기능도 없음
 - `수정` 제공업체 프리셋 (로드맵 P3.2): 163 Mail과 126 Mail은 SMTP로 보낸 모든 메일의 사본을 서버에 보관하므로 두 프리셋의 `autoSavesSent`를 true로 바꾸고, 기본 `saveToSent`가 `已发送`에 두 번째 사본을 추가하지 않도록 했습니다 (실제 163 계정으로 확인: `saveToSent: false`로 보낸 메일이 몇 분 뒤 보낸 편지함에 나타남)
 - `수정` 공유 빌드 플러그인 1.8.3을 통해 AGP 9.1의 SDK XML v4 파싱 경고 및 JVM 단위 테스트 조립 작업에서 APK 네이티브 라이브러리 정렬 검사가 잘못 실행되는 문제 해결
+- `수정` 계정 편집기 (로드맵 P4.7): 폼 전체를 Android 자동 완성 프레임워크에서 제외하여 비밀번호 관리자가 인증 코드를 저장하려고 하지 않습니다. 이전에는 HyperOS (API 35) 에서 저장 후 편집기를 닫을 때 "계정과 비밀번호 저장" 시트가 나타났습니다.
 - `개선` 오류 매핑: 계정의 POP 액세스가 비활성화되어 로그인 후 메일함을 거부하는 POP3 서버 (Gmail은 STAT에 `[SYS/PERM] Your account is not enabled for POP access`로 응답)에 대해 재시도 가능한 `IO_FAILED` "I/O failed" 대신 원인을 밝히는 메시지가 담긴 `UNSUPPORTED_OPERATION`을 반환합니다
 - `개선` 제공자 프리셋: Sina Mail에 보낸편지함 폴더 이름 (`已发送`)을 추가하고, 서버가 보낸 메일 사본을 보관하지 않으며 IMAP CREATE를 거부한다는 점 (폴더는 웹 UI에서만 생성 가능)을 명시했습니다. 126 Mail 서버의 보낸 메일 사본은 실제 계정으로 검증되었습니다
 - `의존성` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`)와 Angus Activation 2.0.3, Jakarta Activation API 2.1.4

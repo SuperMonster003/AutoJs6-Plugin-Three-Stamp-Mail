@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Typeface
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.text.TextUtils
@@ -107,6 +108,12 @@ class AccountEditorActivity : ConfiguredActivity() {
         applyThemeToControls(scaffold.content)
         renderChoices()
         renderEndpoints(writeTexts = true)
+        // The authorization code is not a web password: the whole form stays out of the Autofill
+        // framework so no password manager offers to capture it (HyperOS on API 35 otherwise shows
+        // its "save account and password" sheet when the editor closes after saving).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            scaffold.root.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+        }
         setContentView(scaffold.root)
     }
 

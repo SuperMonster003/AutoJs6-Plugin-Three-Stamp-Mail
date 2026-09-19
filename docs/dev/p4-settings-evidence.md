@@ -1,15 +1,17 @@
-# P4 settings and account store evidence (P4.1 account store, P4.2 settings screens, P4.3 alias sessions)
+# P4 settings and account store evidence (P4.1 account store, P4.2 settings screens, P4.3 alias sessions, P4.4 host entry, P4.5 release history, P4.6 battery guide, P4.7 device matrix)
 
 Evidence for roadmap P4.1 (the encrypted saved-account store), P4.2 (the settings screens) and
 P4.3 (`openSession` by alias, `listSavedAccounts`, the `savedAccounts` capability) collected on
 2026-09-19 in this repository (Gradle 9.5.0, AGP 9.3.2, Kotlin 2.3.20, JDK 21, Windows 11). The
-host entry (P4.4), the release history (P4.5) and the battery-optimization guide (P4.6) extend
-this file as they land.
+host entry (P4.4), the release history (P4.5), the battery-optimization guide (P4.6) and the
+real-account device matrix with its credential audit (P4.7) were added the same day.
 
-No real account is involved in this phase: the store tests use a throw-away directory under
+No real account is involved up to P4.6: the store tests use a throw-away directory under
 `noBackupFilesDir` and a test Keystore alias, the screen test uses the installed plugin's store
 under a throw-away `ui-smoke-*` alias that is removed afterwards, and every server is a scripted
-loopback IMAP or SMTP server (`ScriptedServers.kt`), so no log line carries a secret.
+loopback IMAP or SMTP server (`ScriptedServers.kt`), so no log line carries a secret. P4.7 adds
+one QQ account from the git-ignored `mail-test-accounts.properties`, which reaches the devices only
+as instrumentation arguments (see the audit below).
 
 ## Devices
 
@@ -17,7 +19,9 @@ loopback IMAP or SMTP server (`ScriptedServers.kt`), so no log line carries a se
 | --- | --- | --- | --- |
 | emulator-5554 | AVD_API_24 (x86) | 7.0 (API 24) | oldest supported API, Keystore AES-GCM |
 | bek749scrwv4wo8h | Redmi 22120RN86C | 13 (API 33) | current Keystore implementation; night-mode screenshots |
-| BH900ASK9E | Sony G8441 | 9 (API 28) | light-mode screenshots of the settings screens only |
+| BH900ASK9E | Sony G8441 | 9 (API 28) | light-mode screenshots of the settings screens; P4.4 entry check; P4.7 matrix |
+| QV770340J7 | Sony XQ-DQ72 | 13 (API 33) | host language zh-CN under an en-US system (P4.7 suite only) |
+| 968e9f18 | Xiaomi 23046RP50C (HyperOS) | 15 (API 35) | P4.4 zh-CN guide check without the plugin; one P4.7 suite run (shared with another session) |
 
 ## P4.1 `AccountStore` (plugin `store/` package)
 
@@ -171,6 +175,75 @@ and returning shows the summary as excluded; the Redmi API 33 (MIUI) routes the 
 excluded too; `dumpsys deviceidle whitelist` lists the plugin on all three afterwards (screenshots
 `build/p4/shot-*-battery*.png`, not committed).
 
+## P4.4 host entry
+
+The host (`D:/idea-projects/AutoJs6`, commits `8a29b9e28` and `f1a554349`, unpushed) gained a
+"Mail account settings" row under developer options > Mail. `OfficialPluginSettingsLauncher`
+generalizes the AI entry's inspection (installed, application enabled, enabled in Plugin Center,
+official signature, exactly one exported settings activity behind the plugin permission) and its
+four recovery guides per `OfficialPluginSettingsTarget`; the mail target uses
+`MailActions.OPEN_SETTINGS` / `MailActions.PLUGIN_PERMISSION`. JVM `PluginSettingsPolicyTest`
+(2 cases) passes; `docs/dev/mail-plugin-protocol-v1.md` describes the entry.
+
+| Device | Host language | Result |
+| --- | --- | --- |
+| Sony G8441 API 28 | en | the row opens the plugin's `AccountsActivity` inside the host task (`MailSettingsActivity` already finished); the page lists `qq-smoke` |
+| Xiaomi API 35 (no plugin) | zh-CN | the "邮件" category and "邮件账户设置" row render; tapping shows the install guide "请先从插件中心安装 Angus Mail, 再打开邮件账户设置." with 取消 / 插件中心 |
+
+## P4.7 real account through the settings page (device matrix)
+
+`RealAccountSettingsDeviceTest#savesAnAccountThroughTheEditorForTheHost` drives the real editor
+in the installed plugin's process: `replaceForm` with the QQ preset, the authorization code typed
+into the secret field, "Test connection" against imap.qq.com / smtp.qq.com, the result dialog
+checked (both endpoints reachable, no secret in any text or content description), "Save", then
+the store record (address, provider, `withSecret` round trip, no secret in the account document)
+and the accounts page. `.python/run_settings_real_account.py <PROFILE> <serial> --alias qq-smoke`
+runs it with `am instrument` so the plugin and the record survive; the host then runs
+`docs/smoke/saved-account.js` through `MailScriptSmokeDeviceTest#savedAccountScript`
+(`.python/run_host_script_smoke.py QQ_A <serial> --script docs/smoke/saved-account.js --alias qq-smoke`),
+which receives only the alias: `mail.accounts.list()` / `has(alias)` / `mail.connect(alias)` /
+`test()` / `fetch({ limit: 3 })` / `close()`.
+
+| Device | Editor: test / total | Host script by alias: 6 steps, total | fetched | audit |
+| --- | --- | --- | --- | --- |
+| AVD API 24 | 2153 ms / 2927 ms | 2864 ms | 3 | clean |
+| Sony G8441 API 28 | 3495 ms / 4681 ms | 5767 ms | 3 | clean |
+| Redmi API 33 | 4011 ms / 5495 ms | 5048 ms | 3 | clean |
+
+Editor timings are the instrumentation log lines (`saved alias=qq-smoke provider=qq: test N ms,
+total M ms`); the host column is `saved-account: alias=qq-smoke ok=true steps=6 total N ms`. The
+Redmi ran the host step twice: the first report copied the whole `test()` result, which carries
+the account document (address, user) into the host's report log line, so the script now keeps
+only `{ ok, imap, smtp }` per endpoint and the second run was clean. `#removesTheSavedAccount`
+(`--remove`) deleted the alias on the AVD (`existed=true`); the other records left with the
+plugin when the connected suite uninstalled it.
+
+Full connected suite after P4.7 (`RealAccountSettingsDeviceTest` cases skip without arguments,
+three skips are the real-account cases of `MailCoreDeviceTest` and this class):
+
+| Device | tests | failures | errors | skipped | time |
+| --- | --- | --- | --- | --- | --- |
+| AVD API 24 | 20 | 0 | 0 | 3 | 9.424 s |
+| Sony G8441 API 28 | 20 | 0 | 0 | 3 | 14.696 s |
+| Sony XQ-DQ72 API 33 | 20 | 0 | 0 | 3 | 19.296 s |
+| Redmi API 33 | 20 | 0 | 0 | 3 | 25.542 s |
+
+Findings from the first suite runs, all fixed in the tests or the plugin:
+
+- `AngusMailPluginContractTest#mailBinderAnswersTheSessionEnvelope` expected `[]` from
+  `listSavedAccounts` while `qq-smoke` was still stored on the Sony and the Redmi; it now compares
+  with `AccountStores.of(context).list()` and asserts no secret key in any entry.
+- `SettingsScreensDeviceTest` resolved labels through the test context, which follows the system
+  locale (en-US on Sony XQ-DQ72) while the plugin's screens follow the host language (zh-CN there);
+  labels now come from `AppConfiguration.wrap(context)`, the same resolution the screens use.
+- Xiaomi API 35 (HyperOS): closing the editor after "Save" raised the system's "自动保存账号密码"
+  sheet (Xiaomi smart password manager through the Autofill framework), which offered the
+  authorization code to a third-party password manager and blocked the test until dismissed. The
+  editor now marks its whole form `IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS`
+  (`AccountEditorActivity`), and the editor test asserts the secret and address fields are not
+  important for autofill on API 26+. The Xiaomi is another session's device, so the fixed build
+  was verified there only if the table above lists it.
+
 ## Credential audit
 
 - `grep` of the new sources for `Log.` / `println`: none; the store never logs.
@@ -182,6 +255,13 @@ excluded too; `dumpsys deviceidle whitelist` lists the plugin on all three after
   dialogs show alias, address, host, port, error code and message only; `ConnectionTestDialog`
   renders `SessionTestResult` (no credential field exists on it); `SettingsScreensDeviceTest`
   asserts the secret is absent from the result dialog, the accounts page and the Binder response.
+- P4.7 (real account): `.python/run_settings_real_account.py` masks the secret in the saved
+  instrumentation output, scans that output and the full `logcat -d` of the run for the secret
+  ("leak check ... clean") and for the address ("address in full logcat: no") on all three
+  devices; `.python/run_host_script_smoke.py --alias` clears logcat first and scans the Gradle
+  log and the device log the same way (secret clean, address absent on all three after the
+  report trim). No JSON document, exception or crash report carried the secret; the only
+  address sighting was the first Redmi report (fixed as described above).
 
 ## Reproducing
 
@@ -189,6 +269,12 @@ excluded too; `dumpsys deviceidle whitelist` lists the plugin on all three after
 ./gradlew :app:testDebugUnitTest --tests "io.github.supermonster003.autojs6.plugin.angus.mail.store.*"
 ANDROID_SERIAL=<serial> ./gradlew :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=io.github.supermonster003.autojs6.plugin.angus.mail.AccountStoreDeviceTest"
 ANDROID_SERIAL=<serial> ./gradlew :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=io.github.supermonster003.autojs6.plugin.angus.mail.SettingsScreensDeviceTest"
+```
+
+```
+python .python/run_settings_real_account.py QQ_A <serial> --alias qq-smoke
+python .python/run_host_script_smoke.py QQ_A <serial> --script docs/smoke/saved-account.js --alias qq-smoke
+python .python/run_settings_real_account.py QQ_A <serial> --alias qq-smoke --remove --no-build
 ```
 
 The connected run uninstalls the plugin from the device afterwards; reinstall

@@ -47,6 +47,7 @@ def main():
     parser.add_argument("serial", help="adb serial of the device")
     parser.add_argument("--script", default=None, help="repository-relative smoke script (docs/smoke/*.js) to push and run")
     parser.add_argument("--log", default=None, help="log file name under build/p3/")
+    parser.add_argument("--alias", default=None, help="alias of an account saved on the plugin's settings page (roadmap P4.7): runs #savedAccountScript with --script and only the alias; the profile's credentials then serve the leak check alone")
     args = parser.parse_args()
 
     props = read_properties(os.path.join(PLUGIN, "mail-test-accounts.properties"))
@@ -75,24 +76,40 @@ def main():
         test = TEST_CLASS + "#realProviderScript"
         extra.append(f"-Pandroid.testInstrumentationRunnerArguments.mail.smoke.script={remote}")
         suffix = "-" + os.path.splitext(name)[0]
+    account = [
+        f"-Pandroid.testInstrumentationRunnerArguments.mail.smoke.provider={provider}",
+        f"-Pandroid.testInstrumentationRunnerArguments.mail.smoke.address={address}",
+        f"-Pandroid.testInstrumentationRunnerArguments.{secret_argument}={secret}",
+    ]
+    if args.alias:
+        assert args.script, "--alias needs --script"
+        test = TEST_CLASS + "#savedAccountScript"
+        account = [f"-Pandroid.testInstrumentationRunnerArguments.mail.smoke.alias={args.alias}"]
+        suffix += "-alias"
     log = os.path.join(log_dir, args.log or f"host-smoke-{args.profile.lower()}{suffix}-{args.serial}.log")
     gradlew = os.path.join(HOST, "gradlew.bat" if os.name == "nt" else "gradlew")
     command = [
         gradlew, ":app:connectedAppDebugAndroidTest",
         f"-Pandroid.testInstrumentationRunnerArguments.class={test}",
-        f"-Pandroid.testInstrumentationRunnerArguments.mail.smoke.provider={provider}",
-        f"-Pandroid.testInstrumentationRunnerArguments.mail.smoke.address={address}",
-        f"-Pandroid.testInstrumentationRunnerArguments.{secret_argument}={secret}",
+        *account,
         *extra,
         "--console=plain",
     ]
-    print(f"profile={args.profile} provider={provider} domain={domain} serial={args.serial} test={test.rsplit('#', 1)[1]}")
+    print(f"profile={args.profile} provider={provider} domain={domain} serial={args.serial} test={test.rsplit('#', 1)[1]}" + (f" alias={args.alias}" if args.alias else ""))
     env = dict(os.environ, ANDROID_SERIAL=args.serial)
+    if args.alias:
+        subprocess.run(["adb", "-s", args.serial, "logcat", "-c"], capture_output=True)
     with io.open(log, "w", encoding="utf-8") as out:
         code = subprocess.call(command, cwd=HOST, env=env, stdout=out, stderr=subprocess.STDOUT)
     text = io.open(log, encoding="utf-8", errors="replace").read()
     print("gradle exit", code)
     print("report leak check:", "LEAK" if secret in text else "clean")
+    if args.alias:
+        # The credential audit of the alias flow: neither the secret nor the address may reach any log.
+        device_log = subprocess.run(["adb", "-s", args.serial, "logcat", "-d"], capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
+        print("address in gradle log:", "yes" if address.lower() in text.lower() else "no")
+        print("device log leak check:", "LEAK" if secret in device_log else "clean")
+        print("address in device log:", "yes" if address.lower() in device_log.lower() else "no")
     for line in text.splitlines():
         if "BUILD " in line or "INSTALL_" in line or line.startswith("e: ") or "FAILED" in line:
             print(line.replace(secret, "****"))
