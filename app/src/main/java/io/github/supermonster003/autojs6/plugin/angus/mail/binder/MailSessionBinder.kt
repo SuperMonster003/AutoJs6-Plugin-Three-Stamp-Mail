@@ -8,6 +8,8 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorC
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.AttachmentSource
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.session.MailSession
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.WatchOptions
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.Watcher
 import org.autojs.plugin.mail.api.IMailCallCallback
 import org.autojs.plugin.mail.api.IMailSession
 import org.autojs.plugin.mail.api.IMailSessionCallback
@@ -39,13 +41,16 @@ import kotlin.concurrent.withLock
  * worker thread (attachment sources, or the sink a download streams into) and closed before
  * `onResult`, whatever the outcome, so the host's read end of a download pipe sees EOF before the
  * result. Every session method checks that the caller is the UID that opened the session
- * (`CallerGuard.enforceOwner`). Watches arrive with P5.
+ * (`CallerGuard.enforceOwner`). `watch` (roadmap P5) opens a [MailWatchBinder] on the mail
+ * session's own watcher, up to `MAX_WATCHES_PER_SESSION` at a time; `close` and the host's death
+ * stop every watch of the session before the calls are answered.
  */
 internal class MailSessionBinder(
     private val session: MailSession,
     private val callback: IMailSessionCallback?,
     private val guard: CallerGuard = CallerGuard.trusting(),
     private val ownerUid: Int = android.os.Binder.getCallingUid(),
+    private val network: WatchNetworkMonitor? = null,
 ) : IMailSession.Stub() {
 
     /** One submitted call, from `call` until its single answer. */
@@ -67,6 +72,7 @@ internal class MailSessionBinder(
     private val available = lock.newCondition()
     private val queue = ArrayDeque<Call>()
     private var active: Call? = null
+    private val watches = ArrayList<MailWatchBinder>()
     private val closed = AtomicBoolean(false)
     private val finalized = AtomicBoolean(false)
 
@@ -97,6 +103,7 @@ internal class MailSessionBinder(
             connected = session.connectedProtocols.map { it.id },
             queued = queued,
             active = current,
+            watches = lock.withLock { watches.count { it.isActive } },
         )
     }
 
@@ -145,9 +152,44 @@ internal class MailSessionBinder(
         queued?.let { answerDetached(it, MailBundles.failure(it.requestId, MailBundles.error(cancelled()))) }
     }
 
+    /**
+     * Synchronous (contract B.3): null refuses the watch (closed session, `MAX_WATCHES_PER_SESSION`,
+     * unusable options, a host whose callback is already dead) and the reason is in the session's
+     * `lastError`; otherwise the events start after this returns. The watcher connects on its own
+     * thread and store, so nothing here touches the network.
+     */
     override fun watch(options: Bundle?, callback: IMailWatchCallback?): IMailWatch? {
         guard.enforceOwner(ownerUid)
-        return null
+        callback ?: return null
+        val generation = options?.getLong(MailContract.KEY_GENERATION, 0L) ?: 0L
+        val parsed = try {
+            WatchOptions.parse(options?.getString(MailContract.KEY_WATCH_OPTIONS_JSON), session.receiveProtocol)
+        } catch (e: MailException) {
+            session.record(e)
+            return null
+        }
+        val binder = MailWatchBinder(generation, callback, guard, ownerUid, network) { finished -> lock.withLock { watches.remove(finished) } }
+        val watcher = lock.withLock {
+            if (closed.get()) {
+                session.record(sessionClosed())
+                return null
+            }
+            val created = try {
+                session.watch(parsed, binder)
+            } catch (e: MailException) {
+                session.record(e)
+                return null
+            }
+            watches += binder
+            created
+        }
+        binder.attach(watcher)
+        if (!binder.start()) {
+            lock.withLock { watches.remove(binder) }
+            session.record(MailException(MailErrorCode.WATCH_CLOSED, "the host's watch callback is dead", retryable = false))
+            return null
+        }
+        return binder
     }
 
     override fun close() {
@@ -164,14 +206,17 @@ internal class MailSessionBinder(
      */
     private fun shutdown(reason: String) {
         val drained: List<Call>
+        val stopping: List<MailWatchBinder>
         lock.withLock {
             if (!closed.compareAndSet(false, true)) return
             closeReason = reason
             drained = queue.toList()
             queue.clear()
+            stopping = watches.toList()
             active?.let { abort(it, MailErrorCode.SESSION_CLOSED) }
             available.signalAll()
         }
+        stopping.forEach { it.shutdown(if (reason == "host-died") Watcher.REASON_HOST_DIED else reason) }
         drained.forEach { answerDetached(it, MailBundles.failure(it.requestId, MailBundles.error(sessionClosed()))) }
     }
 

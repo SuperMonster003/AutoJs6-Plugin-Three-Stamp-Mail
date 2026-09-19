@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.os.RemoteException
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.SecretKind
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.WatchEvent
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.WatchStatus
 import org.autojs.plugin.mail.api.IMailCallCallback
 import org.autojs.plugin.mail.api.IMailSessionCallback
 import org.autojs.plugin.mail.api.MailContract
@@ -25,6 +27,9 @@ internal object MailBundles {
     const val FIELD_QUEUED = "queued"
     const val FIELD_ACTIVE = "active"
 
+    /** Extra `getStatus` field (roadmap P5): watches of the session that have not closed. */
+    const val FIELD_WATCHES = "watches"
+
     fun json(key: String, document: String): Bundle = Bundle().apply {
         putInt(MailContract.KEY_CONTRACT_VERSION, MailContract.CONTRACT_VERSION)
         putString(key, document)
@@ -37,6 +42,7 @@ internal object MailBundles {
         connected: List<String> = emptyList(),
         queued: Int = 0,
         active: String? = null,
+        watches: Int = 0,
     ): Bundle {
         val document = JSONObject().put(MailContract.FIELD_STATE, state)
         reason?.let { document.put(MailContract.FIELD_REASON, it) }
@@ -44,8 +50,33 @@ internal object MailBundles {
         document.put(FIELD_CONNECTED, JSONArray(connected))
         document.put(FIELD_QUEUED, queued)
         active?.let { document.put(FIELD_ACTIVE, it) }
+        document.put(FIELD_WATCHES, watches)
         return json(MailContract.KEY_STATUS_JSON, document.toString())
     }
+
+    /** `IMailWatch.getStatus` (protocol document "Status"): state, mode, and after the close its reason and last error. */
+    fun watchStatus(status: WatchStatus): Bundle {
+        val document = JSONObject()
+            .put(MailContract.FIELD_STATE, if (status.active) MailContract.STATE_OPEN else MailContract.STATE_CLOSED)
+            .put(MailContract.FIELD_MODE, status.mode.id)
+        status.reason?.let { document.put(MailContract.FIELD_REASON, it) }
+        status.lastError?.let { document.put(MailContract.FIELD_LAST_ERROR, error(it)) }
+        return json(MailContract.KEY_STATUS_JSON, document.toString())
+    }
+
+    /** The envelope form of a `message` event whose full form does not fit the envelope ceiling. */
+    fun withoutBody(event: WatchEvent.Message): WatchEvent.Message = event.copy(
+        message = event.message.copy(
+            bodyLoaded = false,
+            text = null,
+            html = null,
+            headers = emptyMap(),
+            bodyTruncated = true,
+            bodyParts = emptyList(),
+            raw = null,
+            rawTruncated = false,
+        ),
+    )
 
     /** An error document; the message is clamped to `MAX_ERROR_MESSAGE_BYTES` like the host does on its side. */
     fun error(code: String, message: String, retryable: Boolean = MailErrorCodes.isRetryableByDefault(code), details: String? = null): JSONObject {

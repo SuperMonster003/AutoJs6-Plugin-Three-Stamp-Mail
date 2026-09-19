@@ -25,6 +25,7 @@
 * `新增` 電池最佳化引導 (路線圖 P4.6): 設定頁顯示系統是否可能在背景暫停本外掛程式 (`PowerManager.isIgnoringBatteryOptimizations`), 說明影響後經 `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` 開啟系統對話方塊; 資訊清單因此宣告 `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`; 啟動時不發起任何請求, 也沒有功能依賴該排除
 * `新增` 新郵件監聽, IMAP IDLE (路線圖 P5): 郵件核心以獨立連線用 `IMAPFolder.idle` 監聽資料夾, 每 24 分鐘續期一次 IDLE, 新郵件按 UID 抓取 (信封, 或按需內文) 且只回報一次, 斷線後按指數退避重連 (1 s 起, 上限 5 min, 帶抖動), 資料夾 UIDVALIDITY 變更時回報 `resync`; 伺服器無 IDLE 或 IDLE 連續失敗 3 次則切換為輪詢並發出 `mode` 事件; 每個工作階段最多 `MAX_WATCHES_PER_SESSION` 個監聽, 工作階段關閉時一併關閉
 * `新增` 新郵件監聽, 輪詢 (路線圖 P5): `mode: "poll"` 的監聽每 `pollIntervalMs` (預設 60 s, 下限 `MIN_POLL_INTERVAL_MS`, 上限 1 小時) 按 UID 對資料夾做差分, 連線在輪次之間保持; POP3 帳戶一律輪詢, 按 UIDL 差分且每輪登入一次, 輪次之間不鎖定信箱, 只回報新增, 不回報刪除; 首輪只取快照, 不回報積壓
+* `新增` 經 Binder 的新郵件監聽 (路線圖 P5): `IMailSession.watch` 在郵件核心的監聽器上開啟監聽並立即回應 (工作階段已關閉, 達到 `MAX_WATCHES_PER_SESSION`, 參數不可用或宿主回呼已死亡時回傳 null, 原因記入工作階段狀態); 事件由投遞執行緒帶宿主的 `generation` 與自 1 起計數的 `seq` 送達宿主的 `oneway` 回呼, 宿主停止消費時 `MAX_WATCH_QUEUE` 條事件的佇列摺疊為一條 `resync`, 超過 `MAX_ENVELOPE_BYTES` 的事件去掉內文或退化為 `resync` 後送出, `stop`, 工作階段關閉與宿主死亡均以單條 `closed` 事件結束監聽, 預設網路變更或遺失時執行中的監聽立即重連, 能力集現在宣告 `idle`
 * `修復` 服務商預設 (路線圖 P3.2): 163 信箱與 126 信箱會在伺服器端保存每封經 SMTP 發出的郵件, 兩者的 `autoSavesSent` 改為 true, 預設 `saveToSent` 不再向 `已发送` 追加第二份副本 (真實 163 帳戶核實: `saveToSent: false` 發出的郵件數分鐘後出現在已發送資料夾)
 * `修復` AGP 9.1 建置時的 SDK XML v4 解析警告及 JVM 單元測試組裝工作誤觸發 APK 原生程式庫對齊檢查的問題 (共用建置外掛 1.8.3)
 * `修復` 帳戶編輯器 (路線圖 P4.7): 整個表單退出 Android 自動填入框架, 密碼管理器不再索取授權碼; 此前 HyperOS (API 35) 會在儲存後關閉編輯器時彈出 "自動儲存帳號密碼".

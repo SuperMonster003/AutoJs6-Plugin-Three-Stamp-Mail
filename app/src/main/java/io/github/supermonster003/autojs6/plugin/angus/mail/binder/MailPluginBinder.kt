@@ -57,7 +57,7 @@ internal class MailPluginBinder(
             callback?.let { MailBundles.notifyClosed(it, MailBundles.error(e)) }
             return null
         }
-        return MailSessionBinder(session, callback, guard, ownerUid)
+        return MailSessionBinder(session, callback, guard, ownerUid, WatchNetworkMonitor.of(context))
     }
 
     private fun openInlineAccount(account: Bundle): MailSession {

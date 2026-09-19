@@ -6,6 +6,8 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProt
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.ProviderPresets
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.TlsMode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorCode
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.WatchEventDocument
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.WatchMode
 import org.autojs.plugin.mail.api.MailActions
 import org.autojs.plugin.mail.api.MailContract
 import org.autojs.plugin.mail.api.MailErrorCodes
@@ -46,6 +48,10 @@ class MailCoreContractParityTest {
         assertEquals(MailContract.PROTOCOLS.toList(), MailProtocol.entries.map { it.id })
         assertEquals(MailContract.AUTH_MECHANISMS.toList(), AuthMethod.entries.map { it.id })
         assertEquals(MailContract.TLS_MODES.toList(), TlsMode.entries.map { it.id })
+        assertEquals(MailContract.WATCH_MODES, WatchMode.entries.map { it.id }.toSet())
+        assertEquals(MailContract.EVENT_TYPES, WatchEventDocument.TYPES)
+        assertEquals(MailContract.WATCH_MODE_IDLE, WatchMode.IDLE.id)
+        assertEquals(MailContract.WATCH_MODE_POLL, WatchMode.POLL.id)
     }
 
     @Test
@@ -56,6 +62,8 @@ class MailCoreContractParityTest {
         assertEquals(MailActions.OPEN_SETTINGS, AngusMailPlugin.SETTINGS_ACTION)
         assertEquals(MailProtocol.entries.map { it.id }, AngusMailPlugin.PROTOCOLS)
         assertEquals(AuthMethod.entries.map { it.id }, AngusMailPlugin.AUTH_MECHANISMS)
+        assertTrue(MailContract.FEATURE_IDLE in AngusMailPlugin.FEATURES)
+        AngusMailPlugin.FEATURES.forEach { assertTrue(it, it in MailContract.FEATURES) }
         ProviderPresets.all.forEach { preset -> preset.auth.forEach { assertTrue(it in AngusMailPlugin.AUTH_MECHANISMS) } }
     }
 }
