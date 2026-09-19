@@ -187,6 +187,87 @@ recipient of `MailSessionBinder` closed the mail session (`shutdown("host-died")
 host asking. The Gradle run reports the instrumentation as killed, which is the expected
 outcome of this probe.
 
+## Second follow-up (2026-09-19, after the maintainer's input)
+
+The maintainer enabled POP for the Gmail test account, added a Sina Mail and a 126 Mail
+account to `mail-test-accounts.properties` (profiles `SINA_A` and `NETEASE126_A`, both runners
+know them now) and pointed at the official release build of the host
+(`app/app/release/autojs6-v6.8.0-*.apk`). The plugin builds of this section carry the preset
+changes that became build 20.
+
+### Gmail POP3 (`docs/smoke/pop3.js`, Redmi 22120RN86C)
+
+The first run after enabling POP stopped at 6 of 8 steps: `search` did not find the message
+`get` had just retrieved. Gmail serves POP3 in its own way: a session sees one batch of the
+oldest mail not downloaded yet (`STAT` said 271, then 270; the highest-numbered message of the
+batch dated 2018), and a message fetched with `RETR` is not served again in a later session.
+Every plugin operation is one POP3 session (`Pop3Mailbox.withInbox` opens and closes the
+folder), so the uid was gone. The script now searches before the first `RETR` and takes `raw`
+from the second message when the first answers `MESSAGE_NOT_FOUND` (`onceOnly: true` in the
+report). Second run: 8/8, `connect` 712 ms, `test` 5267 ms (probe 1950 ms, XOAUTH2 login),
+`folders` 2065 ms, `fetch` 8450 ms, `search` 6384 ms (1 hit, client), `get` 6360 ms, `raw`
+12746 ms (8.6 KB, second message), `unsupported` 148 ms; no `download` because the retrieved
+message is not there to ask again. 163 and QQ keep serving a message after `RETR`, and so do
+126 (`pop.126.com`, 8/8: `test` 1347 ms with a 604 ms probe, `fetch` 1474 ms, `search` 1044 ms,
+`get` 1518 ms, `raw` 1914 ms of the same message, 5 messages, no attachment) and Sina
+(`pop.sina.com`, 9/9: `test` 2356 ms with a 1021 ms probe, `fetch` 2105 ms, `search` 1524 ms,
+`get` 1689 ms, `raw` 1727 ms, `download` 2001 ms, 3 messages).
+
+### `autoSavesSent` of 126 Mail and Sina Mail (`docs/smoke/sent-copy.js`)
+
+`sent-copy.js` sends two messages to the account itself, the first with `saveToSent: false`,
+counts the copies of each subject in the sent folder (client filter, up to 90 s, then a 20 s
+grace for a late duplicate) and deletes the probe messages from the sent folder and INBOX.
+
+| Device | Provider | Sent folder | `saveToSent: false` | Default | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| Redmi 22120RN86C | 126 (`imap.126.com`) | `已发送` (special-use `sent`, also the preset) | `sentCopy: server`, 1 copy after 21 s | `sentCopy: server`, 1 copy | the server keeps a copy; preset `autoSavesSent: true` confirmed |
+| Redmi 22120RN86C | sina (`imap.sina.com`) | `已发送` (special-use `sent`; the preset had `null`) | `sentCopy: none`, 0 copies after 95 s | `sentCopy: appended`, 1 copy | the server keeps no copy; preset `autoSavesSent: false` confirmed, the preset now names the folder |
+
+The plugin round trip (`.python/run_real_account.py`, Sony XQ-DQ72, API 33) passed for both
+accounts: 126 `sentCopy=server` (send 1842 ms), Sina `sentCopy=appended` into `已发送` (send
+2877 ms), leak checks clean.
+
+### Sina Mail and the send-receive smokes
+
+The first Sina run of `send-receive.js` stopped at `createFolder` with `SERVER_ERROR: the
+server did not create the folder`. A probe with three names (ASCII, hyphenated, Chinese) got
+the same answer for each, the folder never appeared in `LIST`, and `folderStatus` /
+`deleteFolder` said `FOLDER_NOT_FOUND`: `imap.sina.com` answers NO to every CREATE (folders
+exist only through its web UI; the account has 其它邮件 / 商讯信息 / 星标邮件 / 网站通知 /
+订阅邮件 beside the special-use ones). The preset notes say so now, and both smokes skip the
+folder steps on Sina (`noFolderCreation`: `createFolder` must answer `SERVER_ERROR`, the message
+moves to the trash folder, 13 steps instead of 15).
+
+| Device | Provider | Form | Steps | `send` | `search` (polls, fallback) | `load` | `download` | `raw` | `move` (trash) | `delete` | Ticks |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Redmi 22120RN86C | sina | sync | 13/13 | 4125 ms (`appended`) | 5.6 s (2, client) | 1147 ms | 1328 ms | 1095 ms | 2937 ms | 2323 ms | - |
+| Redmi 22120RN86C | sina | async (`ui`) | 13/13 | 4612 ms (`appended`) | 1.5 s (1, client) | 1509 ms | 1197 ms (1 progress call) | 1264 ms | 2901 ms | 2797 ms | 419 of 436, not blocked |
+
+### The official signing certificate and the release host
+
+`CallerPolicy` accepts a host whose signer set equals the plugin's own; there is no separate
+list of official certificates. The maintainer's release build of the host
+(`app/app/release/autojs6-v6.8.0-*.apk`, versionCode 5282, built 2026-09-19 01:42, after the
+P3.2 and P3.3 commits) is signed by the certificate with SHA-256
+`31a681fcfffb3e428420cae280ded89292b12a3b0f59e19b7a73e32a8ae4c213`. `apksigner verify
+--print-certs` shows the same digest on the plugin's release build (`:app:assembleRelease` with
+the git-ignored `sign.properties` and `app/sm003.jks`) and on the host and plugin packages pulled
+back from the emulator, the Redmi and the Sony: the plugin's `sign.properties` signs the debug
+build type as well, so every smoke of P3 already ran with both sides under the official
+certificate.
+
+Cross-process on the emulator (AVD_API_24, release host plus release plugin, no Gradle): a
+script started through `RunIntentActivity` (`am start -n
+org.autojs.autojs6/org.autojs.autojs.external.open.RunIntentActivity -d file:///sdcard/mail-guard.js`)
+connected an inline account against a closed loopback port. `connect` succeeded (the plugin
+accepted the caller), `test()` answered `CONNECT_FAILED`, `close()` closed; the report went to
+logcat through `android.util.Log`. The negative control, the same release host with a plugin
+signed by the default debug key (digest `2e64822e...`), was refused before the plugin's guard
+could run: `PLUGIN_UNAVAILABLE: mail plugin is unavailable: Plugin "..." is not authorized in
+Plugin Center` (the host checks plugin signatures on its side). R8 on both sides did not get
+in the way. The emulator holds the debug host and plugin again.
+
 
 ## Lessons
 
@@ -233,6 +314,17 @@ outcome of this probe.
   first.
 - (follow-up) POP3 `search` on a big QQ box needs a small `limit`: the client filter scans until
   `limit` messages matched or 200 were seen, at about 0.17 s per `TOP`.
+- (follow-up 2) Gmail POP3 hands out one batch of old mail per session and never serves a
+  message again once `RETR` fetched it; a POP3 script must search or `TOP` before it loads a
+  body, and `raw` / `download` of the same message afterwards answer `MESSAGE_NOT_FOUND`.
+- (follow-up 2) Sina Mail refuses IMAP CREATE for any name; a script that needs its own folder
+  has to work in the trash folder or an existing one.
+- (follow-up 2) Under `MSYS_NO_PATHCONV=1` (needed so `adb pull /data/app/...` keeps its
+  path) local files must be given as `D:/...`, not `/d/...`; `/data/app` of the API 24 emulator
+  is readable only after `adb root`; `pm grant` against a package that failed to install prints
+  the whole `pm` usage, so check the install line first.
+- (follow-up 2) A host Gradle run can die in `processAppDebugResources` with "Couldn't delete
+  R.jar" while another process holds the file; the smoke never starts, so rerun it.
 
 ## Reproducing
 
@@ -248,6 +340,12 @@ python .python/run_host_script_smoke.py GMAIL_A <serial> --script docs/smoke/sen
 python .python/run_host_script_smoke.py GMAIL_A <serial> --script docs/smoke/token-provider.js
 python .python/run_host_script_smoke.py NETEASE_A <serial> --script docs/smoke/pop3.js
 python .python/run_host_script_smoke.py QQ_A <serial> --script docs/smoke/hold-session.js   # then: adb -s <serial> shell am force-stop org.autojs.autojs6
+python .python/run_host_script_smoke.py GMAIL_A <serial> --script docs/smoke/pop3.js           # POP enabled in the Gmail settings, fresh token
+python .python/run_host_script_smoke.py NETEASE126_A <serial> --script docs/smoke/sent-copy.js
+python .python/run_host_script_smoke.py SINA_A <serial> --script docs/smoke/sent-copy.js
+python .python/run_host_script_smoke.py SINA_A <serial> --script docs/smoke/send-receive.js
+python .python/run_real_account.py SINA_A <serial>
+./gradlew :app:assembleRelease   # with sign.properties; then apksigner verify --print-certs on this APK and the host release APK
 ```
 
 The host must already be installed on the device with the current debug build (`adb install -r`

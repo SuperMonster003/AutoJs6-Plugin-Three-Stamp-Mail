@@ -87,6 +87,9 @@ var searchFallback = MAIL_SMOKE.provider === 'qq' || MAIL_SMOKE.provider === '16
 // on status / move / delete; cause not determined), so the moved message goes to the trash
 // folder there and a vanished folder is tolerated at deleteFolder.
 var ephemeralFolders = MAIL_SMOKE.provider === 'qq';
+// Sina Mail answers NO to every IMAP CREATE (folders exist only through its web UI), so the smoke
+// skips the folder steps there and moves into the trash folder.
+var noFolderCreation = MAIL_SMOKE.provider === 'sina';
 var moveTarget = null;
 var deliveryTimeoutMs = 150000;
 var deliveryDeadline = 0;
@@ -147,12 +150,20 @@ step('connect', function () { return mail.connectAsync(account); })
         client = connected;
         check(client.isConnected === true && client.isClosed === false, 'client open after connect');
         check(JSON.stringify(client.account).indexOf(secret) < 0, 'account snapshot has no secret');
+        if (noFolderCreation) {
+            return client.createFolderAsync(folderName).then(function () {
+                throw new Error('expected SERVER_ERROR but createFolder succeeded');
+            }, function (e) {
+                check(e.code === 'SERVER_ERROR', 'expected SERVER_ERROR, got ' + redact(e));
+                report.folderCreation = 'refused';
+            });
+        }
         return step('createFolder', function () { return client.createFolderAsync(folderName); });
     })
     .then(function () { return step('folders', function () { return client.foldersAsync(); }); })
     .then(function (folders) {
-        check(containsFolder(folders, folderName), 'created folder is listed');
-        moveTarget = ephemeralFolders ? specialUseFolder(folders, 'trash') || folderName : folderName;
+        check(noFolderCreation || containsFolder(folders, folderName), 'created folder is listed');
+        moveTarget = ephemeralFolders || noFolderCreation ? specialUseFolder(folders, 'trash') || folderName : folderName;
         report.moveTarget = moveTarget === folderName ? 'created' : 'trash';
         return step('send', function () {
             return client.sendAsync({ to: MAIL_SMOKE.address, subject: subject, text: marker, attachments: [attachmentPath] });
@@ -222,6 +233,9 @@ step('connect', function () { return mail.connectAsync(account); })
     })
     .then(function (deleted) {
         check(deleted.length === 1, 'delete returns the uid');
+        if (noFolderCreation) {
+            return true;
+        }
         return step('deleteFolder', function () {
             return client.deleteFolderAsync(folderName).catch(function (e) {
                 if (ephemeralFolders && e.code === 'FOLDER_NOT_FOUND') {
@@ -234,7 +248,7 @@ step('connect', function () { return mail.connectAsync(account); })
     })
     .then(function () { return client.foldersAsync(); })
     .then(function (folders) {
-        check(!containsFolder(folders, folderName), 'deleted folder is gone');
+        check(noFolderCreation || !containsFolder(folders, folderName), 'deleted folder is gone');
         report.ok = true;
     })
     .catch(function (e) {

@@ -6,9 +6,14 @@
 // reportPath }`; the account must have POP3 enabled at the provider.
 //
 // Steps: connect with `receive: 'pop3'` -> test -> folders (INBOX only) -> fetch 3 envelopes
-// (string UIDs, newest first) -> get the newest (body) -> search by its subject (client filter)
-// -> download / raw of the newest -> setFlags and createFolder answer UNSUPPORTED_OPERATION ->
-// close. Nothing is deleted.
+// (string UIDs, highest message number first) -> search by the subject of the first one (client
+// filter over TOP) -> get it (RETR, body) -> raw and download -> setFlags and createFolder answer
+// UNSUPPORTED_OPERATION -> close. Nothing is deleted.
+//
+// Gmail serves POP3 differently: each session sees one batch of the oldest mail that has not been
+// downloaded yet (about 270 messages), and a message fetched with RETR is not served again in a
+// later session. Every plugin operation is one POP3 session, so after `get` the same uid is gone;
+// the script records that (`onceOnly`) and takes `raw` from the second message instead.
 
 var report = { ok: false, steps: [], timings: {} };
 var secret = MAIL_SMOKE.password || MAIL_SMOKE.accessToken || '';
@@ -69,33 +74,47 @@ try {
     var newest = listed[0];
     report.newest = { uidLength: newest.uid.length, subjectLength: (newest.subject || '').length, date: newest.date instanceof Date ? newest.date.toISOString() : null };
 
-    var full = step('get', function () { return newest.load(); });
-    check(full.uid === newest.uid && full.bodyLoaded === true, 'body loaded for the newest message');
-    report.body = { text: (full.text || '').length, html: (full.html || '').length, attachments: full.attachments.length };
-
     if (newest.subject) {
-        // limit 1: the client filter stops at the first hit; QQ answers TOP in about 0.17 s per message.
+        // Before any RETR (Gmail stops serving a message once it was retrieved). limit 1: the client
+        // filter stops at the first hit; QQ answers TOP in about 0.17 s per message.
         var found = step('search', function () { return client.search({ subject: newest.subject }, { limit: 1 }); });
         check(found.fallback === 'client', 'POP3 search filters on the client');
-        check(found.some(function (m) { return m.uid === newest.uid; }), 'search finds the newest message by subject');
+        check(found.some(function (m) { return m.uid === newest.uid; }), 'search finds the first message by subject');
         report.search = { hits: found.length, fallback: found.fallback };
     }
 
-    var rawPath = step('raw', function () { return client.raw(newest, MAIL_SMOKE.workDir); });
+    var full = step('get', function () { return newest.load(); });
+    check(full.uid === newest.uid && full.bodyLoaded === true, 'body loaded for the first message');
+    report.body = { text: (full.text || '').length, html: (full.html || '').length, attachments: full.attachments.length };
+
+    var rawSource = newest;
+    var rawPath = step('raw', function () {
+        try {
+            return client.raw(newest, MAIL_SMOKE.workDir);
+        } catch (e) {
+            if (e.code !== 'MESSAGE_NOT_FOUND' || listed.length < 2) {
+                throw e;
+            }
+            // The retrieved message is not served again (Gmail); take the next one.
+            report.onceOnly = true;
+            rawSource = listed[1];
+            return client.raw(rawSource, MAIL_SMOKE.workDir);
+        }
+    });
     check(files.exists(rawPath), 'raw file exists');
-    report.raw = { bytes: files.read(rawPath).length };
+    report.raw = { bytes: files.read(rawPath).length, sameMessage: rawSource === newest };
     files.remove(rawPath);
 
-    if (full.attachments.length > 0) {
+    if (full.attachments.length > 0 && !report.onceOnly) {
         var downloaded = step('download', function () { return full.attachments[0].download(MAIL_SMOKE.workDir); });
         check(files.exists(downloaded), 'attachment downloaded');
         files.remove(downloaded);
     }
 
     step('unsupported', function () {
-        expectCode('UNSUPPORTED_OPERATION', function () { client.markRead(newest); });
+        expectCode('UNSUPPORTED_OPERATION', function () { client.markRead(rawSource); });
         expectCode('UNSUPPORTED_OPERATION', function () { client.createFolder('AutoJs6Pop3Smoke'); });
-        expectCode('UNSUPPORTED_OPERATION', function () { client.move(newest, 'Archive'); });
+        expectCode('UNSUPPORTED_OPERATION', function () { client.move(rawSource, 'Archive'); });
         expectCode('FOLDER_NOT_FOUND', function () { client.fetch({ folder: 'Archive', limit: 1 }); });
     });
     report.ok = true;

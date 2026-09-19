@@ -1,6 +1,6 @@
 """Runs the real-provider device round trip with an account from mail-test-accounts.properties.
 
-Usage: python .python/run_real_account.py <QQ_A|QQ_B|GMAIL_A|NETEASE_A|NETEASE_B> <adb serial> [--peer QQ_B] [--save-sent true|false] [--debug] [--append Drafts] [--cleanup] [--receive pop3] [--release]
+Usage: python .python/run_real_account.py <QQ_A|QQ_B|GMAIL_A|NETEASE_A|NETEASE_B|NETEASE126_A|SINA_A> <adb serial> [--peer QQ_B] [--save-sent true|false] [--debug] [--append Drafts] [--cleanup] [--receive pop3] [--release]
 
 Secrets never reach stdout: every value of a secret key is masked in the Gradle output, the
 logcat excerpt and the XML report check. The command line itself is not echoed.
@@ -36,6 +36,8 @@ profiles = {
     'GMAIL_A': dict(address=props.get('GMAIL_USER_NAME_A'), secret=props.get('GMAIL_ACCESS_TOKEN_A'), provider='gmail', auth='xoauth2'),
     'NETEASE_A': dict(address=props.get('NETEASE_USER_NAME_A'), secret=props.get('NETEASE_AUTH_CODE_A'), provider=None, auth='password'),
     'NETEASE_B': dict(address=props.get('NETEASE_USER_NAME_B'), secret=props.get('NETEASE_AUTH_CODE_B'), provider=None, auth='password'),
+    'NETEASE126_A': dict(address=props.get('NETEASE126_USER_NAME_A'), secret=props.get('NETEASE126_AUTH_CODE_A'), provider='126', auth='password'),
+    'SINA_A': dict(address=props.get('SINA_USER_NAME_A'), secret=props.get('SINA_AUTH_CODE_A'), provider='sina', auth='password'),
 }
 # NetEase accounts pick the preset from the address domain (163 / 126); yeah.net keeps the 163 preset
 # (ID command, sent folder) but talks to its own hosts.

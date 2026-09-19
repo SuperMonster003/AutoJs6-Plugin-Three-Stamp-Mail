@@ -25,7 +25,7 @@ PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOST = os.path.join(os.path.dirname(PLUGIN), "AutoJs6")
 TEST_CLASS = "org.autojs.autojs.runtime.api.augment.mail.MailScriptSmokeDeviceTest"
 DEVICE_DIR = "/data/local/tmp/autojs6-mail-smoke"
-PROVIDERS = {"qq.com": "qq", "foxmail.com": "qq", "163.com": "163", "126.com": "126", "yeah.net": "163", "gmail.com": "gmail"}
+PROVIDERS = {"qq.com": "qq", "foxmail.com": "qq", "163.com": "163", "126.com": "126", "yeah.net": "163", "sina.com": "sina", "sina.cn": "sina", "gmail.com": "gmail"}
 TOKEN_KINDS = {"GMAIL"}
 
 
@@ -43,7 +43,7 @@ def read_properties(path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("profile", help="QQ_A, QQ_B, NETEASE_A, NETEASE_B or GMAIL_A")
+    parser.add_argument("profile", help="QQ_A, QQ_B, NETEASE_A, NETEASE_B, NETEASE126_A, SINA_A or GMAIL_A (the part before the last underscore names the property prefix)")
     parser.add_argument("serial", help="adb serial of the device")
     parser.add_argument("--script", default=None, help="repository-relative smoke script (docs/smoke/*.js) to push and run")
     parser.add_argument("--log", default=None, help="log file name under build/p3/")

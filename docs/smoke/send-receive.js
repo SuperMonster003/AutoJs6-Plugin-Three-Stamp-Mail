@@ -42,6 +42,16 @@ function containsFolder(folders, path) {
     return false;
 }
 
+function expectCode(code, action) {
+    try {
+        action();
+    } catch (e) {
+        check(e.code === code, 'expected ' + code + ', got ' + redact(e));
+        return;
+    }
+    throw new Error('expected ' + code + ' but the call succeeded');
+}
+
 function specialUseFolder(folders, role) {
     for (var i = 0; i < folders.length; i++) {
         if (folders[i].specialUse === role && folders[i].selectable) {
@@ -79,6 +89,9 @@ var searchFallback = MAIL_SMOKE.provider === 'qq' || MAIL_SMOKE.provider === '16
 // on status / move / delete; cause not determined), so the moved message goes to the trash
 // folder there and a vanished folder is tolerated at deleteFolder.
 var ephemeralFolders = MAIL_SMOKE.provider === 'qq';
+// Sina Mail answers NO to every IMAP CREATE (folders exist only through its web UI), so the smoke
+// skips the folder steps there and moves into the trash folder.
+var noFolderCreation = MAIL_SMOKE.provider === 'sina';
 var moveTarget = null;
 var deliveryTimeoutMs = 150000;
 var client = null;
@@ -115,10 +128,15 @@ try {
     check(client.isConnected === true && client.isClosed === false, 'client open after connect');
     check(JSON.stringify(client.account).indexOf(secret) < 0, 'account snapshot has no secret');
 
-    step('createFolder', function () { client.createFolder(folderName); });
+    if (noFolderCreation) {
+        expectCode('SERVER_ERROR', function () { client.createFolder(folderName); });
+        report.folderCreation = 'refused';
+    } else {
+        step('createFolder', function () { client.createFolder(folderName); });
+    }
     var folders = step('folders', function () { return client.folders(); });
-    check(containsFolder(folders, folderName), 'created folder is listed');
-    moveTarget = ephemeralFolders ? specialUseFolder(folders, 'trash') || folderName : folderName;
+    check(noFolderCreation || containsFolder(folders, folderName), 'created folder is listed');
+    moveTarget = ephemeralFolders || noFolderCreation ? specialUseFolder(folders, 'trash') || folderName : folderName;
     report.moveTarget = moveTarget === folderName ? 'created' : 'trash';
 
     var sent = step('send', function () {
@@ -167,18 +185,20 @@ try {
 
     var deleted = step('delete', function () { return client.delete(moved, { expunge: true }); });
     check(deleted.length === 1, 'delete returns the uid');
-    step('deleteFolder', function () {
-        try {
-            client.deleteFolder(folderName);
-        } catch (e) {
-            if (ephemeralFolders && e.code === 'FOLDER_NOT_FOUND') {
-                report.folderVanished = true;
-                return;
+    if (!noFolderCreation) {
+        step('deleteFolder', function () {
+            try {
+                client.deleteFolder(folderName);
+            } catch (e) {
+                if (ephemeralFolders && e.code === 'FOLDER_NOT_FOUND') {
+                    report.folderVanished = true;
+                    return;
+                }
+                throw e;
             }
-            throw e;
-        }
-    });
-    check(!containsFolder(client.folders(), folderName), 'deleted folder is gone');
+        });
+        check(!containsFolder(client.folders(), folderName), 'deleted folder is gone');
+    }
     report.ok = true;
 } catch (e) {
     report.error = redact(e);
