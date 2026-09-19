@@ -158,7 +158,7 @@ The plugin's plans and progress are maintained as a checkable list in ROADMAP.md
 
 #### v1.0.0
 
-_2026/09/18_
+_2026/09/19_
 
 - `Hint` P0 development preview: repository skeleton, the mail core with local-server tests, and the plugin identity for the AutoJs6 plugin center. The Binder contract, the script API, and the settings page follow the phases of ROADMAP.md.
 - `Feature` Plugin identity `angus-mail` (engine `mail`) with the INFO service, the Wake Activity, and the `org.autojs.plugin.MAIL` service whose `IMailPlugin` Binder answers plugin info, capabilities, provider and saved-account listings, and the session envelope (operations follow in P2)
@@ -170,6 +170,7 @@ _2026/09/18_
 - `Feature` Binder session control (roadmap P2.5): only the installed AutoJs6 host signed with the same key as this plugin may open sessions or list saved accounts (a `SecurityException` otherwise, the same rule as the MCP Server plugin); request and response envelopes are limited to `MAX_ENVELOPE_BYTES` and error messages to `MAX_ERROR_MESSAGE_BYTES`; each session runs its calls in order and queues up to `MAX_QUEUED_CALLS` behind the one in flight, refusing the next with `LIMIT_EXCEEDED`; `cancel` answers a queued call at once and breaks the call in flight by closing its sockets, so a stalled server no longer costs the read timeout; `close` answers every pending call with `SESSION_CLOSED`; `getStatus` reports `queued` and `active`; the op table names the receive protocols of every op, so POP3 accounts are refused before arguments are parsed; capabilities advertise `append` and `clientSearchFallback`
 - `Feature` README, plugin-center instructions, and changelog in 10 languages
 - `Fix` Provider presets (roadmap P3.2): 163 Mail and 126 Mail keep a server copy of every message sent through SMTP, so `autoSavesSent` is now true for both and the default `saveToSent` no longer appends a second copy to `已发送` (verified with a real 163 account: a message sent with `saveToSent: false` appeared in the sent folder a few minutes later)
+- `Fix` SDK XML v4 parsing warnings with AGP 9.1 and APK native alignment checks incorrectly triggered by JVM unit-test assembly tasks, using shared build plugins 1.8.3
 - `Improvement` Error mapping: a POP3 server that refuses the mailbox after login because POP access is disabled for the account (Gmail answers STAT with `[SYS/PERM] Your account is not enabled for POP access`) now yields `UNSUPPORTED_OPERATION` with a message naming the cause instead of a retryable `IO_FAILED` "I/O failed"
 - `Improvement` Provider presets: Sina Mail names its sent folder (`已发送`) and notes that the server keeps no copy of sent mail and refuses IMAP CREATE (folders exist only through the web UI); the 126 Mail server copy of sent mail is now verified with a real account
 - `Dependency` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) with Angus Activation 2.0.3 and Jakarta Activation API 2.1.4

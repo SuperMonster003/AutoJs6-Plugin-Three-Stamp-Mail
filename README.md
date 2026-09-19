@@ -158,7 +158,7 @@ minimum host build: 5282 (6.8.0)
 
 #### v1.0.0
 
-_2026/09/18_
+_2026/09/19_
 
 - `提示` P0 开发预览: 仓库骨架, 带本地服务器测试的邮件核心, 以及供 AutoJs6 插件中心识别的插件身份. Binder 契约, 脚本 API 与设置页按 ROADMAP.md 的阶段推进.
 - `新增` 插件标识 `angus-mail` (engine `mail`), 含 INFO 服务, Wake Activity 以及 `org.autojs.plugin.MAIL` 服务; 其 `IMailPlugin` Binder 应答插件信息, 能力, 服务商与已保存账户列表以及会话信封 (具体操作随 P2 落地)
@@ -170,6 +170,7 @@ _2026/09/18_
 - `新增` Binder 会话控制 (路线图 P2.5): 只有已安装且与本插件同签名的 AutoJs6 宿主能打开会话或列出已保存账户 (否则 `SecurityException`, 规则与 MCP Server 插件一致); 请求与响应信封不超过 `MAX_ENVELOPE_BYTES`, 错误消息不超过 `MAX_ERROR_MESSAGE_BYTES`; 每个会话顺序执行调用, 执行中的调用之后最多排队 `MAX_QUEUED_CALLS` 个, 再多则 `LIMIT_EXCEEDED`; `cancel` 立即应答排队中的调用, 并通过关闭套接字打断执行中的调用, 服务器无响应时不再等到读超时; `close` 让全部待处理调用应答 `SESSION_CLOSED`; `getStatus` 报告 `queued` 与 `active`; 操作表标明每个操作支持的收信协议, POP3 账户在解析参数前即被拒绝; 能力集宣告 `append` 与 `clientSearchFallback`
 - `新增` 10 种语言的 README, 插件中心说明与更新日志
 - `修复` 服务商预设 (路线图 P3.2): 163 邮箱与 126 邮箱会在服务器端保存每封经 SMTP 发出的邮件, 两者的 `autoSavesSent` 改为 true, 默认 `saveToSent` 不再向 `已发送` 追加第二份副本 (真实 163 账户核实: `saveToSent: false` 发出的邮件数分钟后出现在已发送文件夹)
+- `修复` AGP 9.1 构建时的 SDK XML v4 解析警告及 JVM 单元测试组装任务误触发 APK 原生库对齐检查的问题 (共享构建插件 1.8.3)
 - `优化` 错误映射: POP3 服务器在登录后因账户未开启 POP 访问而拒绝邮箱 (Gmail 对 STAT 答 `[SYS/PERM] Your account is not enabled for POP access`) 时, 现在得到说明原因的 `UNSUPPORTED_OPERATION`, 而不是可重试的 `IO_FAILED` "I/O failed"
 - `优化` 服务商预设: Sina 邮箱补上已发送文件夹名 (`已发送`), 并注明服务器不保存已发邮件副本且拒绝 IMAP CREATE (文件夹只能在网页端创建); 126 邮箱服务器保存已发邮件副本已用真实账户验证
 - `依赖` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) 及 Angus Activation 2.0.3 与 Jakarta Activation API 2.1.4

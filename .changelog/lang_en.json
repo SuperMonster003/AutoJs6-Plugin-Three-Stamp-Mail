@@ -6,7 +6,7 @@
   "changelog_label_dependency": "Dependency",
   "$data": {
     "v1.0.0": {
-      "released_date": "2026/09/18",
+      "released_date": "2026/09/19",
       "hint": [
         "P0 development preview: repository skeleton, the mail core with local-server tests, and the plugin identity for the AutoJs6 plugin center. The Binder contract, the script API, and the settings page follow the phases of ROADMAP.md."
       ],
@@ -21,7 +21,8 @@
         "README, plugin-center instructions, and changelog in 10 languages"
       ],
       "fix": [
-        "Provider presets (roadmap P3.2): 163 Mail and 126 Mail keep a server copy of every message sent through SMTP, so `autoSavesSent` is now true for both and the default `saveToSent` no longer appends a second copy to `已发送` (verified with a real 163 account: a message sent with `saveToSent: false` appeared in the sent folder a few minutes later)"
+        "Provider presets (roadmap P3.2): 163 Mail and 126 Mail keep a server copy of every message sent through SMTP, so `autoSavesSent` is now true for both and the default `saveToSent` no longer appends a second copy to `已发送` (verified with a real 163 account: a message sent with `saveToSent: false` appeared in the sent folder a few minutes later)",
+        "SDK XML v4 parsing warnings with AGP 9.1 and APK native alignment checks incorrectly triggered by JVM unit-test assembly tasks, using shared build plugins 1.8.3"
       ],
       "improvement": [
         "Error mapping: a POP3 server that refuses the mailbox after login because POP access is disabled for the account (Gmail answers STAT with `[SYS/PERM] Your account is not enabled for POP access`) now yields `UNSUPPORTED_OPERATION` with a message naming the cause instead of a retryable `IO_FAILED` \"I/O failed\"",

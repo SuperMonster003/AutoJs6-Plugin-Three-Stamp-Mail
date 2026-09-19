@@ -6,7 +6,7 @@
 
 # v1.0.0
 
-###### 2026/09/18
+###### 2026/09/19
 
 * `Aviso` Vista previa de desarrollo P0: esqueleto del repositorio, nucleo de correo con pruebas en servidor local e identidad del plugin para el centro de plugins de AutoJs6. El contrato Binder, la API de script y la pagina de ajustes siguen las fases de ROADMAP.md.
 * `Función` Identidad del plugin `angus-mail` (motor `mail`) con el servicio INFO, la Wake Activity y el servicio `org.autojs.plugin.MAIL` cuyo Binder `IMailPlugin` responde la informacion del plugin, las capacidades, las listas de proveedores y cuentas guardadas y el sobre de sesion (las operaciones llegan con P2)
@@ -18,6 +18,7 @@
 * `Función` Control de sesiones Binder (hoja de ruta P2.5): solo el host AutoJs6 instalado y firmado con la misma clave que este plugin puede abrir sesiones o listar las cuentas guardadas (`SecurityException` en caso contrario, la misma regla que el plugin MCP Server); los sobres de solicitud y respuesta se limitan a `MAX_ENVELOPE_BYTES` y los mensajes de error a `MAX_ERROR_MESSAGE_BYTES`; cada sesión ejecuta sus llamadas en orden y pone en cola hasta `MAX_QUEUED_CALLS` detrás de la que está en curso, rechazando la siguiente con `LIMIT_EXCEEDED`; `cancel` responde de inmediato a una llamada en cola e interrumpe la llamada en curso cerrando sus sockets, de modo que un servidor sin respuesta ya no cuesta el tiempo de espera de lectura; `close` responde `SESSION_CLOSED` a todas las llamadas pendientes; `getStatus` informa `queued` y `active`; la tabla de operaciones indica los protocolos de recepción de cada operación, por lo que las cuentas POP3 se rechazan antes de analizar los argumentos; las capacidades anuncian `append` y `clientSearchFallback`
 * `Función` README, instrucciones del centro de plugins y registro de cambios en 10 idiomas
 * `Corrección` Preajustes de proveedores (hoja de ruta P3.2): 163 Mail y 126 Mail conservan en el servidor una copia de cada mensaje enviado por SMTP, por lo que `autoSavesSent` ahora es true en ambos y el `saveToSent` predeterminado ya no agrega una segunda copia a `已发送` (verificado con una cuenta real de 163: un mensaje enviado con `saveToSent: false` aparecio en la carpeta de enviados unos minutos despues)
+* `Corrección` Advertencias de lectura de SDK XML v4 con AGP 9.1 y comprobaciones de alineación nativa de APK activadas por error al ensamblar pruebas unitarias JVM, mediante los plugins de compilación compartidos 1.8.3
 * `Mejora` Asignacion de errores: un servidor POP3 que rechaza el buzon tras iniciar sesion porque el acceso POP esta desactivado para la cuenta (Gmail responde a STAT con `[SYS/PERM] Your account is not enabled for POP access`) ahora produce `UNSUPPORTED_OPERATION` con un mensaje que indica la causa en lugar de un `IO_FAILED` "I/O failed" reintentable
 * `Mejora` Preajustes de proveedores: Sina Mail nombra su carpeta de enviados (`已发送`) e indica que el servidor no guarda copia del correo enviado y rechaza IMAP CREATE (las carpetas solo se crean en la interfaz web); la copia en el servidor del correo enviado de 126 Mail queda verificada con una cuenta real
 * `Dependencia` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) con Angus Activation 2.0.3 y Jakarta Activation API 2.1.4

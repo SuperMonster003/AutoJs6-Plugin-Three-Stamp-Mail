@@ -6,7 +6,7 @@
 
 # v1.0.0
 
-###### 2026/09/18
+###### 2026/09/19
 
 * `힌트` P0 개발 미리보기: 저장소 뼈대, 로컬 서버 테스트를 갖춘 메일 코어, AutoJs6 플러그인 센터용 플러그인 식별 정보. Binder 계약, 스크립트 API, 설정 페이지는 ROADMAP.md의 단계에 따라 진행됩니다.
 * `기능` 플러그인 식별자 `angus-mail` (엔진 `mail`), INFO 서비스, Wake Activity, 그리고 `org.autojs.plugin.MAIL` 서비스; 해당 `IMailPlugin` Binder 는 플러그인 정보, 기능, 공급자 및 저장된 계정 목록과 세션 봉투에 응답 (개별 작업은 P2 에서 구현)
@@ -18,6 +18,7 @@
 * `기능` Binder 세션 제어 (로드맵 P2.5): 설치되어 있고 이 플러그인과 같은 키로 서명된 AutoJs6 호스트만 세션을 열거나 저장된 계정을 나열할 수 있음 (그 외에는 `SecurityException`, MCP Server 플러그인과 같은 규칙); 요청과 응답 봉투는 `MAX_ENVELOPE_BYTES` 이내, 오류 메시지는 `MAX_ERROR_MESSAGE_BYTES` 이내; 각 세션은 호출을 순서대로 실행하고 실행 중인 호출 뒤에 최대 `MAX_QUEUED_CALLS` 개를 대기시키며 그 이상은 `LIMIT_EXCEEDED` 로 거부; `cancel` 은 대기 중인 호출에 즉시 응답하고 실행 중인 호출은 소켓을 닫아 중단하므로 응답 없는 서버에서 읽기 시간 초과까지 기다리지 않음; `close` 는 보류 중인 모든 호출에 `SESSION_CLOSED` 로 응답; `getStatus` 는 `queued` 와 `active` 를 보고; 작업 표는 각 작업이 지원하는 수신 프로토콜을 명시하므로 POP3 계정은 인자 해석 전에 거부됨; 기능 목록은 `append` 와 `clientSearchFallback` 을 알림
 * `기능` 10개 언어의 README, 플러그인 센터 안내, 변경 로그
 * `수정` 제공업체 프리셋 (로드맵 P3.2): 163 Mail과 126 Mail은 SMTP로 보낸 모든 메일의 사본을 서버에 보관하므로 두 프리셋의 `autoSavesSent`를 true로 바꾸고, 기본 `saveToSent`가 `已发送`에 두 번째 사본을 추가하지 않도록 했습니다 (실제 163 계정으로 확인: `saveToSent: false`로 보낸 메일이 몇 분 뒤 보낸 편지함에 나타남)
+* `수정` 공유 빌드 플러그인 1.8.3을 통해 AGP 9.1의 SDK XML v4 파싱 경고 및 JVM 단위 테스트 조립 작업에서 APK 네이티브 라이브러리 정렬 검사가 잘못 실행되는 문제 해결
 * `개선` 오류 매핑: 계정의 POP 액세스가 비활성화되어 로그인 후 메일함을 거부하는 POP3 서버 (Gmail은 STAT에 `[SYS/PERM] Your account is not enabled for POP access`로 응답)에 대해 재시도 가능한 `IO_FAILED` "I/O failed" 대신 원인을 밝히는 메시지가 담긴 `UNSUPPORTED_OPERATION`을 반환합니다
 * `개선` 제공자 프리셋: Sina Mail에 보낸편지함 폴더 이름 (`已发送`)을 추가하고, 서버가 보낸 메일 사본을 보관하지 않으며 IMAP CREATE를 거부한다는 점 (폴더는 웹 UI에서만 생성 가능)을 명시했습니다. 126 Mail 서버의 보낸 메일 사본은 실제 계정으로 검증되었습니다
 * `의존성` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`)와 Angus Activation 2.0.3, Jakarta Activation API 2.1.4

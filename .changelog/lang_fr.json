@@ -6,7 +6,7 @@
   "changelog_label_dependency": "Dépendance",
   "$data": {
     "v1.0.0": {
-      "released_date": "2026/09/18",
+      "released_date": "2026/09/19",
       "hint": [
         "Apercu de developpement P0: squelette du depot, coeur de messagerie avec tests sur serveur local et identite du plugin pour le centre de plugins AutoJs6. Le contrat Binder, l'API de script et la page de parametres suivent les phases de ROADMAP.md."
       ],
@@ -21,7 +21,8 @@
         "README, instructions du centre de plugins et journal des modifications en 10 langues"
       ],
       "fix": [
-        "Preselections de fournisseurs (feuille de route P3.2) : 163 Mail et 126 Mail conservent sur le serveur une copie de chaque message envoye par SMTP, `autoSavesSent` vaut donc desormais true pour les deux et le `saveToSent` par defaut n'ajoute plus une seconde copie dans `已发送` (verifie avec un vrai compte 163 : un message envoye avec `saveToSent: false` est apparu dans le dossier des envoyes quelques minutes plus tard)"
+        "Preselections de fournisseurs (feuille de route P3.2) : 163 Mail et 126 Mail conservent sur le serveur une copie de chaque message envoye par SMTP, `autoSavesSent` vaut donc desormais true pour les deux et le `saveToSent` par defaut n'ajoute plus une seconde copie dans `已发送` (verifie avec un vrai compte 163 : un message envoye avec `saveToSent: false` est apparu dans le dossier des envoyes quelques minutes plus tard)",
+        "Avertissements de lecture SDK XML v4 avec AGP 9.1 et contrôles d'alignement natif des APK déclenchés par erreur lors de l'assemblage des tests unitaires JVM, avec les plugins de compilation partagés 1.8.3"
       ],
       "improvement": [
         "Correspondance des erreurs : un serveur POP3 qui refuse la boite apres la connexion parce que l'acces POP est desactive pour le compte (Gmail repond a STAT `[SYS/PERM] Your account is not enabled for POP access`) donne desormais `UNSUPPORTED_OPERATION` avec un message nommant la cause au lieu d'un `IO_FAILED` \"I/O failed\" reessayable",

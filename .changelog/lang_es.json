@@ -6,7 +6,7 @@
   "changelog_label_dependency": "Dependencia",
   "$data": {
     "v1.0.0": {
-      "released_date": "2026/09/18",
+      "released_date": "2026/09/19",
       "hint": [
         "Vista previa de desarrollo P0: esqueleto del repositorio, nucleo de correo con pruebas en servidor local e identidad del plugin para el centro de plugins de AutoJs6. El contrato Binder, la API de script y la pagina de ajustes siguen las fases de ROADMAP.md."
       ],
@@ -21,7 +21,8 @@
         "README, instrucciones del centro de plugins y registro de cambios en 10 idiomas"
       ],
       "fix": [
-        "Preajustes de proveedores (hoja de ruta P3.2): 163 Mail y 126 Mail conservan en el servidor una copia de cada mensaje enviado por SMTP, por lo que `autoSavesSent` ahora es true en ambos y el `saveToSent` predeterminado ya no agrega una segunda copia a `已发送` (verificado con una cuenta real de 163: un mensaje enviado con `saveToSent: false` aparecio en la carpeta de enviados unos minutos despues)"
+        "Preajustes de proveedores (hoja de ruta P3.2): 163 Mail y 126 Mail conservan en el servidor una copia de cada mensaje enviado por SMTP, por lo que `autoSavesSent` ahora es true en ambos y el `saveToSent` predeterminado ya no agrega una segunda copia a `已发送` (verificado con una cuenta real de 163: un mensaje enviado con `saveToSent: false` aparecio en la carpeta de enviados unos minutos despues)",
+        "Advertencias de lectura de SDK XML v4 con AGP 9.1 y comprobaciones de alineación nativa de APK activadas por error al ensamblar pruebas unitarias JVM, mediante los plugins de compilación compartidos 1.8.3"
       ],
       "improvement": [
         "Asignacion de errores: un servidor POP3 que rechaza el buzon tras iniciar sesion porque el acceso POP esta desactivado para la cuenta (Gmail responde a STAT con `[SYS/PERM] Your account is not enabled for POP access`) ahora produce `UNSUPPORTED_OPERATION` con un mensaje que indica la causa en lugar de un `IO_FAILED` \"I/O failed\" reintentable",

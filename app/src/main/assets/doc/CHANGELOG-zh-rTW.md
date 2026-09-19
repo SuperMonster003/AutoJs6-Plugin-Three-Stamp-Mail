@@ -6,7 +6,7 @@
 
 # v1.0.0
 
-###### 2026/09/18
+###### 2026/09/19
 
 * `提示` P0 開發預覽: 儲存庫骨架, 帶本機伺服器測試的郵件核心, 以及供 AutoJs6 外掛程式中心識別的外掛程式身分. Binder 契約, 指令碼 API 與設定頁按 ROADMAP.md 的階段推進.
 * `新增` 外掛程式標識 `angus-mail` (engine `mail`), 含 INFO 服務, Wake Activity 以及 `org.autojs.plugin.MAIL` 服務; 其 `IMailPlugin` Binder 應答外掛程式資訊, 能力, 服務商與已儲存帳戶列表以及工作階段信封 (具體操作隨 P2 落地)
@@ -18,6 +18,7 @@
 * `新增` Binder 工作階段控制 (路線圖 P2.5): 只有已安裝且與本外掛程式同簽章的 AutoJs6 宿主能開啟工作階段或列出已儲存帳戶 (否則 `SecurityException`, 規則與 MCP Server 外掛程式一致); 請求與回應信封不超過 `MAX_ENVELOPE_BYTES`, 錯誤訊息不超過 `MAX_ERROR_MESSAGE_BYTES`; 每個工作階段依序執行呼叫, 執行中的呼叫之後最多排隊 `MAX_QUEUED_CALLS` 個, 再多則 `LIMIT_EXCEEDED`; `cancel` 立即回應排隊中的呼叫, 並透過關閉通訊端中斷執行中的呼叫, 伺服器無回應時不再等到讀取逾時; `close` 讓全部待處理呼叫回應 `SESSION_CLOSED`; `getStatus` 回報 `queued` 與 `active`; 操作表標明每個操作支援的收信協定, POP3 帳戶在解析參數前即被拒絕; 能力集宣告 `append` 與 `clientSearchFallback`
 * `新增` 10 種語言的 README, 外掛程式中心說明與更新日誌
 * `修復` 服務商預設 (路線圖 P3.2): 163 信箱與 126 信箱會在伺服器端保存每封經 SMTP 發出的郵件, 兩者的 `autoSavesSent` 改為 true, 預設 `saveToSent` 不再向 `已发送` 追加第二份副本 (真實 163 帳戶核實: `saveToSent: false` 發出的郵件數分鐘後出現在已發送資料夾)
+* `修復` AGP 9.1 建置時的 SDK XML v4 解析警告及 JVM 單元測試組裝工作誤觸發 APK 原生程式庫對齊檢查的問題 (共用建置外掛 1.8.3)
 * `優化` 錯誤對應: POP3 伺服器在登入後因帳戶未開啟 POP 存取而拒絕信箱 (Gmail 對 STAT 回應 `[SYS/PERM] Your account is not enabled for POP access`) 時, 現在得到說明原因的 `UNSUPPORTED_OPERATION`, 而不是可重試的 `IO_FAILED` "I/O failed"
 * `優化` 服務商預設: Sina 信箱補上已傳送資料夾名稱 (`已发送`), 並註明伺服器不保存已傳送郵件副本且拒絕 IMAP CREATE (資料夾只能在網頁端建立); 126 信箱伺服器保存已傳送郵件副本已用真實帳戶驗證
 * `相依性` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) 及 Angus Activation 2.0.3 與 Jakarta Activation API 2.1.4
