@@ -15,6 +15,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.supermonster003.autojs6.plugin.angus.mail.binder.CallerGuard
 import io.github.supermonster003.autojs6.plugin.angus.mail.binder.MailPluginBinder
+import io.github.supermonster003.autojs6.plugin.angus.mail.settings.AccountsActivity
 import org.autojs.plugin.common.api.IPluginInfoProvider
 import org.autojs.plugin.common.api.PluginCapabilityKeys
 import org.autojs.plugin.mail.api.IMailCallCallback
@@ -81,6 +82,27 @@ class AngusMailPluginContractTest {
         val matches = context.packageManager.queryIntentActivities(wakeIntent, 0)
         assertEquals("The WAKE action must resolve to exactly one activity", 1, matches.size)
         assertEquals(component.className, matches.single().activityInfo.name)
+    }
+
+    @Test
+    fun settingsEntryResolvesBehindThePluginPermission() {
+        val intent = Intent(AngusMailPlugin.SETTINGS_ACTION).addCategory(Intent.CATEGORY_DEFAULT).setPackage(packageName)
+        @Suppress("DEPRECATION")
+        val matches = context.packageManager.queryIntentActivities(intent, 0)
+        assertEquals("The MAIL_SETTINGS action must resolve to exactly one activity", 1, matches.size)
+        val activityInfo = matches.single().activityInfo
+        assertEquals(MailSettingsActivity::class.java.name, activityInfo.name)
+        assertTrue("the settings entry must be exported", activityInfo.exported)
+        assertTrue("the settings entry must be enabled", activityInfo.enabled)
+        assertEquals(PLUGIN_PERMISSION, activityInfo.permission)
+        assertEquals(android.R.style.Theme_NoDisplay, activityInfo.theme)
+        assertTrue(activityInfo.flags and ActivityInfo.FLAG_EXCLUDE_FROM_RECENTS != 0)
+
+        // The launcher entry stays reachable without the permission.
+        val launcher = requireNotNull(context.packageManager.getLaunchIntentForPackage(packageName)) { "no launcher entry" }
+        val launcherComponent = requireNotNull(launcher.component)
+        assertEquals(AccountsActivity::class.java.name, launcherComponent.className)
+        assertNull(context.packageManager.getActivityInfo(launcherComponent, 0).permission)
     }
 
     @Test
@@ -389,6 +411,7 @@ class AngusMailPluginContractTest {
         assertArrayEquals(AngusMailPlugin.AUTH_MECHANISMS.toTypedArray(), capabilities.getStringArray(MailCapabilityKeys.AUTH_MECHANISMS))
         assertArrayEquals(AngusMailPlugin.FEATURES.toTypedArray(), capabilities.getStringArray(MailCapabilityKeys.FEATURES))
         assertEquals(AngusMailPlugin.PROVIDERS_VERSION, capabilities.getInt(MailCapabilityKeys.PROVIDERS_VERSION))
+        assertEquals(AngusMailPlugin.SETTINGS_VERSION, capabilities.getInt(MailCapabilityKeys.SETTINGS_VERSION))
         assertEquals(AngusMailPlugin.MAIL_LIBRARY_VERSION, capabilities.getString(MailCapabilityKeys.LIBRARY_VERSION))
     }
 

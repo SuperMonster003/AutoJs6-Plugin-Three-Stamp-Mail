@@ -79,5 +79,6 @@ internal fun AngusMailPluginRuntimeInfo.capabilitiesBundle(): Bundle = Bundle().
     putStringArray(MailCapabilityKeys.AUTH_MECHANISMS, AngusMailPlugin.AUTH_MECHANISMS.toTypedArray())
     putStringArray(MailCapabilityKeys.FEATURES, AngusMailPlugin.FEATURES.toTypedArray())
     putInt(MailCapabilityKeys.PROVIDERS_VERSION, AngusMailPlugin.PROVIDERS_VERSION)
+    putInt(MailCapabilityKeys.SETTINGS_VERSION, AngusMailPlugin.SETTINGS_VERSION)
     putString(MailCapabilityKeys.LIBRARY_VERSION, AngusMailPlugin.MAIL_LIBRARY_VERSION)
 }

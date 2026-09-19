@@ -27,6 +27,15 @@ object AngusMailPlugin {
     const val SERVICE_ACTION = "org.autojs.plugin.MAIL"
     const val SERVICE_CATEGORY = "mail"
 
+    /**
+     * Parameterless settings entry the host starts behind the plugin permission
+     * ([MailSettingsActivity], roadmap P4.3); mirrors `MailActions.OPEN_SETTINGS`.
+     */
+    const val SETTINGS_ACTION = "org.autojs.plugin.MAIL_SETTINGS"
+
+    /** Settings extension advertised in the capabilities: 1 = [SETTINGS_ACTION] plus saved accounts. */
+    const val SETTINGS_VERSION = 1
+
     /** Discovery contract of [AngusMailPluginInfoService]. */
     const val INFO_ACTION = PluginActions.INFO
 

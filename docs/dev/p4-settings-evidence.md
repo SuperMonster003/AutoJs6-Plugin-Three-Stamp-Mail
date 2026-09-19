@@ -97,6 +97,18 @@ Regression on the AVD after the change: `AngusMailPluginContractTest` (4) and
 `MailSessionBinderTest` (3) pass; the installed service still answers `[]` for an empty store
 and the capability array equals `AngusMailPlugin.FEATURES`.
 
+Settings entry (the fourth P4.3 item, landed with P4.2): `MailSettingsActivity` is the exported,
+`Theme.NoDisplay`, `excludeFromRecents` activity behind `org.autojs.permission.PLUGIN` that answers
+`org.autojs.plugin.MAIL_SETTINGS` (`MailActions.OPEN_SETTINGS` on the host side); it forwards a
+parameterless intent to `AccountsActivity` and finishes, and treats an intent with data, a clip or
+extras as no request. The launcher entry keeps no permission (a permission on the LAUNCHER activity
+hides the icon). The capabilities advertise `mailSettingsVersion = 1`. Device cases (both devices):
+`AngusMailPluginContractTest.settingsEntryResolvesBehindThePluginPermission` (exactly one activity
+resolves the action, with the permission, the NoDisplay theme and the recents flag; the launcher
+intent resolves to `AccountsActivity` without a permission) and
+`SettingsScreensDeviceTest.settingsEntryForwardsOnlyTheParameterlessAction` (an `ActivityMonitor` sees
+`AccountsActivity` exactly once for the bare action and not at all for the same intent with an extra).
+
 ## P4.2 settings screens
 
 Programmatic Android Views on the OpenCC UI kit (`ui/` package; decision D36, no Compose):

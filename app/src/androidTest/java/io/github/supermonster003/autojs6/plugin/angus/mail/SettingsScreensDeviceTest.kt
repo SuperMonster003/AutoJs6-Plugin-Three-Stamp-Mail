@@ -2,6 +2,7 @@ package io.github.supermonster003.autojs6.plugin.angus.mail
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
@@ -179,6 +180,33 @@ class SettingsScreensDeviceTest {
         } finally {
             imap.close()
             smtp.close()
+        }
+    }
+
+    @Test
+    fun settingsEntryForwardsOnlyTheParameterlessAction() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val monitor = instrumentation.addMonitor(AccountsActivity::class.java.name, null, false)
+        try {
+            val entry = Intent(AngusMailPlugin.SETTINGS_ACTION)
+                .addCategory(Intent.CATEGORY_DEFAULT)
+                .setClassName(context, MailSettingsActivity::class.java.name)
+            ActivityScenario.launch<MailSettingsActivity>(entry).use { scenario ->
+                waitUntil("the settings entry finishes") { scenario.state == Lifecycle.State.DESTROYED }
+            }
+            val accounts = requireNotNull(monitor.waitForActivityWithTimeout(10_000)) { "the accounts page did not open" }
+            assertEquals(1, monitor.hits)
+            accounts.finish()
+
+            // Anything beyond the bare action is not a settings request: the entry finishes without forwarding.
+            val decorated = Intent(entry).putExtra("alias", alias)
+            ActivityScenario.launch<MailSettingsActivity>(decorated).use { scenario ->
+                waitUntil("the decorated entry finishes") { scenario.state == Lifecycle.State.DESTROYED }
+            }
+            Thread.sleep(1_000)
+            assertEquals(1, monitor.hits)
+        } finally {
+            instrumentation.removeMonitor(monitor)
         }
     }
 

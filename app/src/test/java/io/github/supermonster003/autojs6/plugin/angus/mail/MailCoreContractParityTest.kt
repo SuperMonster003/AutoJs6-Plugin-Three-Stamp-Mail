@@ -6,6 +6,7 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProt
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.ProviderPresets
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.TlsMode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorCode
+import org.autojs.plugin.mail.api.MailActions
 import org.autojs.plugin.mail.api.MailContract
 import org.autojs.plugin.mail.api.MailErrorCodes
 import org.junit.Assert.assertEquals
@@ -50,6 +51,9 @@ class MailCoreContractParityTest {
     @Test
     fun capabilitiesDescribeTheMailCore() {
         assertEquals(ProviderPresets.version, AngusMailPlugin.PROVIDERS_VERSION)
+        assertEquals(MailActions.SERVICE_ACTION, AngusMailPlugin.SERVICE_ACTION)
+        assertEquals(MailActions.SERVICE_CATEGORY, AngusMailPlugin.SERVICE_CATEGORY)
+        assertEquals(MailActions.OPEN_SETTINGS, AngusMailPlugin.SETTINGS_ACTION)
         assertEquals(MailProtocol.entries.map { it.id }, AngusMailPlugin.PROTOCOLS)
         assertEquals(AuthMethod.entries.map { it.id }, AngusMailPlugin.AUTH_MECHANISMS)
         ProviderPresets.all.forEach { preset -> preset.auth.forEach { assertTrue(it in AngusMailPlugin.AUTH_MECHANISMS) } }

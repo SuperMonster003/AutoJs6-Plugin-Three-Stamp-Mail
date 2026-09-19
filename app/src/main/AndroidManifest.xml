@@ -79,6 +79,23 @@
             android:parentActivityName=".AppSettingsActivity"
             android:theme="@style/Theme.AngusMail" />
 
+        <!--
+            Parameterless settings entry for the host (roadmap P4.3): forwards to AccountsActivity and
+            finishes. It carries the plugin permission so only AutoJs6 can start it, which is why the
+            launcher entry above does not: a permission there would hide the icon from the launcher.
+        -->
+        <activity
+            android:name=".MailSettingsActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:permission="org.autojs.permission.PLUGIN"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="org.autojs.plugin.MAIL_SETTINGS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".WakeActivity"
             android:excludeFromRecents="true"

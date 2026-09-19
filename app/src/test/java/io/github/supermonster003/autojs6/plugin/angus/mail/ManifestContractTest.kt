@@ -53,7 +53,7 @@ class ManifestContractTest {
 
         val activities = application.children("activity").associateBy { it.androidAttribute("name") }
         assertEquals(
-            setOf(".settings.AccountsActivity", ".settings.AccountEditorActivity", ".AppSettingsActivity", ".AboutActivity", ".WakeActivity"),
+            setOf(".settings.AccountsActivity", ".settings.AccountEditorActivity", ".AppSettingsActivity", ".AboutActivity", ".MailSettingsActivity", ".WakeActivity"),
             activities.keys,
         )
         val wake = activities.getValue(".WakeActivity")
@@ -102,6 +102,22 @@ class ManifestContractTest {
             assertTrue("$name declares no intent filter", activity.children("intent-filter").isEmpty())
         }
         assertEquals("adjustResize", activities.getValue(".settings.AccountEditorActivity").androidAttribute("windowSoftInputMode"))
+    }
+
+    @Test
+    fun `settings entry is exported behind the plugin permission and answers only the settings action`() {
+        val activities = manifest.child("application").children("activity").associateBy { it.androidAttribute("name") }
+
+        val entry = activities.getValue(".MailSettingsActivity")
+        assertEquals("true", entry.androidAttribute("exported"))
+        assertEquals(PLUGIN_PERMISSION, entry.androidAttribute("permission"))
+        assertEquals("true", entry.androidAttribute("excludeFromRecents"))
+        assertEquals("@android:style/Theme.NoDisplay", entry.androidAttribute("theme"))
+        assertNull("the entry has no parent; it finishes at once", entry.androidAttributeOrNull("parentActivityName"))
+        val filter = entry.child("intent-filter")
+        assertEquals(listOf(AngusMailPlugin.SETTINGS_ACTION), filter.children("action").map { it.androidAttribute("name") })
+        assertEquals(listOf("android.intent.category.DEFAULT"), filter.children("category").map { it.androidAttribute("name") })
+        assertEquals("org.autojs.plugin.MAIL_SETTINGS", AngusMailPlugin.SETTINGS_ACTION)
     }
 
     @Test
