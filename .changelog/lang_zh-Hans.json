@@ -25,7 +25,8 @@
         "设置入口 (路线图 P4.3): AutoJs6 宿主经导出的 `org.autojs.plugin.MAIL_SETTINGS` 活动打开账户页, 该活动要求插件权限, 只接受无参数的请求并立即结束; 能力集合宣告 `mailSettingsVersion` 1; 启动器入口本身不带该权限",
         "发行历史 (路线图 P4.5): 设置页与关于页可打开发行历史页, 内容取自随插件打包的当前语言更新日志 (无对应翻译时回退英语), 每个版本一张卡片, 含日期与带标签的条目; 插件不做自身的更新检查, 更新跟随 AutoJs6 插件中心",
         "电池优化引导 (路线图 P4.6): 设置页显示系统是否可能在后台暂停本插件 (`PowerManager.isIgnoringBatteryOptimizations`), 说明影响后经 `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` 打开系统对话框; 清单因此声明 `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`; 启动时不发起任何请求, 也没有功能依赖该排除",
-        "新邮件监听, IMAP IDLE (路线图 P5): 邮件内核以独立连接用 `IMAPFolder.idle` 监听文件夹, 每 24 分钟续期一次 IDLE, 新邮件按 UID 抓取 (信封, 或按需正文) 且只报一次, 断线后按指数退避重连 (1 s 起, 上限 5 min, 带抖动), 文件夹 UIDVALIDITY 变化时报 `resync`; 服务器无 IDLE 或 IDLE 连续失败 3 次则切换为轮询并发 `mode` 事件; 每个会话最多 `MAX_WATCHES_PER_SESSION` 个监听, 会话关闭时一并关闭"
+        "新邮件监听, IMAP IDLE (路线图 P5): 邮件内核以独立连接用 `IMAPFolder.idle` 监听文件夹, 每 24 分钟续期一次 IDLE, 新邮件按 UID 抓取 (信封, 或按需正文) 且只报一次, 断线后按指数退避重连 (1 s 起, 上限 5 min, 带抖动), 文件夹 UIDVALIDITY 变化时报 `resync`; 服务器无 IDLE 或 IDLE 连续失败 3 次则切换为轮询并发 `mode` 事件; 每个会话最多 `MAX_WATCHES_PER_SESSION` 个监听, 会话关闭时一并关闭",
+        "新邮件监听, 轮询 (路线图 P5): `mode: \"poll\"` 的监听每 `pollIntervalMs` (默认 60 s, 下限 `MIN_POLL_INTERVAL_MS`, 上限 1 小时) 按 UID 对文件夹做差分, 连接在轮次之间保持; POP3 账户一律轮询, 按 UIDL 差分且每轮登录一次, 轮次之间不锁定邮箱, 只报新增, 不报删除; 首轮只取快照, 不报积压"
       ],
       "fix": [
         "服务商预设 (路线图 P3.2): 163 邮箱与 126 邮箱会在服务器端保存每封经 SMTP 发出的邮件, 两者的 `autoSavesSent` 改为 true, 默认 `saveToSent` 不再向 `已发送` 追加第二份副本 (真实 163 账户核实: `saveToSent: false` 发出的邮件数分钟后出现在已发送文件夹)",

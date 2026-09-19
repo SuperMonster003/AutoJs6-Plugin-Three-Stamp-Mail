@@ -1,16 +1,18 @@
 package io.github.supermonster003.autojs6.plugin.angus.mail.core.watch
 
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccount
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailSecret
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.MessageDocument
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.imapUid
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.session.ImapMailbox
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.session.Pop3Mailbox
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.session.ProtocolTrace
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.session.SocketRegistry
 import jakarta.mail.Folder
 import org.eclipse.angus.mail.imap.IMAPFolder
 
-/** What a [PollWatcher] polls: an IMAP folder by UID (the POP3 mailbox by UIDL follows, roadmap D3 / P5). */
+/** What a [PollWatcher] polls: an IMAP folder by UID or the POP3 mailbox by UIDL (roadmap D3 / P5). */
 interface PollSource {
     /** One poll: a `resync` reason when the increment could not be determined, and the new messages, oldest first. */
     class Poll(val resync: String?, val messages: List<MessageDocument>)
@@ -26,9 +28,9 @@ interface PollSource {
 
 /**
  * Polling watch (roadmap P5): every `pollIntervalMs` the [PollSource] diffs the folder against
- * what it reported last (IMAP by UID). Losses and reconnects follow [AbstractWatcher]; the cursor
- * survives them, so nothing is reported twice. The [IdleWatcher] hands over to this watcher when
- * IDLE is unavailable.
+ * what it reported last (IMAP by UID, POP3 by UIDL; POP3 reports additions only, roadmap D3).
+ * Losses and reconnects follow [AbstractWatcher]; the cursor survives them, so nothing is
+ * reported twice.
  */
 class PollWatcher(
     account: MailAccount,
@@ -39,7 +41,10 @@ class PollWatcher(
     source: PollSource? = null,
 ) : AbstractWatcher(account, secret, options, listener, config, THREAD_NAME) {
 
-    private val source: PollSource = source ?: ImapPollSource(account, secret, options.folder, options.fetchBody)
+    private val source: PollSource = source ?: when (account.receive) {
+        MailProtocol.POP3 -> Pop3PollSource(account, secret, options.fetchBody)
+        else -> ImapPollSource(account, secret, options.folder, options.fetchBody)
+    }
 
     /** Polls completed (tests). */
     @Volatile
@@ -136,6 +141,40 @@ class ImapPollSource internal constructor(
             val resync = cursor.align(box, open)
             PollSource.Poll(resync, box.messagesAfter(open, cursor.lastUid, fetchBody).also { cursor.advance(it) })
         }
+    }
+
+    override fun disconnect() {
+        mailbox?.let { runCatching { it.close() } }
+        mailbox = null
+    }
+}
+
+/** POP3 polling: one login, `UIDL` and `QUIT` per poll; additions only (roadmap D3). */
+class Pop3PollSource(
+    private val account: MailAccount,
+    private val secret: MailSecret,
+    private val fetchBody: Boolean,
+) : PollSource {
+
+    private var mailbox: Pop3Mailbox? = null
+
+    /** The UIDLs reported so far; null until the first snapshot. */
+    @Volatile
+    var known: Set<String>? = null
+        private set
+
+    override fun connect(sockets: SocketRegistry, trace: ProtocolTrace): String? {
+        val box = Pop3Mailbox.connect(account, secret, trace, sockets)
+        mailbox = box
+        if (known == null) known = box.poll(null, fetchBody).uidls
+        return null
+    }
+
+    override fun poll(): PollSource.Poll {
+        val box = mailbox ?: throw IllegalStateException("the poll source is not connected")
+        val result = box.poll(known, fetchBody)
+        known = result.uidls
+        return PollSource.Poll(null, result.messages)
     }
 
     override fun disconnect() {

@@ -196,6 +196,35 @@ class Pop3Mailbox private constructor(
         UidsResult.pop3(found.map { it.text })
     }
 
+    // ------------------------------------------------------------------ watches (P5)
+
+    /** One poll of a POP3 watch: every UIDL in the mailbox now, and the documents of those not seen before. */
+    class Poll(val uidls: Set<String>, val messages: List<MessageDocument>)
+
+    /**
+     * Polls the mailbox for a watch (roadmap D3 / P5): with [known] null only the UIDL snapshot
+     * is taken (the first connection reports no backlog); otherwise the messages whose UIDL is
+     * not in [known] come back oldest first, as header envelopes or, with [fetchBody], as full
+     * documents. Deletions are not reported. The folder closes at the end of every poll, so the
+     * maildrop is not locked between polls.
+     */
+    fun poll(known: Set<String>?, fetchBody: Boolean): Poll = withInbox(Folder.READ_ONLY) { folder ->
+        val uidls = uidls(folder)
+        val snapshot = uidls.keys.toSet()
+        if (known == null) return@withInbox Poll(snapshot, emptyList())
+        val fresh = uidls.filterKeys { it !in known }.entries.sortedBy { it.value }
+        if (fresh.isEmpty()) return@withInbox Poll(snapshot, emptyList())
+        val messages = fresh.map { folder.getMessage(it.value) }.toTypedArray()
+        val documents = if (fetchBody) {
+            trace.timed(MailProtocol.POP3.id, "retr ${messages.size}") {
+                messages.mapIndexed { index, message -> MessageMapper.full(message, INBOX, JsonPrimitive(fresh[index].key)) }
+            }
+        } else {
+            envelopes(folder, messages, uidls)
+        }
+        Poll(snapshot, documents)
+    }
+
     // ------------------------------------------------------------------ helpers
 
     /** UIDL -> message number of the open [folder], from one `UIDL` command; the server must support it. */
