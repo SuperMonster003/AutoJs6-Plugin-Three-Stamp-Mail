@@ -89,7 +89,7 @@
       "sentFolder": "已发送",
       "requiresClientId": true,
       "docsUrl": "https://help.mail.126.com/",
-      "notes": "Same servers policy as 163 Mail: every IMAP connection has to send the ID command before SELECT or EXAMINE; the plugin identifies each connection it opens, and the server is expected to keep its own copy of sent mail like 163 Mail does."
+      "notes": "Same servers policy as 163 Mail: every IMAP connection has to send the ID command before SELECT or EXAMINE; the plugin identifies each connection it opens. The server keeps a copy of every message sent through SMTP in the sent folder (verified with a real account), and SEARCH by SUBJECT or FROM answers OK without hits for just-delivered mail."
     },
     {
       "id": "icloud",
@@ -130,10 +130,10 @@
       "auth": ["password"],
       "authHint": "Authorization code from the Sina Mail client settings",
       "autoSavesSent": false,
-      "sentFolder": null,
+      "sentFolder": "已发送",
       "requiresClientId": false,
       "docsUrl": "https://help.sina.com.cn/",
-      "notes": null
+      "notes": "The server does not keep a copy of mail sent through SMTP (the plugin appends one to the sent folder), and it answers NO to every IMAP CREATE: folders can only be made in the web UI, so createFolder fails with SERVER_ERROR."
     },
     {
       "id": "aliyun",

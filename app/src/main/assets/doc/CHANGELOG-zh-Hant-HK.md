@@ -19,6 +19,7 @@
 * `新增` 10 種語言的 README, 插件中心說明與更新日誌
 * `修復` 服務商預設 (路線圖 P3.2): 163 郵箱與 126 郵箱會在伺服器端保存每封經 SMTP 發出的郵件, 兩者的 `autoSavesSent` 改為 true, 預設 `saveToSent` 不再向 `已发送` 追加第二份副本 (真實 163 帳戶核實: `saveToSent: false` 發出的郵件數分鐘後出現在已發送資料夾)
 * `優化` 錯誤映射: POP3 伺服器在登入後因帳戶未開啟 POP 存取而拒絕郵箱 (Gmail 對 STAT 答 `[SYS/PERM] Your account is not enabled for POP access`) 時, 現在得到說明原因的 `UNSUPPORTED_OPERATION`, 而不是可重試的 `IO_FAILED` "I/O failed"
+* `優化` 服務商預設: Sina 郵箱補上已發送資料夾名 (`已发送`), 並註明伺服器不保存已發郵件副本且拒絕 IMAP CREATE (資料夾只能在網頁端建立); 126 郵箱伺服器保存已發郵件副本已用真實帳戶驗證
 * `依賴` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) 及 Angus Activation 2.0.3 與 Jakarta Activation API 2.1.4
 * `依賴` 附加 GreenMail 2.1.13 用於 JVM 郵件核心測試 (僅測試範圍)
 * `依賴` 附加 `common-plugin-api.aar` (AutoJs6 模組 `plugin-api/common-plugin-api`, 宿主組建 6.8.0 / 5282, MPL 2.0) 作為共用插件契約, 並在 `locks/host-api-aars.lock` 中鎖定雜湊

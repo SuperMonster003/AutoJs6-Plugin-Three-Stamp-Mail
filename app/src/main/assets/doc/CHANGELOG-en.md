@@ -19,6 +19,7 @@
 * `Feature` README, plugin-center instructions, and changelog in 10 languages
 * `Fix` Provider presets (roadmap P3.2): 163 Mail and 126 Mail keep a server copy of every message sent through SMTP, so `autoSavesSent` is now true for both and the default `saveToSent` no longer appends a second copy to `已发送` (verified with a real 163 account: a message sent with `saveToSent: false` appeared in the sent folder a few minutes later)
 * `Improvement` Error mapping: a POP3 server that refuses the mailbox after login because POP access is disabled for the account (Gmail answers STAT with `[SYS/PERM] Your account is not enabled for POP access`) now yields `UNSUPPORTED_OPERATION` with a message naming the cause instead of a retryable `IO_FAILED` "I/O failed"
+* `Improvement` Provider presets: Sina Mail names its sent folder (`已发送`) and notes that the server keeps no copy of sent mail and refuses IMAP CREATE (folders exist only through the web UI); the 126 Mail server copy of sent mail is now verified with a real account
 * `Dependency` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) with Angus Activation 2.0.3 and Jakarta Activation API 2.1.4
 * `Dependency` GreenMail 2.1.13 added for the JVM mail core tests (test scope only)
 * `Dependency` Added `common-plugin-api.aar` (AutoJs6 module `plugin-api/common-plugin-api`, host build 6.8.0 / 5282, MPL 2.0) as the shared plugin contract, hash-locked in `locks/host-api-aars.lock`

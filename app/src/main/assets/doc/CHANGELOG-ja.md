@@ -19,6 +19,7 @@
 * `機能` 10 言語の README, プラグインセンターの説明, 更新履歴
 * `修正` プロバイダープリセット (ロードマップ P3.2): 163 Mail と 126 Mail は SMTP で送信したすべてのメールをサーバー側で保存するため, 両者の `autoSavesSent` を true にし, 既定の `saveToSent` が `已发送` に 2 通目のコピーを追加しないようにしました (実際の 163 アカウントで確認: `saveToSent: false` で送信したメールが数分後に送信済みフォルダーに現れました)
 * `改善` エラーマッピング: アカウントの POP アクセスが無効なためログイン後にメールボックスを拒否する POP3 サーバー (Gmail は STAT に `[SYS/PERM] Your account is not enabled for POP access` と応答) に対して, 再試行可能な `IO_FAILED` "I/O failed" ではなく原因を示すメッセージ付きの `UNSUPPORTED_OPERATION` を返すようにしました
+* `改善` プロバイダープリセット: Sina Mail に送信済みフォルダー名 (`已发送`) を追加し, サーバーが送信済みメールのコピーを保持せず IMAP CREATE を拒否する (フォルダーはウェブ UI でのみ作成可能) ことを注記しました. 126 Mail のサーバー側送信済みコピーは実アカウントで検証済みです
 * `依存関係` Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) と Angus Activation 2.0.3, Jakarta Activation API 2.1.4
 * `依存関係` JVM メールコアテスト用に GreenMail 2.1.13 を追加 (テストスコープのみ)
 * `依存関係` 共有プラグインコントラクトとして `common-plugin-api.aar` (AutoJs6 モジュール `plugin-api/common-plugin-api`, ホストビルド 6.8.0 / 5282, MPL 2.0) を追加し, `locks/host-api-aars.lock` でハッシュを固定
