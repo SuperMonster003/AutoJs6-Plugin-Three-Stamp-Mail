@@ -36,6 +36,12 @@ data class ProviderPreset(
     val sentFolder: String? = null,
     /** True when the IMAP server refuses clients that do not send the `ID` command (163 / 126). */
     val requiresClientId: Boolean = false,
+    /**
+     * False when the IMAP server does not push new mail through IDLE: no IDLE capability (163 /
+     * 126) or IDLE accepted but silent (QQ, Sina; verified 2026-09-19, roadmap P5 evidence). A
+     * watch in mode `auto` then polls from the start instead of idling.
+     */
+    val idlePush: Boolean = true,
     /** Provider help page describing the client settings. */
     val docsUrl: String,
     @SerialName("notes")

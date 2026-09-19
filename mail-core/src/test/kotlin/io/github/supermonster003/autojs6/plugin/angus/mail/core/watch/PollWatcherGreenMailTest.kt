@@ -3,6 +3,7 @@ package io.github.supermonster003.autojs6.plugin.angus.mail.core.watch
 import com.icegreen.greenmail.util.GreenMail
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailSecret
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.ProviderPresets
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.query.MessageArgs
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.session.MailSession
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.WatchTestSupport.BOB_PASSWORD
@@ -21,7 +22,8 @@ import org.junit.Test
 /**
  * Roadmap P5 `PollWatcher` against GreenMail: IMAP polls diff by UID, POP3 polls diff by UIDL
  * (string uids, additions only, the maildrop is free between polls), a requested reconnect keeps
- * the cursor, and `Watchers.open` picks the poller for POP3 accounts and for `mode: "poll"`.
+ * the cursor, and `Watchers.open` picks the poller for POP3 accounts, for `mode: "poll"` and for
+ * presets whose server does not push through IDLE (`idlePush = false`) unless `idle` is asked for.
  */
 class PollWatcherGreenMailTest {
 
@@ -126,6 +128,11 @@ class PollWatcherGreenMailTest {
         assertTrue(Watchers.open(bob(), secret, WatchOptions(mode = WatchMode.IDLE), Events(), FAST) is IdleWatcher)
         assertTrue(Watchers.open(bob(), secret, WatchOptions(mode = WatchMode.POLL), Events(), FAST) is PollWatcher)
         assertTrue(Watchers.open(bob(MailProtocol.POP3), secret, WatchOptions(), Events(), FAST) is PollWatcher)
+        val silent = bob().copy(provider = ProviderPresets.require("qq"))
+        assertFalse(silent.provider!!.idlePush)
+        assertTrue(Watchers.open(silent, secret, WatchOptions(), Events(), FAST) is PollWatcher)
+        assertTrue(Watchers.open(silent, secret, WatchOptions(mode = WatchMode.IDLE), Events(), FAST) is IdleWatcher)
+        assertTrue(Watchers.open(bob().copy(provider = ProviderPresets.require("gmail")), secret, WatchOptions(), Events(), FAST) is IdleWatcher)
         try {
             Watchers.open(bob(MailProtocol.POP3), secret, WatchOptions(mode = WatchMode.IDLE), Events(), FAST)
             org.junit.Assert.fail("POP3 has no IDLE")

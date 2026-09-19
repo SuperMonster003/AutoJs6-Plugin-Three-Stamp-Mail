@@ -65,7 +65,7 @@ Angus Mail 为 AutoJs6 脚本提供全局对象 `mail`, 用于发送邮件, 列�
 - 发信: 纯文本或 HTML, 多个收件人, 附件与内联图片, 自定义信头与优先级; 服务商不自动保存已发送邮件时由插件写入服务器.
 - 收信: 按页列出文件夹, 在服务器端搜索 (服务商拒绝非 ASCII 搜索时回退到客户端过滤), 读取文本与 HTML 正文, 并把附件直接下载到脚本工作目录.
 - 整理: 标记已读或星标, 移动, 复制, 删除, 清除, 以及创建, 重命名或删除文件夹; POP3 账户获得只读子集.
-- 监听: 在脚本运行期间通过 IMAP IDLE 接收新邮件事件, 服务器或 POP3 账户不支持时回退为轮询.
+- 监听: 在脚本运行期间接收新邮件事件, 服务器真正推送时用 IMAP IDLE, 否则轮询 (默认 60 s, 可调): QQ 与 Sina 接受 IDLE 但不推送, 163 与 126 没有 IDLE, POP3 账户一律轮询; 断网与插件进程重启后监听自动恢复.
 - 服务商: 内置 Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina 和 Aliyun 预设, 自动填充主机, 端口与加密方式; 任何字段都可为其他服务器覆盖.
 - 认证: 密码与服务商授权码, 或由脚本提供并附带刷新回调的 XOAUTH2 访问令牌.
 
@@ -115,7 +115,7 @@ watch.on('message', m => { if (/code/i.test(m.subject)) console.log(m.text); });
 - INTERNET 权限只用于脚本指定服务器的 IMAP, POP3 和 SMTP 连接; 插件不发起其他请求, 也不收集任何数据.
 - 密码与令牌从脚本到插件经 Binder 的专用字段传递, 不会出现在日志, JSON 文档, 错误消息或崩溃报告中, 且只在会话生命周期内驻留内存. 设置页保存的账户由 Android Keystore 密钥加密, 并排除在备份之外.
 - 连接默认使用 TLS (按服务商要求选择 SSL 或 STARTTLS); 明文连接与自签名证书必须为每个账户显式声明.
-- REQUEST_IGNORE_BATTERY_OPTIMIZATIONS 权限只服务于设置页的引导按钮: 按钮显示系统是否可能在后台暂停插件, 并在用户要求时打开系统对话框; 插件从不自行请求, 也没有任何功能依赖该排除.
+- REQUEST_IGNORE_BATTERY_OPTIMIZATIONS 权限只服务于设置页的引导按钮: 按钮显示系统是否可能在后台暂停插件, 并在用户要求时打开系统对话框; 插件从不自行请求, 也没有任何功能依赖该排除. P5 监听矩阵实测了该排除的用途: 屏幕关闭一段时间后 (Doze) Android 会冻结后台应用的网络, 监听断开, 重连超时, 新邮件要等设备唤醒几分钟后才报告 (Android 9 上约四分钟; Doze 结束时插件立即重连); 排除后监听保持连接.
 
 请只从官方 [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) 页面或 AutoJs6 插件中心获取插件. 来源不明的安装包即使版本号相同, 也可能无法通过宿主校验或带来风险.
 
@@ -182,6 +182,7 @@ _2026/09/19_
 - `修复` 服务商预设 (路线图 P3.2): 163 邮箱与 126 邮箱会在服务器端保存每封经 SMTP 发出的邮件, 两者的 `autoSavesSent` 改为 true, 默认 `saveToSent` 不再向 `已发送` 追加第二份副本 (真实 163 账户核实: `saveToSent: false` 发出的邮件数分钟后出现在已发送文件夹)
 - `修复` AGP 9.1 构建时的 SDK XML v4 解析警告及 JVM 单元测试组装任务误触发 APK 原生库对齐检查的问题 (共享构建插件 1.8.3)
 - `修复` 账户编辑器 (路线图 P4.7): 整个表单退出 Android 自动填充框架, 密码管理器不再索取授权码; 此前 HyperOS (API 35) 会在保存后关闭编辑器时弹出 "自动保存账号密码".
+- `修复` QQ, Sina, 163 与 126 的新邮件监听 (邮件路线图 P5 设备矩阵): 服务商预设新增 `idlePush` (预设表版本 2), 这四家上 `mode: auto` 从一开始就轮询而不再进入 IDLE, 因为 QQ 与 Sina 接受 IMAP IDLE 却在客户端空闲期间从不推送 (真实账户, 2026-09-19: 10 分钟内没有任何未标记响应; Sina 还会在 60 s 后断开连接), 而 163 与 126 根本没有 IDLE; 显式 `mode: 'idle'` 仍会进入 IDLE. 矩阵本身 (QQ 在 API 24 模拟器与两台 Sony 手机, 163 在一台 Redmi: 杀插件进程, 断网, Wi-Fi 切蜂窝, 强制 Doze) 记录于 `docs/dev/p5-watch-evidence.md`, 配套冒烟脚本 `docs/smoke/watch.js` 与驱动 `.python/run_watch_matrix.py`; 同一矩阵还表明 Doze 会冻结后台应用的网络 (监听的重连超时, Android 9 上新邮件在唤醒后约四分钟才报告), 因此插件现在在设备离开 Doze 的瞬间重连其监听, 设置页的电池优化引导文案说明了该排除的用途
 - `优化` 错误映射: POP3 服务器在登录后因账户未开启 POP 访问而拒绝邮箱 (Gmail 对 STAT 答 `[SYS/PERM] Your account is not enabled for POP access`) 时, 现在得到说明原因的 `UNSUPPORTED_OPERATION`, 而不是可重试的 `IO_FAILED` "I/O failed"
 - `优化` 服务商预设: Sina 邮箱补上已发送文件夹名 (`已发送`), 并注明服务器不保存已发邮件副本且拒绝 IMAP CREATE (文件夹只能在网页端创建); 126 邮箱服务器保存已发邮件副本已用真实账户验证
 - `优化` 服务商预设: Yahoo Mail 与 Aliyun Mail 的说明注明这两个预设未经真实账户核实 (项目无法获得测试账户), 其已发送副本行为按公开文档推定.

@@ -101,7 +101,8 @@ class IdleWatcherGreenMailTest {
         val events = Events()
         val watcher = watch(events, config = FAST.copy(idleRenewMs = 400))
         watcher.start()
-        await(timeoutMs = 10_000, what = "two renews") { watcher.renewCount >= 2 }
+        // the renew thread counts before the loop re-enters IDLE, so wait for both
+        await(timeoutMs = 10_000, what = "two renews and the third IDLE") { watcher.renewCount >= 2 && watcher.idleCount >= 3 }
         assertTrue("IDLE was re-entered after the renews", watcher.idleCount >= 3)
         assertEquals("the renew keeps the connection", 1, watcher.connectCount)
         deliver(greenMail, "after renew", 1)

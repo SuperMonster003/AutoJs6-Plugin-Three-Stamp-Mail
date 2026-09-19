@@ -35,11 +35,11 @@
     <string name="accounts_title">Saved accounts</string>
     <string name="action_save">Save</string>
     <string name="battery_dialog_action">Continue</string>
-    <string name="battery_dialog_message">Android may pause apps in the background to save power, which can interrupt a mail session a script keeps open. Excluding this plugin lets those sessions continue; it changes nothing else and is never required. The next screen is the system dialog.</string>
+    <string name="battery_dialog_message">Android may pause apps in the background to save power. With the screen off for a while (Doze) the network of background apps is frozen: a mail session a script keeps open loses its connection, a watch\'s reconnects time out and new mail is only reported a few minutes after the device wakes up (measured: about four minutes on Android 9). Excluding this plugin keeps those sessions and watches connected; it changes nothing else and is never required. The next screen is the system dialog.</string>
     <string name="battery_dialog_title">Ignore battery optimization?</string>
     <string name="battery_request_failed">This device offers no battery optimization screen</string>
     <string name="battery_summary_ignored">Excluded: the system will not pause this plugin\'s mail sessions in the background; tap to manage</string>
-    <string name="battery_summary_optimized">Applied: the system may pause long-running sessions; tap to ask for an exclusion</string>
+    <string name="battery_summary_optimized">Applied: in Doze the system freezes the network of background apps, so watches and long-running sessions pause until the device wakes up; tap to ask for an exclusion</string>
     <string name="battery_title">Battery optimization</string>
     <string name="dark_mode_dark">Dark</string>
     <string name="dark_mode_light">Light</string>

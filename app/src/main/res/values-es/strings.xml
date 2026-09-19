@@ -35,11 +35,11 @@
     <string name="accounts_title">Cuentas guardadas</string>
     <string name="action_save">Guardar</string>
     <string name="battery_dialog_action">Continuar</string>
-    <string name="battery_dialog_message">Android puede pausar aplicaciones en segundo plano para ahorrar energía, lo que puede interrumpir una sesión de correo que un script mantiene abierta. Excluir este plugin permite que esas sesiones continúen; no cambia nada más y nunca es obligatorio. La siguiente pantalla es el diálogo del sistema.</string>
+    <string name="battery_dialog_message">Android puede pausar aplicaciones en segundo plano para ahorrar energía. Con la pantalla apagada un rato (Doze) la red de las aplicaciones en segundo plano se congela: una sesión de correo que un script mantiene abierta pierde la conexión, las reconexiones de una vigilancia caducan y el correo nuevo solo se informa unos minutos después de que el dispositivo despierte (medido: unos cuatro minutos en Android 9). Excluir este plugin mantiene conectadas esas sesiones y vigilancias; no cambia nada más y nunca es obligatorio. La siguiente pantalla es el diálogo del sistema.</string>
     <string name="battery_dialog_title">Ignorar la optimización de batería?</string>
     <string name="battery_request_failed">Este dispositivo no ofrece una pantalla de optimización de batería</string>
     <string name="battery_summary_ignored">Excluido: el sistema no pausará las sesiones de correo de este plugin en segundo plano; toca para gestionarlo</string>
-    <string name="battery_summary_optimized">Aplicada: el sistema puede pausar sesiones largas; toca para solicitar una exclusión</string>
+    <string name="battery_summary_optimized">Aplicada: en Doze el sistema congela la red de las aplicaciones en segundo plano, así que las vigilancias y las sesiones largas se detienen hasta que el dispositivo despierte; toca para solicitar una exclusión</string>
     <string name="battery_title">Optimización de batería</string>
     <string name="dark_mode_dark">Oscuro</string>
     <string name="dark_mode_light">Claro</string>

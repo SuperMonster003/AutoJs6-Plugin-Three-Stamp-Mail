@@ -35,11 +35,11 @@
     <string name="accounts_title">已儲存帳戶</string>
     <string name="action_save">儲存</string>
     <string name="battery_dialog_action">繼續</string>
-    <string name="battery_dialog_message">Android 可能為慳電而在背景暫停應用程式, 這會打斷腳本保持開啟的電郵會話. 排除本插件後這些會話可以繼續; 除此之外不改變任何行為, 也從不是必需的. 下一步是系統對話框.</string>
+    <string name="battery_dialog_message">Android 可能為慳電而在背景暫停應用程式. 螢幕關閉一段時間後 (Doze) 背景應用程式的網絡會被凍結: 腳本保持開啟的電郵會話會斷開, 監聽的重連會超時, 新郵件要等裝置喚醒幾分鐘後才會報告 (實測: Android 9 上約四分鐘). 排除本插件後這些會話與監聽可以保持連接; 除此之外不改變任何行為, 也從不是必需的. 下一步是系統對話框.</string>
     <string name="battery_dialog_title">忽略電池優化?</string>
     <string name="battery_request_failed">此裝置不提供電池優化畫面</string>
     <string name="battery_summary_ignored">已排除: 系統不會在背景暫停本插件的電郵會話; 點按以管理</string>
-    <string name="battery_summary_optimized">已套用: 系統可能暫停長時間運行的會話; 點按以申請排除</string>
+    <string name="battery_summary_optimized">已套用: Doze 下系統會凍結背景應用程式的網絡, 監聽與長時間運行的會話將暫停到裝置喚醒; 點按以申請排除</string>
     <string name="battery_title">電池優化</string>
     <string name="dark_mode_dark">深色</string>
     <string name="dark_mode_light">淺色</string>

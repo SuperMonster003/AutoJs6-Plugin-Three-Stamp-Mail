@@ -35,11 +35,11 @@
     <string name="accounts_title">已保存账户</string>
     <string name="action_save">保存</string>
     <string name="battery_dialog_action">继续</string>
-    <string name="battery_dialog_message">Android 可能为省电而在后台暂停应用, 这会打断脚本保持打开的邮件会话. 排除本插件后这些会话可以继续; 除此之外不改变任何行为, 也从不是必需的. 下一步是系统对话框.</string>
+    <string name="battery_dialog_message">Android 可能为省电而在后台暂停应用. 屏幕关闭一段时间后 (Doze) 后台应用的网络会被冻结: 脚本保持打开的邮件会话会断开, 监听的重连会超时, 新邮件要等设备唤醒几分钟后才会报告 (实测: Android 9 上约四分钟). 排除本插件后这些会话与监听可以保持连接; 除此之外不改变任何行为, 也从不是必需的. 下一步是系统对话框.</string>
     <string name="battery_dialog_title">忽略电池优化?</string>
     <string name="battery_request_failed">此设备不提供电池优化界面</string>
     <string name="battery_summary_ignored">已排除: 系统不会在后台暂停本插件的邮件会话; 点按以管理</string>
-    <string name="battery_summary_optimized">已应用: 系统可能暂停长时间运行的会话; 点按以申请排除</string>
+    <string name="battery_summary_optimized">已应用: Doze 下系统会冻结后台应用的网络, 监听与长时间运行的会话将暂停到设备唤醒; 点按以申请排除</string>
     <string name="battery_title">电池优化</string>
     <string name="dark_mode_dark">深色</string>
     <string name="dark_mode_light">浅色</string>

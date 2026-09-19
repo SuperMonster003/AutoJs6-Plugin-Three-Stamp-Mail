@@ -35,11 +35,11 @@
     <string name="accounts_title">저장된 계정</string>
     <string name="action_save">저장</string>
     <string name="battery_dialog_action">계속</string>
-    <string name="battery_dialog_message">Android 는 전력 절약을 위해 백그라운드 앱을 중단할 수 있으며, 스크립트가 열어 둔 메일 세션이 끊길 수 있습니다. 이 플러그인을 제외하면 그 세션이 계속됩니다; 그 밖의 동작은 바뀌지 않으며 필수도 아닙니다. 다음 화면은 시스템 대화 상자입니다.</string>
+    <string name="battery_dialog_message">Android 는 전력 절약을 위해 백그라운드 앱을 중단할 수 있습니다. 화면이 한동안 꺼지면 (Doze) 백그라운드 앱의 네트워크가 동결됩니다: 스크립트가 열어 둔 메일 세션은 끊기고, 감시의 재연결은 시간 초과되며, 새 메일은 기기가 깨어난 뒤 몇 분이 지나서야 보고됩니다 (측정: Android 9 에서 약 4 분). 이 플러그인을 제외하면 그 세션과 감시가 연결을 유지합니다; 그 밖의 동작은 바뀌지 않으며 필수도 아닙니다. 다음 화면은 시스템 대화 상자입니다.</string>
     <string name="battery_dialog_title">배터리 최적화를 무시할까요?</string>
     <string name="battery_request_failed">이 기기에는 배터리 최적화 화면이 없습니다</string>
     <string name="battery_summary_ignored">제외됨: 시스템이 이 플러그인의 메일 세션을 백그라운드에서 중단하지 않습니다; 탭하여 관리</string>
-    <string name="battery_summary_optimized">적용됨: 시스템이 오래 실행되는 세션을 중단할 수 있습니다; 탭하여 제외를 요청</string>
+    <string name="battery_summary_optimized">적용됨: Doze 에서는 시스템이 백그라운드 앱의 네트워크를 동결하므로 감시와 오래 실행되는 세션이 기기가 깨어날 때까지 멈춥니다; 탭하여 제외를 요청</string>
     <string name="battery_title">배터리 최적화</string>
     <string name="dark_mode_dark">다크</string>
     <string name="dark_mode_light">라이트</string>

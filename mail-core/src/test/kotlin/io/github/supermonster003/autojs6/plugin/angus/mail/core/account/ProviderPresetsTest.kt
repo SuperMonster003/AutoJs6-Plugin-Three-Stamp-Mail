@@ -20,7 +20,7 @@ class ProviderPresetsTest {
 
     @Test
     fun catalogMatchesAppendixC() {
-        assertEquals(1, ProviderPresets.version)
+        assertEquals(2, ProviderPresets.version)
         assertEquals(listOf("gmail", "outlook", "office365", "qq", "163", "126", "icloud", "yahoo", "sina", "aliyun"), ProviderPresets.ids)
     }
 
@@ -54,7 +54,7 @@ class ProviderPresetsTest {
         assertFalse(json.contains("@"))
         assertFalse(json.contains("password\":\""))
         val document = Json.parseToJsonElement(json).jsonObject
-        assertEquals(1, document["version"]!!.jsonPrimitive.content.toInt())
+        assertEquals(2, document["version"]!!.jsonPrimitive.content.toInt())
         assertEquals(ProviderPresets.all.size, document["providers"]!!.jsonArray.size)
         assertEquals(ProviderPresets.catalog, ProviderPresets.parse(json))
     }
@@ -93,6 +93,9 @@ class ProviderPresetsTest {
         val sina = ProviderPresets.require("sina")
         assertFalse("Sina keeps no server copy of sent mail (real account, 2026-09-19)", sina.autoSavesSent)
         assertEquals("已发送", sina.sentFolder)
+        listOf("qq", "sina").forEach { assertFalse("$it accepts IDLE but pushes nothing (real account, 2026-09-19)", ProviderPresets.require(it).idlePush) }
+        listOf("163", "126").forEach { assertFalse("$it has no IDLE (real account, 2026-09-19)", ProviderPresets.require(it).idlePush) }
+        listOf("gmail", "outlook", "office365", "icloud", "yahoo", "aliyun").forEach { assertTrue("$it: idlePush stays on", ProviderPresets.require(it).idlePush) }
         assertEquals("imap.126.com", mail126.imap!!.host)
         assertEquals("imap.163.com", mail163.imap!!.host)
         assertNull(ProviderPresets.require("icloud").pop3)

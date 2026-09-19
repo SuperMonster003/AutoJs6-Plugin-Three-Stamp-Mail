@@ -35,11 +35,11 @@
     <string name="accounts_title">保存済みアカウント</string>
     <string name="action_save">保存</string>
     <string name="battery_dialog_action">続行</string>
-    <string name="battery_dialog_message">Android は省電力のためバックグラウンドのアプリを一時停止することがあり, スクリプトが開いたままにしているメールセッションが中断されることがあります. このプラグインを除外するとそれらのセッションを継続できます; それ以外の動作は変わらず, 必須でもありません. 次の画面はシステムのダイアログです.</string>
+    <string name="battery_dialog_message">Android は省電力のためバックグラウンドのアプリを一時停止することがあります. 画面を消してしばらくすると (Doze) バックグラウンドアプリのネットワークは凍結されます: スクリプトが開いたままにしているメールセッションは切断され, 監視の再接続はタイムアウトし, 新着メールは端末が起きてから数分後にしか報告されません (実測: Android 9 で約 4 分). このプラグインを除外するとそれらのセッションと監視は接続を保てます; それ以外の動作は変わらず, 必須でもありません. 次の画面はシステムのダイアログです.</string>
     <string name="battery_dialog_title">電池の最適化を無視しますか?</string>
     <string name="battery_request_failed">この端末には電池の最適化の画面がありません</string>
     <string name="battery_summary_ignored">除外済み: システムはこのプラグインのメールセッションをバックグラウンドで一時停止しません; タップして管理</string>
-    <string name="battery_summary_optimized">適用中: システムは長時間のセッションを一時停止することがあります; タップして除外を申請</string>
+    <string name="battery_summary_optimized">適用中: Doze 中はシステムがバックグラウンドアプリのネットワークを凍結するため, 監視と長時間のセッションは端末が起きるまで止まります; タップして除外を申請</string>
     <string name="battery_title">電池の最適化</string>
     <string name="dark_mode_dark">ダーク</string>
     <string name="dark_mode_light">ライト</string>

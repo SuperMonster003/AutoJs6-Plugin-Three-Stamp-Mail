@@ -48,6 +48,7 @@ def main():
     parser.add_argument("--script", default=None, help="repository-relative smoke script (docs/smoke/*.js) to push and run")
     parser.add_argument("--log", default=None, help="log file name under build/p3/")
     parser.add_argument("--alias", default=None, help="alias of an account saved on the plugin's settings page (roadmap P4.7): runs #savedAccountScript with --script and only the alias; the profile's credentials then serve the leak check alone")
+    parser.add_argument("--timeout", type=int, default=None, help="milliseconds the host test waits for the script's report (mail.smoke.timeoutMs, default 300000; the P5 watch matrix needs more for Doze)")
     args = parser.parse_args()
 
     props = read_properties(os.path.join(PLUGIN, "mail-test-accounts.properties"))
@@ -75,6 +76,8 @@ def main():
         subprocess.check_call(["adb", "-s", args.serial, "push", local, remote], stdout=subprocess.DEVNULL)
         test = TEST_CLASS + "#realProviderScript"
         extra.append(f"-Pandroid.testInstrumentationRunnerArguments.mail.smoke.script={remote}")
+        if args.timeout:
+            extra.append(f"-Pandroid.testInstrumentationRunnerArguments.mail.smoke.timeoutMs={args.timeout}")
         suffix = "-" + os.path.splitext(name)[0]
     account = [
         f"-Pandroid.testInstrumentationRunnerArguments.mail.smoke.provider={provider}",
