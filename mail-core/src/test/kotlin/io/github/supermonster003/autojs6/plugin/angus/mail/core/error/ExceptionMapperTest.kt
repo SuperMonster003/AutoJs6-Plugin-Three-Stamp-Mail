@@ -9,6 +9,7 @@ import jakarta.mail.MessagingException
 import jakarta.mail.SendFailedException
 import jakarta.mail.internet.AddressException
 import jakarta.mail.internet.InternetAddress
+import org.eclipse.angus.mail.iap.ProtocolException
 import org.eclipse.angus.mail.util.MailConnectException
 import org.eclipse.angus.mail.util.SocketConnectException
 import org.junit.Assert.assertEquals
@@ -36,6 +37,15 @@ class ExceptionMapperTest {
         assertFalse(error.retryable)
         assertEquals("imap connect: authentication failed", error.message)
         assertEquals("[AUTHENTICATIONFAILED] Invalid credentials for ***", error.details)
+    }
+
+    @Test
+    fun aServerWithoutAMechanismForThePasswordIsNotAServerError() {
+        // Angus IMAPStore against Outlook.com (LOGINDISABLED, AUTH=XOAUTH2 only) with a password, before any credential is sent.
+        val error = mapper.map(MessagingException("No login methods supported!", ProtocolException("No login methods supported!")), "imap connect")
+        assertEquals(MailErrorCode.AUTH_MECHANISM_UNSUPPORTED, error.code)
+        assertFalse(error.retryable)
+        assertTrue(error.details.orEmpty(), error.details.orEmpty().contains("xoauth2"))
     }
 
     @Test

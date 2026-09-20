@@ -4,41 +4,93 @@
     {
       "id": "gmail",
       "name": "Gmail",
-      "domains": ["gmail.com", "googlemail.com"],
-      "imap": {"host": "imap.gmail.com", "port": 993, "tls": "ssl"},
-      "pop3": {"host": "pop.gmail.com", "port": 995, "tls": "ssl"},
-      "smtp": {"host": "smtp.gmail.com", "port": 465, "tls": "ssl"},
-      "auth": ["password", "xoauth2"],
+      "domains": [
+        "gmail.com",
+        "googlemail.com"
+      ],
+      "imap": {
+        "host": "imap.gmail.com",
+        "port": 993,
+        "tls": "ssl"
+      },
+      "pop3": {
+        "host": "pop.gmail.com",
+        "port": 995,
+        "tls": "ssl"
+      },
+      "smtp": {
+        "host": "smtp.gmail.com",
+        "port": 465,
+        "tls": "ssl"
+      },
+      "auth": [
+        "password",
+        "xoauth2"
+      ],
       "authHint": "App Password of a Google account with 2-Step Verification, or an OAuth 2.0 access token",
       "autoSavesSent": true,
       "sentFolder": "[Gmail]/Sent Mail",
       "requiresClientId": false,
       "docsUrl": "https://support.google.com/mail/answer/7126229",
-      "notes": "SMTP also accepts STARTTLS on port 587. Folders live under the [Gmail] namespace."
+      "notes": "SMTP also accepts STARTTLS on port 587. Folders live under the [Gmail] namespace and roles come from SPECIAL-USE. The server advertises UTF8=ACCEPT but answers BAD Could not parse command to any SEARCH with non-ASCII text once the extension is enabled, so the plugin never enables it and searches with CHARSET UTF-8 (verified 2026-09-20). Custom IMAP keywords are stored. IDLE reports new mail about 30 s after delivery. The server copies of sent mail in [Gmail]/Sent Mail can be addressed by UID. The POP3 view does not include mail the account has just sent."
     },
     {
       "id": "outlook",
       "name": "Outlook.com",
-      "domains": ["outlook.com", "hotmail.com", "live.com", "msn.com"],
-      "imap": {"host": "outlook.office365.com", "port": 993, "tls": "ssl"},
-      "pop3": {"host": "outlook.office365.com", "port": 995, "tls": "ssl"},
-      "smtp": {"host": "smtp-mail.outlook.com", "port": 587, "tls": "starttls"},
-      "auth": ["xoauth2"],
+      "domains": [
+        "outlook.com",
+        "hotmail.com",
+        "live.com",
+        "msn.com"
+      ],
+      "imap": {
+        "host": "outlook.office365.com",
+        "port": 993,
+        "tls": "ssl"
+      },
+      "pop3": {
+        "host": "outlook.office365.com",
+        "port": 995,
+        "tls": "ssl"
+      },
+      "smtp": {
+        "host": "smtp-mail.outlook.com",
+        "port": 587,
+        "tls": "starttls"
+      },
+      "auth": [
+        "xoauth2"
+      ],
       "authHint": "OAuth 2.0 access token; Outlook.com no longer accepts passwords for IMAP, POP3 and SMTP",
       "autoSavesSent": true,
       "sentFolder": "Sent",
       "requiresClientId": false,
       "docsUrl": "https://support.microsoft.com/office/pop-imap-and-smtp-settings-for-outlook-com-d088b986-291d-42b8-9564-9c414e2aa040",
-      "notes": "Personal Microsoft accounts."
+      "notes": "Personal Microsoft accounts. IMAP advertises LOGINDISABLED and only AUTH=XOAUTH2, and IMAP, POP3 and SMTP all refuse an app password (Basic authentication is disabled, SMTP 535; three accounts, 2026-09-20): an access token is required."
     },
     {
       "id": "office365",
       "name": "Microsoft 365",
       "domains": [],
-      "imap": {"host": "outlook.office365.com", "port": 993, "tls": "ssl"},
-      "pop3": {"host": "outlook.office365.com", "port": 995, "tls": "ssl"},
-      "smtp": {"host": "smtp.office365.com", "port": 587, "tls": "starttls"},
-      "auth": ["xoauth2", "password"],
+      "imap": {
+        "host": "outlook.office365.com",
+        "port": 993,
+        "tls": "ssl"
+      },
+      "pop3": {
+        "host": "outlook.office365.com",
+        "port": 995,
+        "tls": "ssl"
+      },
+      "smtp": {
+        "host": "smtp.office365.com",
+        "port": 587,
+        "tls": "starttls"
+      },
+      "auth": [
+        "xoauth2",
+        "password"
+      ],
       "authHint": "OAuth 2.0 access token; a tenant may still allow a password for SMTP submission only",
       "autoSavesSent": true,
       "sentFolder": "Sent Items",
@@ -49,11 +101,29 @@
     {
       "id": "qq",
       "name": "QQ Mail",
-      "domains": ["qq.com", "foxmail.com", "vip.qq.com"],
-      "imap": {"host": "imap.qq.com", "port": 993, "tls": "ssl"},
-      "pop3": {"host": "pop.qq.com", "port": 995, "tls": "ssl"},
-      "smtp": {"host": "smtp.qq.com", "port": 465, "tls": "ssl"},
-      "auth": ["password"],
+      "domains": [
+        "qq.com",
+        "foxmail.com",
+        "vip.qq.com"
+      ],
+      "imap": {
+        "host": "imap.qq.com",
+        "port": 993,
+        "tls": "ssl"
+      },
+      "pop3": {
+        "host": "pop.qq.com",
+        "port": 995,
+        "tls": "ssl"
+      },
+      "smtp": {
+        "host": "smtp.qq.com",
+        "port": 465,
+        "tls": "ssl"
+      },
+      "auth": [
+        "password"
+      ],
       "authHint": "Authorization code generated in the QQ Mail settings, not the account password",
       "autoSavesSent": true,
       "sentFolder": "Sent Messages",
@@ -65,11 +135,28 @@
     {
       "id": "163",
       "name": "163 Mail",
-      "domains": ["163.com", "vip.163.com"],
-      "imap": {"host": "imap.163.com", "port": 993, "tls": "ssl"},
-      "pop3": {"host": "pop.163.com", "port": 995, "tls": "ssl"},
-      "smtp": {"host": "smtp.163.com", "port": 465, "tls": "ssl"},
-      "auth": ["password"],
+      "domains": [
+        "163.com",
+        "vip.163.com"
+      ],
+      "imap": {
+        "host": "imap.163.com",
+        "port": 993,
+        "tls": "ssl"
+      },
+      "pop3": {
+        "host": "pop.163.com",
+        "port": 995,
+        "tls": "ssl"
+      },
+      "smtp": {
+        "host": "smtp.163.com",
+        "port": 465,
+        "tls": "ssl"
+      },
+      "auth": [
+        "password"
+      ],
       "authHint": "Authorization code from the 163 Mail settings (POP3/SMTP/IMAP page), not the account password",
       "autoSavesSent": true,
       "sentFolder": "已发送",
@@ -81,11 +168,28 @@
     {
       "id": "126",
       "name": "126 Mail",
-      "domains": ["126.com", "vip.126.com"],
-      "imap": {"host": "imap.126.com", "port": 993, "tls": "ssl"},
-      "pop3": {"host": "pop.126.com", "port": 995, "tls": "ssl"},
-      "smtp": {"host": "smtp.126.com", "port": 465, "tls": "ssl"},
-      "auth": ["password"],
+      "domains": [
+        "126.com",
+        "vip.126.com"
+      ],
+      "imap": {
+        "host": "imap.126.com",
+        "port": 993,
+        "tls": "ssl"
+      },
+      "pop3": {
+        "host": "pop.126.com",
+        "port": 995,
+        "tls": "ssl"
+      },
+      "smtp": {
+        "host": "smtp.126.com",
+        "port": 465,
+        "tls": "ssl"
+      },
+      "auth": [
+        "password"
+      ],
       "authHint": "Authorization code from the 126 Mail settings (POP3/SMTP/IMAP page), not the account password",
       "autoSavesSent": true,
       "sentFolder": "已发送",
@@ -97,10 +201,24 @@
     {
       "id": "icloud",
       "name": "iCloud Mail",
-      "domains": ["icloud.com", "me.com", "mac.com"],
-      "imap": {"host": "imap.mail.me.com", "port": 993, "tls": "ssl"},
-      "smtp": {"host": "smtp.mail.me.com", "port": 587, "tls": "starttls"},
-      "auth": ["password"],
+      "domains": [
+        "icloud.com",
+        "me.com",
+        "mac.com"
+      ],
+      "imap": {
+        "host": "imap.mail.me.com",
+        "port": 993,
+        "tls": "ssl"
+      },
+      "smtp": {
+        "host": "smtp.mail.me.com",
+        "port": 587,
+        "tls": "starttls"
+      },
+      "auth": [
+        "password"
+      ],
       "authHint": "App-specific password generated at appleid.apple.com",
       "autoSavesSent": false,
       "sentFolder": "Sent Messages",
@@ -111,11 +229,29 @@
     {
       "id": "yahoo",
       "name": "Yahoo Mail",
-      "domains": ["yahoo.com", "ymail.com", "rocketmail.com"],
-      "imap": {"host": "imap.mail.yahoo.com", "port": 993, "tls": "ssl"},
-      "pop3": {"host": "pop.mail.yahoo.com", "port": 995, "tls": "ssl"},
-      "smtp": {"host": "smtp.mail.yahoo.com", "port": 465, "tls": "ssl"},
-      "auth": ["password"],
+      "domains": [
+        "yahoo.com",
+        "ymail.com",
+        "rocketmail.com"
+      ],
+      "imap": {
+        "host": "imap.mail.yahoo.com",
+        "port": 993,
+        "tls": "ssl"
+      },
+      "pop3": {
+        "host": "pop.mail.yahoo.com",
+        "port": 995,
+        "tls": "ssl"
+      },
+      "smtp": {
+        "host": "smtp.mail.yahoo.com",
+        "port": 465,
+        "tls": "ssl"
+      },
+      "auth": [
+        "password"
+      ],
       "authHint": "App password generated in the Yahoo account security settings",
       "autoSavesSent": true,
       "sentFolder": "Sent",
@@ -126,11 +262,28 @@
     {
       "id": "sina",
       "name": "Sina Mail",
-      "domains": ["sina.com", "sina.cn"],
-      "imap": {"host": "imap.sina.com", "port": 993, "tls": "ssl"},
-      "pop3": {"host": "pop.sina.com", "port": 995, "tls": "ssl"},
-      "smtp": {"host": "smtp.sina.com", "port": 465, "tls": "ssl"},
-      "auth": ["password"],
+      "domains": [
+        "sina.com",
+        "sina.cn"
+      ],
+      "imap": {
+        "host": "imap.sina.com",
+        "port": 993,
+        "tls": "ssl"
+      },
+      "pop3": {
+        "host": "pop.sina.com",
+        "port": 995,
+        "tls": "ssl"
+      },
+      "smtp": {
+        "host": "smtp.sina.com",
+        "port": 465,
+        "tls": "ssl"
+      },
+      "auth": [
+        "password"
+      ],
       "authHint": "Authorization code from the Sina Mail client settings",
       "autoSavesSent": false,
       "sentFolder": "已发送",
@@ -142,11 +295,27 @@
     {
       "id": "aliyun",
       "name": "Aliyun Mail",
-      "domains": ["aliyun.com"],
-      "imap": {"host": "imap.aliyun.com", "port": 993, "tls": "ssl"},
-      "pop3": {"host": "pop3.aliyun.com", "port": 995, "tls": "ssl"},
-      "smtp": {"host": "smtp.aliyun.com", "port": 465, "tls": "ssl"},
-      "auth": ["password"],
+      "domains": [
+        "aliyun.com"
+      ],
+      "imap": {
+        "host": "imap.aliyun.com",
+        "port": 993,
+        "tls": "ssl"
+      },
+      "pop3": {
+        "host": "pop3.aliyun.com",
+        "port": 995,
+        "tls": "ssl"
+      },
+      "smtp": {
+        "host": "smtp.aliyun.com",
+        "port": 465,
+        "tls": "ssl"
+      },
+      "auth": [
+        "password"
+      ],
       "authHint": "Account password of a personal Aliyun Mail account",
       "autoSavesSent": false,
       "sentFolder": null,

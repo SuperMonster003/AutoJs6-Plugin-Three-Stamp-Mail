@@ -1,6 +1,9 @@
 """Runs the real-provider matrix probe (mail roadmap P6) on the JVM with accounts from mail-test-accounts.properties.
 
-Usage: python .python/run_provider_matrix.py QQ_A[,NETEASE_A,...] [--idle-seconds 120] [--poll-ms 30000] [--no-pop3] [--keep] [--ops folders,cleanup] [--diag 'LIST "" "*";STATUS X (MESSAGES)']
+Usage: python .python/run_provider_matrix.py QQ_A[,NETEASE_A,...] [--idle-seconds 120] [--poll-ms 30000] [--no-pop3] [--keep] [--ops folders,cleanup] [--diag 'LIST "" "*";STATUS X (MESSAGES)'] [--no-preset]
+
+--no-preset spells the preset's hosts out and sends no `provider`, so the preset's authentication restriction is
+bypassed and the server's own refusal is what the mail core reports (Outlook.com with an app password).
 
 Writes build/p6/matrix.properties, runs `:mail-core:test --tests "*ProviderMatrixProbe"`, prints the
 result rows with every secret and every account address masked, and checks the Gradle output, the XML
@@ -20,6 +23,7 @@ pop3 = 'false' if '--no-pop3' in opts else 'true'
 keep = 'true' if '--keep' in opts else 'false'
 ops = opts[opts.index('--ops') + 1] if '--ops' in opts else ''
 diag = opts[opts.index('--diag') + 1] if '--diag' in opts else ''
+no_preset = '--no-preset' in opts
 
 props = {}
 for line in open('mail-test-accounts.properties', encoding='utf-8'):
@@ -49,6 +53,8 @@ with open('build/p6/matrix.properties', 'w', encoding='utf-8') as f:
         f.write('ops=%s\n' % ops)
     if diag:
         f.write('diag=%s\n' % diag.replace('\\', '\\\\'))
+    if no_preset:
+        f.write('noPreset=true\n')
 for f in ['build/p6/matrix-%s.log' % p for p in profiles.split(',')] + ['build/p6/matrix-summary.txt']:
     if os.path.exists(f):
         os.remove(f)

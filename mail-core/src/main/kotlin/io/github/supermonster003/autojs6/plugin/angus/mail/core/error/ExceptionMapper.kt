@@ -32,6 +32,9 @@ import javax.net.ssl.SSLException
 /** Gmail's reply to STAT when POP is disabled for the account: `[SYS/PERM] Your account is not enabled for POP access`. */
 private const val POP_ACCESS_DISABLED = "not enabled for POP"
 
+/** Angus IMAPStore when the server advertises LOGINDISABLED and none of the mechanisms the credential allows. */
+private const val NO_LOGIN_METHODS = "No login methods supported"
+
 /**
  * Turns whatever Jakarta Mail, the JDK, or the mail core itself throws into a [MailException]
  * with a contract error code (roadmap D18). Messages and details pass through the [Redactor], so a
@@ -103,6 +106,17 @@ class ExceptionMapper(private val redactor: Redactor) {
         }
         if (chain.any { it is InterruptedException || it is ClosedByInterruptException || (it is InterruptedIOException && it !is SocketTimeoutException) }) {
             return Classified(MailErrorCode.CANCELLED, "the operation was cancelled", retryable = false)
+        }
+        // Outlook.com advertises LOGINDISABLED and AUTH=XOAUTH2 only: with a password Angus finds no mechanism to try
+        // and gives up before any credential is sent ("No login methods supported!"), which is the credential's
+        // kind being wrong for this server, not a server error (P6 provider matrix, 2026-09-20).
+        if (chain.any { it is ProtocolException && it.message?.contains(NO_LOGIN_METHODS, ignoreCase = true) == true }) {
+            return Classified(
+                MailErrorCode.AUTH_MECHANISM_UNSUPPORTED,
+                "the server offers no authentication method for this kind of credential",
+                retryable = false,
+                details = "the server disables LOGIN and advertises no AUTH mechanism for a password; an access token (xoauth2) may be required",
+            )
         }
         if (chain.any { it is CommandFailedException || it is BadCommandException || it is ProtocolException }) {
             return Classified(MailErrorCode.SERVER_ERROR, "the server rejected the command", retryable = false)

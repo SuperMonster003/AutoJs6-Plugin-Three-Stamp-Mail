@@ -5,7 +5,8 @@ Kotlin 2.3.20, JDK 21, Windows 11) and in the host repository (AutoJs6 6.8.0, bu
 The plugin side landed as builds 33 (`IdleWatcher`), 34 (`PollWatcher`) and 35
 (`MailWatchBinder`), the host side as `ade3bd21c` (code and tests) and `d37b764e3` (docs); this
 document and the matrix tooling are build 36, which also carries the provider finding below
-(`idlePush`).
+(`idlePush`). The Gmail rows were added on 2026-09-20 (build 46) once the maintainer had renewed
+the access token.
 
 Real accounts come only from the git-ignored `mail-test-accounts.properties`: the watched
 account reaches a device as instrumentation arguments of the host smoke test (as in P3 / P4),
@@ -40,7 +41,7 @@ trace to `build/p5/probe-jvm.log`):
 | Sina (`imap.sina.com`) | advertises `IDLE` | `+ Waiting for DONE` | none within 60 s, then the server closes the connection (60.1 s in both probes) | not probed further | preset `idlePush: false`: `mode: auto` polls |
 | 163 (`imap.163.com`) | no `IDLE` | `BAD command not support` | n/a | poll path verified in the matrix below | preset `idlePush: false` (saves the failed `IDLE` attempt; the runtime fallback `IdleUnavailable -> PollWatcher` stays for unknown servers) |
 | 126 (`imap.126.com`) | no `IDLE` | `BAD command not support` | n/a | same policy as 163 | preset `idlePush: false` |
-| Gmail | (IDLE known to push) | not tested | not tested | not tested | blocked: the stored access token answers `[AUTHENTICATIONFAILED] Invalid credentials`; the Gmail column of the matrix waits for a fresh token (as in P3) |
+| Gmail (`imap.gmail.com`, 2026-09-20) | advertises `IDLE` | `+ idling` | yes, on a cadence of about 30 s: from the PC (`build/p6/gmail_idle_probe.py`, `imaplib` with XOAUTH2) the untagged `EXISTS` for a message sent from the QQ B account came 30.0 s after the SMTP submission and for a message the account sent to itself 60.1 s after it, while a fresh `messages.list` right after a send saw the message within 1.6 s (P6 matrix); the watch matrix below saw 30.8 to 49.3 s | immediate to a new `EXAMINE` (1.6 s in the P6 matrix `list` row) | preset `idlePush: true` stands: `mode: auto` idles, the plugin's own IDLE connection reports the message when Gmail gets round to it; a 60 s poll would be no faster |
 
 Decision D38 in the roadmap records the preset field `ProviderPreset.idlePush` (default true;
 `providers.json` version 2) and `Watchers.open`: `mode: auto` on an IMAP account whose preset
@@ -141,7 +142,9 @@ spelled out in the script header and in the host protocol document.
 Arrival latency = time from the PC's SMTP submission to the script's `message` event. QQ and
 163 poll every 60 s (`idlePush: false`), so their latency is the remaining poll interval plus
 the provider's own visibility lag hidden inside it; the figures below are therefore "within one
-poll interval" and say nothing about IDLE push (Gmail, blocked by the token).
+poll interval" and say nothing about IDLE push. The Gmail rows (2026-09-20, plugin build 45 with
+the changes of build 46, host 5282) are the IDLE path: the watch idles from the start and the
+latency is Gmail's own notification cadence (about 30 s, see the provider table above).
 
 | Scenario | Device | Watched | Mode | #1 arrival | Disturbance and recovery | #2 arrival | Events (order) | ok |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -159,12 +162,17 @@ poll interval" and say nothing about IDLE push (Gmail, blocked by the token).
 | baseline | Redmi API 33 | 163 | auto -> poll | 60.8 s | none (163 has no IDLE; with `idlePush: false` no failed `IDLE` is attempted) | 59.7 s | message #1, message #2, close(stopped) | yes |
 | baseline, `mode: 'idle'` (control) | Redmi API 33 | QQ | idle | none in 600 s | none: QQ's IDLE stays silent; the renew `NOOP` every 24 min would be the first chance to notice | none in 600 s | close(stopped) | no (expected: the reason for `idlePush`) |
 | baseline, plugin build 35 (`auto` was still IDLE) | AVD API 24 | QQ | idle | none in 600 s | none | none in 600 s | (none) | no: the silent IDLE of QQ, which led to `idlePush` |
+| baseline | Redmi API 33 | Gmail (XOAUTH2) | auto -> idle | 35.6 s | none | 30.8 s | message #1, message #2, close(stopped) | yes |
+| kill-plugin | Redmi API 33 | Gmail (XOAUTH2) | auto -> idle | 34.8 s | `am force-stop` of the plugin: re-watched with generation 2 about 1.7 s after the kill, still in IDLE mode | 34.3 s (generation 2) | message #1, error(PLUGIN_UNAVAILABLE), resync(rewatched), message #2, close(stopped) | yes |
+| wifi-off (30 s) | Redmi API 33 | Gmail (XOAUTH2) | auto -> idle | 34.6 s | the IDLE connection is reported lost, five reconnects fail during the outage (`error(CONNECT_FAILED)` x6 in all), reconnect on the network callback | 49.3 s | message #1, error(CONNECT_FAILED) x6, message #2, close(stopped) | yes |
 
 Recovery summary: a plugin kill is healed by the host in under 2 s (new generation, one
 `error` and one `resync`, no duplicate message); a network loss produces one `error` per failed
 reconnect and heals within seconds of the network's return through the plugin's default-network
 callback; a Wi-Fi to cellular switch costs one `error`; Doze is the only disturbance that delays
-mail by minutes, see below.
+mail by minutes, see below. The IDLE path behaves the same way on Gmail: the same events in the
+same order, the re-watch after a plugin kill keeps IDLE, and the arrival after the outage is the
+reconnect plus Gmail's next notification.
 
 ## Doze
 

@@ -4,6 +4,7 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAcco
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccountOptions
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailSecret
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.PresetEndpoint
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.ProviderPresets
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.SecretKind
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
@@ -53,6 +54,7 @@ class ProviderMatrixProbe {
 
     private lateinit var log: PrintWriter
     private var only: Set<String>? = null
+    private var noPreset = false
     private var mask: (String) -> String = { it }
     private var diag: List<String> = emptyList()
     private val rows = mutableListOf<Row>()
@@ -71,6 +73,7 @@ class ProviderMatrixProbe {
         val pop3 = config.getProperty("pop3", "true").toBoolean()
         val keep = config.getProperty("keep", "false").toBoolean()
         only = config.getProperty("ops")?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet()
+        noPreset = config.getProperty("noPreset", "false").toBoolean()
         val summary = File("../build/p6/matrix-summary.txt").printWriter()
         try {
             profiles.forEach { profile ->
@@ -101,13 +104,21 @@ class ProviderMatrixProbe {
         val domain = address.substringAfterLast('@').lowercase()
         val preset = ProviderPresets.all.firstOrNull { domain in it.domains }
             ?: if (domain == "yeah.net") ProviderPresets.all.first { it.id == "163" } else error("no preset for domain $domain")
-        val hosts = if (domain == "yeah.net") ""","imap":{"host":"imap.yeah.net"},"pop3":{"host":"pop.yeah.net"},"smtp":{"host":"smtp.yeah.net"}""" else ""
+        fun endpoint(name: String, endpoint: PresetEndpoint?) = endpoint?.let { ""","$name":{"host":"${it.host}","port":${it.port},"tls":"${it.tls}"}""" }.orEmpty()
+        val hosts = when {
+            domain == "yeah.net" -> ""","imap":{"host":"imap.yeah.net"},"pop3":{"host":"pop.yeah.net"},"smtp":{"host":"smtp.yeah.net"}"""
+            // no `provider`: the preset's hosts spelled out, so its authentication restriction does not apply and the
+            // server's own answer to the login is what gets mapped (Outlook.com with an app password)
+            noPreset -> endpoint("imap", preset.imap) + endpoint("pop3", preset.pop3) + endpoint("smtp", preset.smtp)
+            else -> ""
+        }
+        val providerField = if (noPreset) "" else """"provider":"${preset.id}","""
         val masked = "***@$domain"
         val local = address.substringBeforeLast('@')
         mask = { text -> text.replace(address, masked).replace(local, "***") }
-        out("# $profile provider=${preset.id} address=$masked auth=${if (tokenAuth) "xoauth2" else "password"} idlePush=${preset.idlePush} autoSavesSent=${preset.autoSavesSent} sentFolder=${preset.sentFolder} requiresClientId=${preset.requiresClientId}")
+        out("# $profile provider=${if (noPreset) "none (hosts of ${preset.id})" else preset.id} address=$masked auth=${if (tokenAuth) "xoauth2" else "password"} idlePush=${preset.idlePush} autoSavesSent=${preset.autoSavesSent} sentFolder=${preset.sentFolder} requiresClientId=${preset.requiresClientId}")
         fun account(receive: String): MailAccount = MailAccountOptions.parse(
-            """{"provider":"${preset.id}","address":"$address","receive":"$receive","debug":true,"timeout":{"connect":20000,"read":60000}$hosts}""",
+            """{$providerField"address":"$address","receive":"$receive","debug":true,"timeout":{"connect":20000,"read":60000}$hosts}""",
             if (tokenAuth) SecretKind.ACCESS_TOKEN else SecretKind.PASSWORD,
         )
         val stamp = System.currentTimeMillis().toString().takeLast(8)

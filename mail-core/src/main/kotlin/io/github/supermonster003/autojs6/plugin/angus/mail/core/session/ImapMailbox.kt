@@ -568,10 +568,12 @@ class ImapMailbox private constructor(
         val hits = ArrayList<Message>()
         var scanned = 0
         trace.timed(MailProtocol.IMAP.id, "client filter ${window.size}") {
+            val started = System.currentTimeMillis()
             for (message in window.asReversed()) {
                 if (hits.size >= limit) break
                 scanned++
                 if (runCatching { term.match(message) }.getOrDefault(false)) hits += message
+                if (scanned % CLIENT_FILTER_PROGRESS_EVERY == 0) trace.record(MailProtocol.IMAP.id, "client filter progress $scanned of ${window.size}, ${hits.size} matched, ${System.currentTimeMillis() - started} ms")
             }
         }
         if (scanned < window.size) trace.record(MailProtocol.IMAP.id, "client filter stopped after $scanned of ${window.size} candidates: $limit matched")
@@ -601,6 +603,9 @@ class ImapMailbox private constructor(
 
     companion object {
         const val INBOX = "INBOX"
+
+        /** The client filter reports its progress to the trace every this many candidates (slow scans, roadmap P6 Gmail). */
+        const val CLIENT_FILTER_PROGRESS_EVERY = 25
 
         /** Capabilities reported by `session.test`; the plugin's behaviour depends on the first block. */
         val KNOWN_CAPABILITIES: List<String> = listOf(

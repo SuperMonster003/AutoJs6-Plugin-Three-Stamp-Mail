@@ -127,9 +127,18 @@ class IdentifyingImapStoreTest {
 /**
  * A minimal scripted IMAP server for [IdentifyingImapStoreTest]: it understands only the
  * commands Angus Mail issues there and, when [advertiseId] is set, refuses `SELECT` / `EXAMINE`
- * on connections that have not sent `ID`, like NetEase does.
+ * on connections that have not sent `ID`, like NetEase does. With [utf8Accept] it advertises
+ * `ENABLE UTF8=ACCEPT` and, like Gmail, parses a `SEARCH` with non-ASCII text only in the
+ * `CHARSET UTF-8` + literal form. With [loginDisabled] it advertises `AUTH=XOAUTH2 LOGINDISABLED`
+ * and refuses `LOGIN` / `AUTHENTICATE PLAIN` like Outlook.com does.
+ *
+ * `LITERAL+` is always advertised, as GreenMail and every preset provider do, so Angus sends
+ * literals without waiting for a continuation. A synchronizing literal (`{n}`, `+` from the
+ * server, then the bytes) never completes on a development machine whose mail scanner (ESET's
+ * email client protection) recognises the `* OK` greeting on a loopback connection and holds
+ * the bytes that follow the continuation; the `{n}` branch below is kept only for completeness.
  */
-internal class FakeImapServer(private val advertiseId: Boolean) : Closeable {
+internal class FakeImapServer(private val advertiseId: Boolean, private val utf8Accept: Boolean = false, private val loginDisabled: Boolean = false) : Closeable {
 
     class Session {
         val commands = CopyOnWriteArrayList<String>()
@@ -139,6 +148,12 @@ internal class FakeImapServer(private val advertiseId: Boolean) : Closeable {
 
         @Volatile
         var identified: Boolean = false
+
+        /** Extensions the client enabled (`ENABLE`). */
+        val enabled = CopyOnWriteArrayList<String>()
+
+        /** Every `SEARCH` as the server parsed it (literals resolved, UTF-8 decoded). */
+        val searches = CopyOnWriteArrayList<String>()
     }
 
     private val socket = ServerSocket(0, 8, InetAddress.getLoopbackAddress())
@@ -182,8 +197,30 @@ internal class FakeImapServer(private val advertiseId: Boolean) : Closeable {
                 session.commands += command
                 when (command) {
                     "CAPABILITY" -> {
-                        send(if (advertiseId) "* CAPABILITY IMAP4rev1 UIDPLUS ID" else "* CAPABILITY IMAP4rev1 UIDPLUS")
+                        send("* CAPABILITY IMAP4rev1 UIDPLUS LITERAL+" + (if (advertiseId) " ID" else "") + (if (utf8Accept) " ENABLE UTF8=ACCEPT" else "") + (if (loginDisabled) " AUTH=XOAUTH2 LOGINDISABLED" else ""))
                         send("$tag OK CAPABILITY completed")
+                    }
+                    "ENABLE" -> {
+                        session.enabled += parts.getOrElse(2) { "" }.uppercase()
+                        send("* ENABLED ${parts.getOrElse(2) { "" }}")
+                        send("$tag OK ENABLE completed")
+                    }
+                    "SEARCH" -> {
+                        // Gmail: a search whose text is not ASCII parses only as CHARSET UTF-8 with a literal.
+                        // The literal is the last argument: `{n+}` is followed by its bytes and the rest of the
+                        // command on the next line; `{n}` waits for a continuation first.
+                        var rest = parts.getOrElse(2) { "" }
+                        if (rest.endsWith("}")) {
+                            if (!rest.endsWith("+}")) send("+ go ahead")
+                            rest = rest.substringBeforeLast('{') + (reader.readLine() ?: return)
+                        }
+                        session.searches += String(rest.toByteArray(Charsets.ISO_8859_1), Charsets.UTF_8)
+                        if (rest.any { it.code > 127 } && !rest.uppercase().startsWith("CHARSET UTF-8 ")) {
+                            send("$tag BAD Could not parse command")
+                        } else {
+                            send("* SEARCH")
+                            send("$tag OK SEARCH completed")
+                        }
                     }
                     "UID" -> {
                         val sub = parts.getOrElse(2) { "" }.substringBefore(' ').uppercase()
@@ -204,7 +241,7 @@ internal class FakeImapServer(private val advertiseId: Boolean) : Closeable {
                         messages = 0
                         send("$tag OK EXPUNGE completed")
                     }
-                    "LOGIN" -> send("$tag OK LOGIN completed")
+                    "LOGIN", "AUTHENTICATE" -> send(if (loginDisabled) "$tag NO Basic authentication is disabled." else "$tag OK $command completed")
                     "LIST" -> {
                         // Angus turns a refused open into "not found" unless LIST confirms the folder.
                         val mailbox = parts.getOrElse(2) { "" }.substringAfterLast(' ').trim('"')

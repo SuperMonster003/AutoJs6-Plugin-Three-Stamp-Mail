@@ -139,4 +139,22 @@ internal class IdentifyingImapProtocol(
     private fun authenticated() {
         if (isAuthenticated) onAuthenticated(this, connection)
     }
+
+    /**
+     * Angus enables `UTF8=ACCEPT` on every server that advertises it and then searches without
+     * `CHARSET`, sending non-ASCII text as a UTF-8 quoted string or literal (RFC 6855). Gmail
+     * advertises the extension and still answers such a `SEARCH` with `BAD Could not parse
+     * command`, while `SEARCH CHARSET UTF-8` with a literal finds the messages (verified with a
+     * real account on 2026-09-20, roadmap P6 provider matrix); every other preset provider lacks
+     * the extension. The extension is therefore never enabled: searches always carry `CHARSET`
+     * and mailbox names always use modified UTF-7, the path every server takes.
+     */
+    override fun enable(cap: String?) {
+        if (cap.equals(UTF8_ACCEPT, ignoreCase = true)) return
+        super.enable(cap)
+    }
+
+    private companion object {
+        const val UTF8_ACCEPT = "UTF8=ACCEPT"
+    }
 }
