@@ -8,7 +8,7 @@
     "v1.0.0": {
       "released_date": "2026/09/19",
       "hint": [
-        "P0 개발 미리보기: 저장소 뼈대, 로컬 서버 테스트를 갖춘 메일 코어, AutoJs6 플러그인 센터용 플러그인 식별 정보. Binder 계약, 스크립트 API, 설정 페이지는 ROADMAP.md의 단계에 따라 진행됩니다."
+        "첫 정식 릴리스: 메일 코어, Binder 계약, 스크립트 API `mail`, 설정 페이지와 저장된 계정, 새 메일 감시, 그리고 TLS, 문자 집합, 제공자, 수명 주기, 적대적 입력, 비밀 감사, 성능 매트릭스가 증거와 함께 완료되었습니다 (ROADMAP.md P0 부터 P6). AutoJs6 6.8.0 (빌드 5282) 이상이 필요합니다."
       ],
       "feature": [
         "플러그인 식별자 `angus-mail` (엔진 `mail`), INFO 서비스, Wake Activity, 그리고 `org.autojs.plugin.MAIL` 서비스; 해당 `IMailPlugin` Binder 는 플러그인 정보, 기능, 공급자 및 저장된 계정 목록과 세션 봉투에 응답 (개별 작업은 P2 에서 구현)",

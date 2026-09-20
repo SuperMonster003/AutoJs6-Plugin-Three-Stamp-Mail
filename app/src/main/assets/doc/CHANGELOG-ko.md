@@ -8,7 +8,7 @@
 
 ###### 2026/09/19
 
-* `힌트` P0 개발 미리보기: 저장소 뼈대, 로컬 서버 테스트를 갖춘 메일 코어, AutoJs6 플러그인 센터용 플러그인 식별 정보. Binder 계약, 스크립트 API, 설정 페이지는 ROADMAP.md의 단계에 따라 진행됩니다.
+* `힌트` 첫 정식 릴리스: 메일 코어, Binder 계약, 스크립트 API `mail`, 설정 페이지와 저장된 계정, 새 메일 감시, 그리고 TLS, 문자 집합, 제공자, 수명 주기, 적대적 입력, 비밀 감사, 성능 매트릭스가 증거와 함께 완료되었습니다 (ROADMAP.md P0 부터 P6). AutoJs6 6.8.0 (빌드 5282) 이상이 필요합니다.
 * `기능` 플러그인 식별자 `angus-mail` (엔진 `mail`), INFO 서비스, Wake Activity, 그리고 `org.autojs.plugin.MAIL` 서비스; 해당 `IMailPlugin` Binder 는 플러그인 정보, 기능, 공급자 및 저장된 계정 목록과 세션 봉투에 응답 (개별 작업은 P2 에서 구현)
 * `기능` Eclipse Angus Mail 기반 메일 코어: SSL 또는 STARTTLS를 쓰는 IMAP / POP3 / SMTP 세션 속성, 비밀번호와 XOAUTH2 인증, SMTP 전송과 IMAP 받은 편지함 나열을 로컬 GreenMail 서버에서 검증
 * `기능` 메일 코어 계정 계층 (로드맵 P2.1): Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina, Aliyun 프로바이더 프리셋, 프로토콜별 타임아웃, `tls.trustAll`, IMAP `ID` 명령, 마스킹된 `debug` 트레이스를 갖춘 계정 옵션; 세션은 지연 연결하고 유휴 연결을 끊으며 끊김 후 재연결; `session.test` 는 Binder 를 통해 엔드포인트별 기능과 왕복 시간을 반환

@@ -8,7 +8,7 @@
     "v1.0.0": {
       "released_date": "2026/09/19",
       "hint": [
-        "Apercu de developpement P0: squelette du depot, coeur de messagerie avec tests sur serveur local et identite du plugin pour le centre de plugins AutoJs6. Le contrat Binder, l'API de script et la page de parametres suivent les phases de ROADMAP.md."
+        "Première publication : le coeur de messagerie, le contrat Binder, l'API de script `mail`, la page de paramètres avec les comptes enregistrés, la surveillance du nouveau courrier, ainsi que les matrices TLS, jeux de caractères, fournisseurs, cycle de vie, entrées hostiles, audit des secrets et performances sont achevés avec leurs preuves (ROADMAP.md, phases P0 à P6). Nécessite AutoJs6 6.8.0 (build 5282) ou plus récent."
       ],
       "feature": [
         "Identite du plugin `angus-mail` (moteur `mail`) avec le service INFO, la Wake Activity et le service `org.autojs.plugin.MAIL` dont le Binder `IMailPlugin` repond aux informations du plugin, aux capacites, aux listes de fournisseurs et de comptes enregistres et a l'enveloppe de session (les operations arrivent avec P2)",

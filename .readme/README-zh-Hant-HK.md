@@ -52,7 +52,7 @@ Angus Mail 為 AutoJs6 腳本提供全域物件 `mail`, 用於傳送郵件, 列�
 
 ******
 
-版本 1.0.0 處於開發階段: 倉庫骨架, 帶本機伺服器測試的郵件核心, 以及供 AutoJs6 插件中心識別的插件身份已經就緒; Binder 契約, 腳本 API 與設定頁按 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) 的階段推進. 需要 AutoJs6 6.8.0 (組建 5282) 或更高版本.
+版本 1.0.0 是首個正式版本: 路線圖 P0 至 P6 的全部條目 (郵件核心, Binder 契約, 腳本 API, 設定頁與別名帳戶, 新郵件監聽, 以及 TLS, 字元集, 服務商, 生命週期, 敵意輸入, 秘密審計與效能矩陣) 均已完成並附有證據, 見 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). 需要 AutoJs6 6.8.0 (組建 5282) 或更高版本; 腳本 API 的完整參考見 [AutoJs6 文件](https://docs.autojs6.com/#/mail).
 
 ******
 
@@ -77,8 +77,26 @@ Angus Mail 為 AutoJs6 腳本提供全域物件 `mail`, 用於傳送郵件, 列�
 
 1. 在安裝了 AutoJs6 組建 5282 (6.8.0) 或更高版本的裝置上, 從 [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) 安裝插件 APK.
 2. 開啟 AutoJs6 插件中心, 確認 `Angus Mail` 已被識別並啟用它.
-3. 準備帳戶: 在郵件服務商的設定中開啟 IMAP 或 POP3, 並取得授權碼或應用程式專用密碼 (QQ, 163, 126, Gmail, iCloud), 或 OAuth 2.0 存取權杖 (Outlook.com).
+3. 準備帳戶: 在郵件服務商的網頁端開啟 IMAP 或 POP3 與 SMTP, 並取得授權碼 (QQ, 163, 126, Sina), 應用程式專用密碼 (Gmail, iCloud, Yahoo) 或 OAuth 2.0 存取權杖 (Outlook.com); 登入密碼本身通常不被接受.
 4. 在腳本中呼叫 `mail.connect(...)`, 或在插件設定頁 (插件的啟動器圖示, 或 AutoJs6 開發者選項 > 電郵帳戶設定) 儲存帳戶後以別名連線.
+
+******
+
+### 服務商準備
+
+******
+
+每家服務商都要先在網頁端開啟 IMAP (或 POP3) 與 SMTP, 並以授權碼, 應用程式專用密碼或存取權杖代替登入密碼; 各預設 (`provider` 的取值) 的要點:
+
+- QQ 郵箱 (`qq`): 在網頁版的帳戶設定中開啟 IMAP/SMTP 服務並產生授權碼, 以授權碼作為 `password`.
+- 163 / 126 / yeah.net (`163`, `126`; yeah.net 使用 `163` 預設並覆蓋主機): 在網頁版設定的 POP3/SMTP/IMAP 頁開啟服務並產生授權碼; POP3 需要單獨開啟, 否則 IMAP 與 SMTP 接受的授權碼會被 POP3 拒絕. 伺服器要求每個 IMAP 連線先發送 `ID` 命令 (否則回答 `Unsafe Login`), 插件自動完成.
+- 新浪郵箱 (`sina`): 在網頁版的客戶端設定中開啟 IMAP/SMTP 服務並使用授權碼. 伺服器不儲存已寄郵件副本 (插件追加到 `已发送`), 不允許經 IMAP 新建資料夾, 文字搜尋由插件在客戶端完成.
+- Gmail (`gmail`): 開啟兩步驟驗證後在 Google 帳戶中產生應用程式專用密碼作為 `password`, 或提供帶 `https://mail.google.com/` 範圍的 OAuth 2.0 存取權杖 (`accessToken` 與 `tokenProvider`); 資料夾位於 `[Gmail]` 命名空間, 新郵件由 IDLE 推送. 專案以權杖完成了真實帳戶核實.
+- Outlook.com / Hotmail (`outlook`) 與 Microsoft 365 (`office365`): 微軟已關閉個人帳戶的基本驗證, 應用程式密碼在 IMAP, POP3 與 SMTP 上都會被拒絕, `outlook` 預設因此只接受 OAuth 2.0 存取權杖 (`accessToken` 與 `tokenProvider`); 工作或學校帳戶 (`office365`) 可用密碼或權杖, 但租戶政策可能停用 IMAP, POP3 或 SMTP AUTH.
+- iCloud (`icloud`): 在 Apple 帳戶中產生 App 專用密碼; 沒有 POP3 服務.
+- Yahoo (`yahoo`) 與阿里雲個人郵箱 (`aliyun`): 產生應用程式密碼或授權碼; 這兩個預設按公開文件編寫, 專案沒有可用的測試帳戶, 未經核實.
+
+其他伺服器不填 `provider`, 而是給出 `imap` (或 `pop3`) 與 `smtp` 的 `host`, `port` 與 `tls` (`ssl`, `starttls` 或 `none`); 預設的任何欄位也都可以覆蓋. 全部選項見 [MailAccountOptions](https://docs.autojs6.com/#/mailAccountOptionsType), 內置預設可用 `mail.providers.list()` 查看.
 
 ******
 
@@ -86,10 +104,12 @@ Angus Mail 為 AutoJs6 腳本提供全域物件 `mail`, 用於傳送郵件, 列�
 
 ******
 
-一個寄送報表, 讀取帶附件的未讀郵件並等待驗證碼的腳本:
+一個以別名連線, 寄送報表, 讀取帶附件的未讀郵件, 監聽驗證碼並非同步搜尋的腳本:
 
 ```js
-let client = mail.connect({ provider: 'qq', address: 'me@qq.com', password: 'authorization-code' });
+// A saved alias keeps the credential inside the plugin; an inline account works as well:
+// mail.connect({ provider: 'qq', address: 'me@qq.com', password: 'authorization-code' })
+let client = mail.connect('work');
 
 client.send({ to: 'you@example.com', subject: 'Report', text: 'See the attachment', attachments: ['/sdcard/report.xlsx'] });
 
@@ -101,7 +121,53 @@ client.fetch({ unseenOnly: true, limit: 10 }).forEach(m => {
 
 let watch = client.watch('INBOX', { fetchBody: true });
 watch.on('message', m => { if (/code/i.test(m.subject)) console.log(m.text); });
+watch.on('error', e => console.warn(e.code, e.message));
+
+// Every network method also has an Async form; every failure is a MailError with a code.
+mail.setDefault(client);
+mail.searchAsync({ subject: 'invoice', since: '2026-09-01' }).then(list => console.log(list.length, list.fallback));
 ```
+
+******
+
+### 別名帳戶
+
+******
+
+別名是儲存在插件內的帳戶. 在插件設定頁 (啟動器圖示, 或 AutoJs6 開發者選項 > 電郵帳戶設定) 填寫帳戶, 測試連線並儲存後, 密碼或權杖由 Android Keystore 金鑰加密存放在插件的私有目錄中且不參與備份; 腳本隨後以 `mail.connect('別名')` 連線, 憑證不經過腳本, 也不經 Binder 傳遞.
+
+設定頁可把一個帳戶標記為預設, `mail.accounts.list()` 回傳的條目帶有 `default: true`, `mail.accounts.has(alias)` 檢查別名是否存在. 需要同時使用多個帳戶時為每個別名各建一個客戶端; `mail.setDefault(client)` 之後, `mail.fetch(...)` 這類轉發方法直接作用於預設客戶端.
+
+******
+
+### 相容性
+
+******
+
+以下結論來自路線圖 P6 的真實帳戶矩陣 (2026-09-19 與 09-20, 每家服務商向自己寄送一封帶中文主題, 內文, 顯示名與附件名的郵件, 再逐項驗證), 以及 TLS, 字元集, 生命週期與效能矩陣:
+
+- QQ 郵箱: 寄信, 列表, 內文, 附件, 標記, 移動 (`MOVE`) 與 POP3 全部通過; 中文搜尋伺服器回答 0 命中而不是錯誤, 需要 `fallback: 'always'`; 寄出郵件的 Message-ID 被伺服器改寫; 不允許新建資料夾; 監聽以輪詢進行 (IDLE 不推送), 新郵件送達 15-40 s 後才在伺服器上可見.
+- 163 / 126 / yeah.net: 全部通過; 伺服器儲存已寄副本; 沒有 IDLE, 監聽輪詢; 163 對近期郵件的文字搜尋回答 0 命中 (126 與 yeah.net 正常); 寄件人顯示名中的空格回讀為底線; yeah.net 的 POP3 需在網頁端單獨開啟.
+- 新浪郵箱: 通過; 伺服器只接受 ALL, SINCE 與標記類搜尋條件, 文字搜尋自動回退到客戶端過濾; 沒有 IDLE; 不允許新建資料夾; 已寄副本由插件追加.
+- Gmail: 以 OAuth 2.0 權杖通過全部行, 新郵件經 IDLE 推送 (約 30 s, 為 Gmail 自身的通知節奏); 含中文的伺服器搜尋全部命中 (插件不啟用 `UTF8=ACCEPT`); 自訂 IMAP 關鍵字會被儲存 (六家中唯一); POP3 視圖不含帳戶自己寄出的郵件.
+- Outlook.com / Hotmail: 三個帳戶的應用程式密碼在 IMAP, POP3 與 SMTP 上均被微軟拒絕 (`AUTH_MECHANISM_UNSUPPORTED`), 操作行等待權杖; iCloud, Yahoo 與 Aliyun 沒有可用的測試帳戶, 預設未經核實.
+- TLS 與字元集: 隱式 SSL, STARTTLS, 明文, 自簽憑證 (帶與不帶 `tls.trustAll`), 主機名不匹配與連接埠模式錯配在 IMAP, POP3 與 SMTP 上逐一測試, 失敗對應為 `TLS_FAILED`, `TIMEOUT` 等可判斷的錯誤碼; GB18030, GBK, GB2312, Big5, ISO-2022-JP, EUC-KR 與 UTF-8 的主題, 顯示名, 內文與檔名在宣告, 未宣告與誤宣告三種情形下逐一斷言.
+- 裝置與生命週期: Android 7.0 (API 24) 模擬器, Sony (Android 9) 與 Redmi (Android 13) 實機; 腳本正常結束, `exit()`, `engines.stopAll()`, 強制停止宿主或插件, 原地升級, 停用與解除安裝插件八種結束方式下連線, 綁定與執行緒均被回收; 熄屏進入 Doze 後監聽中斷並在裝置喚醒後恢復, 需要持續監聽時可在設定頁申請電池最佳化豁免.
+- 效能基線: 本機 10000 封收件匣與 50 MiB 附件在 JVM, Redmi 與 Sony 上的列表, 搜尋, 下載, 寄送與一小時 IDLE 待機資料見 `docs/dev/p6-performance-baseline.md`; 郵件文件有界 (地址, 信頭, MIME 樹與內嵌內文均有上限), 敵意輸入不會撐爆會話.
+
+******
+
+### 常見問題
+
+******
+
+- **`AUTH_FAILED` 怎麼排查?** 先確認使用的是授權碼或應用程式專用密碼而不是登入密碼, 且已在網頁端開啟對應協定 (IMAP 與 POP3 是分別開啟的); 呼叫 `client.test()` 分別查看收信端點與 SMTP 的結果與錯誤碼. 權杖帳戶的 `AUTH_FAILED` 通常是權杖過期, 提供 `tokenProvider` 後插件會重新整理並重試一次. 錯誤物件的 `code`, `details` 與 `retryable` 說明是否值得重試.
+- **163 / 126 報 `Unsafe Login`?** 網易的 IMAP 伺服器拒絕未發送 `ID` 命令的連線, 插件對每個 IMAP 連線在登入後立即發送 `ID`, 正常情況下不會遇到. 若仍出現, 請在網頁端重新開啟 IMAP 服務並重新產生授權碼.
+- **中文搜尋沒有結果?** 各伺服器對非 ASCII 搜尋的處理不同: 新浪拒絕 (插件自動回退到客戶端過濾), QQ 與 163 回答 0 命中而不報錯 (預設的 `fallback: 'client'` 不會觸發). 對這些帳戶使用 `fallback: 'always'`, 並用 `since` 或 `limit` 縮小範圍; 客戶端的內文過濾要逐封抓取, 在大郵箱上可能很慢.
+- **`mail.connect` 成功了, 第一次 `fetch` 才報錯?** `connect` 只開啟插件會話, 不連線郵件伺服器; 首個網路方法才登入 (SMTP 在首次寄信時). 想提前驗證帳戶請呼叫 `client.test()`.
+- **監聽在熄屏後停了?** Android 的 Doze 會凍結背景應用程式的網路, 監聽中斷, 新郵件在裝置喚醒後幾分鐘內補報 (Doze 結束時插件立即重連). 需要持續監聽時, 在設定頁用引導按鈕為插件申請電池最佳化豁免; 監聽只在腳本執行期間有效, 腳本結束即關閉.
+- **Outlook.com / Hotmail 怎麼接入?** 微軟已關閉個人帳戶的基本驗證, 需要透過 OAuth 2.0 授權流程 (需要一個已註冊的應用程式) 取得帶 IMAP, POP 與 SMTP 權限範圍的存取權杖, 以 `accessToken` 傳入並用 `tokenProvider` 重新整理; 預設不接受密碼.
+- **POP3 帳戶能做什麼?** 只有 `INBOX`, `uid` 為 UIDL 字串; 列表, 讀取, 下載, 刪除與輪詢監聽可用; 標記, 移動, 複製, 追加, 清除與資料夾管理回傳 `UNSUPPORTED_OPERATION`; 搜尋在客戶端進行且只有信封條件可用.
 
 ******
 
@@ -161,7 +227,7 @@ minimum host build: 5282 (6.8.0)
 
 _2026/09/19_
 
-- `提示` P0 開發預覽: 倉庫骨架, 帶本機伺服器測試的郵件核心, 以及供 AutoJs6 插件中心識別的插件身份. Binder 契約, 腳本 API 與設定頁按 ROADMAP.md 的階段推進.
+- `提示` 首個正式版本: 郵件核心, Binder 契約, 腳本 API `mail`, 設定頁與別名帳戶, 新郵件監聽, 以及 TLS, 字元集, 服務商, 生命週期, 敵意輸入, 秘密審計與效能矩陣均已完成並附有證據 (ROADMAP.md P0 至 P6). 需要 AutoJs6 6.8.0 (組建 5282) 或更高版本.
 - `新增` 插件標識 `angus-mail` (engine `mail`), 含 INFO 服務, Wake Activity 以及 `org.autojs.plugin.MAIL` 服務; 其 `IMailPlugin` Binder 應答插件資訊, 能力, 服務商與已儲存帳戶列表以及會話信封 (具體操作隨 P2 落地)
 - `新增` 基於 Eclipse Angus Mail 的郵件核心: IMAP / POP3 / SMTP 的工作階段屬性 (SSL 或 STARTTLS), 密碼與 XOAUTH2 認證, SMTP 寄信與 IMAP 收件匣列表, 已在本機 GreenMail 伺服器上驗證
 - `新增` 郵件核心帳戶層 (路線圖 P2.1): 帳戶選項支援 Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina 與 Aliyun 的服務商預設, 按協議區分的逾時, `tls.trustAll`, IMAP `ID` 命令與脫敏的 `debug` 協議摘要; 工作階段延遲連線, 閒置時中斷並在斷線後重連; `session.test` 經 Binder 回傳各端點的能力與往返耗時
@@ -280,5 +346,6 @@ app/src/main/res/raw-*/plugin_instruction.md
 
 - AutoJs6 專案: https://github.com/SuperMonster003/AutoJs6
 - AutoJs6 文件: https://docs.autojs6.com
+- 郵件模組文件: https://docs.autojs6.com/#/mail
 - Eclipse Angus Mail: https://eclipse-ee4j.github.io/angus-mail/
 - 第三方聲明: https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/THIRD_PARTY_NOTICES.md

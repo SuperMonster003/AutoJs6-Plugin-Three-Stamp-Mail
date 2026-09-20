@@ -65,6 +65,18 @@
 
 ******
 
+### {{ h3_providers }}
+
+******
+
+{{ p_providers_intro }}:
+
+{{ placeholder_provider_steps }}
+
+{{ p_providers_more }}
+
+******
+
 ### {{ h3_quick_start }}
 
 ******
@@ -72,7 +84,9 @@
 {{ p_quick_start_intro }}:
 
 ```js
-let client = mail.connect({ provider: 'qq', address: 'me@qq.com', password: 'authorization-code' });
+// A saved alias keeps the credential inside the plugin; an inline account works as well:
+// mail.connect({ provider: 'qq', address: 'me@qq.com', password: 'authorization-code' })
+let client = mail.connect('work');
 
 client.send({ to: 'you@example.com', subject: 'Report', text: 'See the attachment', attachments: ['/sdcard/report.xlsx'] });
 
@@ -84,7 +98,40 @@ client.fetch({ unseenOnly: true, limit: 10 }).forEach(m => {
 
 let watch = client.watch('INBOX', { fetchBody: true });
 watch.on('message', m => { if (/code/i.test(m.subject)) console.log(m.text); });
+watch.on('error', e => console.warn(e.code, e.message));
+
+// Every network method also has an Async form; every failure is a MailError with a code.
+mail.setDefault(client);
+mail.searchAsync({ subject: 'invoice', since: '2026-09-01' }).then(list => console.log(list.length, list.fallback));
 ```
+
+******
+
+### {{ h3_aliases }}
+
+******
+
+{{ p_aliases_what }}
+
+{{ p_aliases_how }}
+
+******
+
+### {{ h3_compatibility }}
+
+******
+
+{{ p_compatibility_intro }}:
+
+{{ placeholder_compatibility_points }}
+
+******
+
+### {{ h3_faq }}
+
+******
+
+{{ placeholder_faq_items }}
 
 ******
 
@@ -218,5 +265,6 @@ app/src/main/res/raw-*/plugin_instruction.md
 
 - {{ text_link_autojs6 }}: {{ autojs6_url }}
 - {{ text_link_autojs6_docs }}: {{ docs_autojs6_url }}
+- {{ text_link_mail_docs }}: {{ docs_mail_url }}
 - {{ text_link_angus_mail }}: {{ angus_mail_url }}
 - {{ text_link_third_party_notices }}: {{ third_party_notices_url }}

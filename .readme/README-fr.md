@@ -52,7 +52,7 @@ Tout le trafic de courrier reste dans le processus du plugin. AutoJs6 decouvre l
 
 ******
 
-La version 1.0.0 est en developpement: le squelette du depot, le coeur de messagerie avec ses tests sur serveur local et l'identite du plugin pour le centre de plugins AutoJs6 sont en place; le contrat Binder, l'API de script et la page de parametres suivent les phases de [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Necessite AutoJs6 6.8.0 (build 5282) ou plus recent.
+La version 1.0.0 est la première publication : tous les points des phases P0 à P6 de la feuille de route (le coeur de messagerie, le contrat Binder, l'API de script, la page de paramètres avec les comptes enregistrés, la surveillance du nouveau courrier, ainsi que les matrices TLS, jeux de caractères, fournisseurs, cycle de vie, entrées hostiles, audit des secrets et performances) sont achevés avec leurs preuves dans [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Nécessite AutoJs6 6.8.0 (build 5282) ou plus récent ; la référence complète de l'API de script se trouve dans la [documentation AutoJs6](https://docs.autojs6.com/#/mail).
 
 ******
 
@@ -75,10 +75,28 @@ Le plugin fournit les capacités suivantes:
 
 ******
 
-1. Installez l'APK du plugin depuis [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) sur un appareil disposant d'AutoJs6 build 5282 (6.8.0) ou plus recent.
-2. Ouvrez le centre de plugins AutoJs6, verifiez que `Angus Mail` est reconnu et activez-le.
-3. Preparez le compte: activez IMAP ou POP3 dans les parametres de votre fournisseur de messagerie et obtenez un code d'autorisation ou un mot de passe d'application (QQ, 163, 126, Gmail, iCloud), ou un jeton d'acces OAuth 2.0 (Outlook.com).
-4. Appelez `mail.connect(...)` dans un script, ou enregistrez le compte dans la page de parametres du plugin (son icone dans le lanceur, ou AutoJs6 > Options du developpeur > Parametres des comptes de courrier) et connectez-vous par alias.
+1. Installez l'APK du plugin depuis [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) sur un appareil disposant d'AutoJs6 build 5282 (6.8.0) ou plus récent.
+2. Ouvrez le centre de plugins AutoJs6, vérifiez que `Angus Mail` est reconnu et activez-le.
+3. Préparez le compte : activez IMAP ou POP3 et SMTP dans les paramètres web de votre fournisseur de messagerie et obtenez un code d'autorisation (QQ, 163, 126, Sina), un mot de passe d'application (Gmail, iCloud, Yahoo) ou un jeton d'accès OAuth 2.0 (Outlook.com) ; le mot de passe de connexion lui-même n'est généralement pas accepté.
+4. Appelez `mail.connect(...)` dans un script, ou enregistrez le compte dans la page de paramètres du plugin (son icône dans le lanceur, ou AutoJs6 > Options du développeur > Paramètres des comptes de courrier) et connectez-vous par alias.
+
+******
+
+### Préparation des fournisseurs
+
+******
+
+Chaque fournisseur exige d'abord l'activation d'IMAP (ou POP3) et de SMTP dans ses paramètres web, ainsi qu'un code d'autorisation, un mot de passe d'application ou un jeton d'accès à la place du mot de passe de connexion ; l'essentiel pour chaque préréglage (la valeur de `provider`):
+
+- QQ Mail (`qq`) : activez le service IMAP/SMTP dans les paramètres web du compte et générez un code d'autorisation, utilisé comme `password`.
+- 163 / 126 / yeah.net (`163`, `126` ; yeah.net utilise le préréglage `163` avec ses hôtes remplacés) : activez les services dans la page POP3/SMTP/IMAP des paramètres web et générez un code d'autorisation ; POP3 s'active séparément, sinon POP3 refuse le code qu'IMAP et SMTP acceptent. Les serveurs exigent que chaque connexion IMAP envoie d'abord la commande `ID` (sinon ils répondent `Unsafe Login`) ; le plugin s'en charge lui-même.
+- Sina Mail (`sina`) : activez le service IMAP/SMTP dans les paramètres web du client et utilisez le code d'autorisation. Le serveur ne conserve aucune copie du courrier envoyé (le plugin en ajoute une dans le dossier des envoyés), refuse la création de dossiers par IMAP, et les recherches textuelles s'exécutent côté client.
+- Gmail (`gmail`) : avec la validation en deux étapes activée, générez un mot de passe d'application dans le compte Google et utilisez-le comme `password`, ou fournissez un jeton d'accès OAuth 2.0 avec la portée `https://mail.google.com/` (`accessToken` et `tokenProvider`) ; les dossiers se trouvent sous l'espace de noms `[Gmail]` et le nouveau courrier arrive par IDLE. Le projet a vérifié le compte réel avec un jeton.
+- Outlook.com / Hotmail (`outlook`) et Microsoft 365 (`office365`) : Microsoft a désactivé l'authentification de base des comptes personnels, si bien que les mots de passe d'application sont refusés sur IMAP, POP3 et SMTP et que le préréglage `outlook` n'accepte qu'un jeton d'accès OAuth 2.0 (`accessToken` et `tokenProvider`) ; les comptes professionnels ou scolaires (`office365`) acceptent un mot de passe ou un jeton, mais la politique du locataire peut désactiver IMAP, POP3 ou SMTP AUTH.
+- iCloud (`icloud`) : générez un mot de passe pour application dans le compte Apple ; il n'y a pas de service POP3.
+- Yahoo (`yahoo`) et la messagerie personnelle Aliyun (`aliyun`) : générez un mot de passe d'application ou un code d'autorisation ; ces deux préréglages suivent la documentation publique et ne sont pas vérifiés, le projet ne disposant d'aucun compte de test.
+
+Pour les autres serveurs, omettez `provider` et indiquez `host`, `port` et `tls` (`ssl`, `starttls` ou `none`) pour `imap` (ou `pop3`) et `smtp` ; n'importe quel champ d'un préréglage peut aussi être remplacé. Toutes les options sont décrites dans [MailAccountOptions](https://docs.autojs6.com/#/mailAccountOptionsType), et `mail.providers.list()` affiche les préréglages intégrés.
 
 ******
 
@@ -86,10 +104,12 @@ Le plugin fournit les capacités suivantes:
 
 ******
 
-Un script qui envoie un rapport, lit les courriers non lus avec leurs pieces jointes et attend un code de verification:
+Un script qui se connecte par alias, envoie un rapport, lit les courriers non lus avec leurs pièces jointes, surveille un code de vérification et recherche de façon asynchrone:
 
 ```js
-let client = mail.connect({ provider: 'qq', address: 'me@qq.com', password: 'authorization-code' });
+// A saved alias keeps the credential inside the plugin; an inline account works as well:
+// mail.connect({ provider: 'qq', address: 'me@qq.com', password: 'authorization-code' })
+let client = mail.connect('work');
 
 client.send({ to: 'you@example.com', subject: 'Report', text: 'See the attachment', attachments: ['/sdcard/report.xlsx'] });
 
@@ -101,7 +121,53 @@ client.fetch({ unseenOnly: true, limit: 10 }).forEach(m => {
 
 let watch = client.watch('INBOX', { fetchBody: true });
 watch.on('message', m => { if (/code/i.test(m.subject)) console.log(m.text); });
+watch.on('error', e => console.warn(e.code, e.message));
+
+// Every network method also has an Async form; every failure is a MailError with a code.
+mail.setDefault(client);
+mail.searchAsync({ subject: 'invoice', since: '2026-09-01' }).then(list => console.log(list.length, list.fallback));
 ```
+
+******
+
+### Comptes enregistrés et alias
+
+******
+
+Un alias est un compte enregistré dans le plugin. Une fois le compte saisi, testé et enregistré dans la page de paramètres du plugin (son icône dans le lanceur, ou AutoJs6 > Options du développeur > Paramètres des comptes de courrier), le mot de passe ou le jeton est stocké chiffré avec une clé de l'Android Keystore dans le répertoire privé du plugin et exclu des sauvegardes ; les scripts se connectent ensuite avec `mail.connect('alias')`, et l'identifiant ne transite ni par le script ni par Binder.
+
+La page de paramètres peut marquer un compte comme compte par défaut ; les entrées renvoyées par `mail.accounts.list()` portent `default: true` pour celui-ci, et `mail.accounts.has(alias)` vérifie l'existence d'un alias. Créez un client par alias lorsque plusieurs comptes sont utilisés en même temps ; après `mail.setDefault(client)`, les méthodes relayées comme `mail.fetch(...)` agissent sur le client par défaut.
+
+******
+
+### Compatibilité
+
+******
+
+Les conclusions ci-dessous proviennent de la matrice avec comptes réels de la phase P6 (2026-09-19 et 09-20 : chaque fournisseur s'est envoyé un message avec sujet, corps, noms affichés et nom de fichier en chinois, puis chaque opération a été vérifiée) et des matrices TLS, jeux de caractères, cycle de vie et performances:
+
+- QQ Mail : envoi, listage, corps, pièces jointes, indicateurs, déplacement (`MOVE`) et POP3 passent ; le serveur répond à une recherche en chinois par zéro résultat au lieu d'une erreur, d'où la nécessité de `fallback: 'always'` ; le Message-ID du courrier sortant est réécrit par le serveur ; la création de dossiers est refusée ; la surveillance interroge périodiquement (IDLE ne notifie jamais) et le nouveau courrier devient visible sur le serveur 15-40 s après la livraison.
+- 163 / 126 / yeah.net : tout passe ; le serveur conserve la copie envoyée ; pas d'IDLE, donc la surveillance interroge ; 163 répond zéro résultat aux recherches textuelles sur le courrier récent (126 et yeah.net fonctionnent) ; les espaces du nom affiché de l'expéditeur reviennent en traits de soulignement ; POP3 sur yeah.net doit être activé séparément dans les paramètres web.
+- Sina Mail : passe ; le serveur n'accepte que les conditions ALL, SINCE et les indicateurs, si bien que les recherches textuelles basculent automatiquement vers le filtrage côté client ; pas d'IDLE ; la création de dossiers est refusée ; la copie envoyée est ajoutée par le plugin.
+- Gmail : toutes les lignes passent avec un jeton OAuth 2.0, le nouveau courrier arrive par IDLE (environ 30 s, la cadence de notification propre à Gmail) ; les recherches serveur, chinois compris, aboutissent toutes (le plugin n'active pas `UTF8=ACCEPT`) ; les mots-clés IMAP personnalisés sont stockés (le seul des six) ; la vue POP3 n'inclut pas le courrier que le compte s'est envoyé à lui-même.
+- Outlook.com / Hotmail : Microsoft refuse les mots de passe d'application de trois comptes sur IMAP, POP3 et SMTP (`AUTH_MECHANISM_UNSUPPORTED`), les lignes d'opérations attendent donc un jeton ; iCloud, Yahoo et Aliyun n'ont pas de compte de test et leurs préréglages ne sont pas vérifiés.
+- TLS et jeux de caractères : SSL implicite, STARTTLS, texte en clair, certificats auto-signés (avec et sans `tls.trustAll`), discordances de nom d'hôte et de mode de port sont testés un par un sur IMAP, POP3 et SMTP, et les échecs correspondent à des codes distinguables comme `TLS_FAILED` et `TIMEOUT` ; sujets, noms affichés, corps et noms de fichiers en GB18030, GBK, GB2312, Big5, ISO-2022-JP, EUC-KR et UTF-8 sont vérifiés déclarés, non déclarés et mal déclarés.
+- Appareils et cycle de vie : un émulateur Android 7.0 (API 24) plus des téléphones Sony (Android 9) et Redmi (Android 13) ; connexions, liaisons et threads sont libérés pour huit façons de terminer un script (sortie normale, `exit()`, `engines.stopAll()`, arrêt forcé de l'hôte ou du plugin, mise à niveau sur place, désactivation et désinstallation du plugin) ; écran éteint (Doze), une surveillance perd sa connexion et la rétablit au réveil de l'appareil, et la page de paramètres peut demander l'exemption d'optimisation de la batterie pour une surveillance ininterrompue.
+- Base de performances : listage, recherche, téléchargement, envoi et une heure d'attente en IDLE contre une boîte locale de 10000 messages avec une pièce jointe de 50 MiB sur la JVM, le Redmi et le Sony sont consignés dans `docs/dev/p6-performance-baseline.md` ; les documents de message sont bornés (adresses, en-têtes, arbre MIME et corps en ligne ont des limites), de sorte qu'une entrée hostile ne peut pas faire exploser une session.
+
+******
+
+### Questions fréquentes
+
+******
+
+- **Comment diagnostiquer `AUTH_FAILED` ?** Vérifiez que vous utilisez le code d'autorisation ou le mot de passe d'application plutôt que le mot de passe de connexion, et que le protocole est activé dans les paramètres web (IMAP et POP3 s'activent séparément) ; appelez `client.test()` pour voir séparément le résultat et le code d'erreur du point de réception et de SMTP. Pour les comptes à jeton, `AUTH_FAILED` signifie généralement un jeton expiré ; avec un `tokenProvider`, le plugin le renouvelle et réessaie une fois. Les champs `code`, `details` et `retryable` de l'erreur indiquent si une nouvelle tentative vaut la peine.
+- **163 / 126 répondent `Unsafe Login` ?** Les serveurs IMAP de NetEase refusent les connexions qui n'ont pas envoyé la commande `ID` ; le plugin envoie `ID` juste après la connexion sur chaque connexion IMAP, cela ne devrait donc pas se produire. Si c'est tout de même le cas, réactivez le service IMAP dans les paramètres web et générez un nouveau code d'autorisation.
+- **Une recherche en chinois ne trouve rien ?** Les serveurs traitent différemment les recherches non ASCII : Sina les rejette (le plugin bascule de lui-même vers le filtrage côté client), tandis que QQ et 163 répondent zéro résultat sans erreur (le `fallback: 'client'` par défaut ne se déclenche pas). Utilisez `fallback: 'always'` sur ces comptes et réduisez la fenêtre avec `since` ou `limit` ; le filtrage des corps côté client télécharge chaque candidat et peut être lent sur une grande boîte.
+- **`mail.connect` a réussi mais le premier `fetch` échoue ?** `connect` ouvre seulement la session du plugin et ne contacte pas le serveur de messagerie ; la première méthode réseau ouvre la session (SMTP au premier envoi). Appelez `client.test()` pour vérifier un compte à l'avance.
+- **La surveillance s'arrête quand l'écran s'éteint ?** Le Doze d'Android gèle le réseau des applications en arrière-plan, la surveillance perd donc sa connexion et le nouveau courrier est signalé quelques minutes après le réveil de l'appareil (le plugin se reconnecte dès la fin du Doze). Pour une surveillance ininterrompue, utilisez le bouton guide de la page de paramètres pour demander l'exemption d'optimisation de la batterie ; une surveillance ne vit que pendant l'exécution du script et se ferme à sa fin.
+- **Comment connecter Outlook.com / Hotmail ?** Microsoft a désactivé l'authentification de base des comptes personnels ; un flux d'autorisation OAuth 2.0 (qui nécessite une application enregistrée) doit donc produire un jeton d'accès avec les portées IMAP, POP et SMTP ; passez-le en `accessToken` et renouvelez-le via `tokenProvider`. Le préréglage n'accepte aucun mot de passe.
+- **Que peut faire un compte POP3 ?** Seul `INBOX` existe et `uid` est la chaîne UIDL ; listage, lecture, téléchargement, suppression et surveillance par interrogation fonctionnent, tandis que les indicateurs, le déplacement, la copie, l'ajout, la purge et la gestion des dossiers répondent `UNSUPPORTED_OPERATION` ; les recherches s'exécutent côté client avec les seules conditions d'enveloppe.
 
 ******
 
@@ -161,7 +227,7 @@ Les plans et l'avancement du plugin sont tenus sous forme de liste cochable dans
 
 _2026/09/19_
 
-- `Note` Apercu de developpement P0: squelette du depot, coeur de messagerie avec tests sur serveur local et identite du plugin pour le centre de plugins AutoJs6. Le contrat Binder, l'API de script et la page de parametres suivent les phases de ROADMAP.md.
+- `Note` Première publication : le coeur de messagerie, le contrat Binder, l'API de script `mail`, la page de paramètres avec les comptes enregistrés, la surveillance du nouveau courrier, ainsi que les matrices TLS, jeux de caractères, fournisseurs, cycle de vie, entrées hostiles, audit des secrets et performances sont achevés avec leurs preuves (ROADMAP.md, phases P0 à P6). Nécessite AutoJs6 6.8.0 (build 5282) ou plus récent.
 - `Fonctionnalité` Identite du plugin `angus-mail` (moteur `mail`) avec le service INFO, la Wake Activity et le service `org.autojs.plugin.MAIL` dont le Binder `IMailPlugin` repond aux informations du plugin, aux capacites, aux listes de fournisseurs et de comptes enregistres et a l'enveloppe de session (les operations arrivent avec P2)
 - `Fonctionnalité` Coeur de messagerie sur Eclipse Angus Mail: proprietes de session IMAP / POP3 / SMTP avec SSL ou STARTTLS, authentification par mot de passe et XOAUTH2, envoi SMTP et liste de la boite de reception IMAP, verifies sur un serveur GreenMail local
 - `Fonctionnalité` Couche de comptes du noyau mail (feuille de route P2.1) : options de compte avec les présélections Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina et Aliyun, délais par protocole, `tls.trustAll`, la commande IMAP `ID` et une trace `debug` expurgée ; les sessions se connectent à la demande, ferment les connexions inactives et se reconnectent après une coupure ; `session.test` répond via le Binder avec les capacités et les temps d'aller-retour par point de terminaison
@@ -280,5 +346,6 @@ Le code du projet est publié sous la [Mozilla Public License 2.0](https://githu
 
 - Projet AutoJs6: https://github.com/SuperMonster003/AutoJs6
 - Documentation AutoJs6: https://docs.autojs6.com
+- Documentation du module de messagerie: https://docs.autojs6.com/#/mail
 - Eclipse Angus Mail: https://eclipse-ee4j.github.io/angus-mail/
 - Avis de tiers: https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/THIRD_PARTY_NOTICES.md

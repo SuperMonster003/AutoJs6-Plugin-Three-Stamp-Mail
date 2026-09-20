@@ -8,7 +8,7 @@
     "v1.0.0": {
       "released_date": "2026/09/19",
       "hint": [
-        "P0 开发预览: 仓库骨架, 带本地服务器测试的邮件核心, 以及供 AutoJs6 插件中心识别的插件身份. Binder 契约, 脚本 API 与设置页按 ROADMAP.md 的阶段推进."
+        "首个正式版本: 邮件核心, Binder 契约, 脚本 API `mail`, 设置页与别名账户, 新邮件监听, 以及 TLS, 字符集, 服务商, 生命周期, 敌意输入, 秘密审计与性能矩阵均已完成并附有证据 (ROADMAP.md P0 至 P6). 需要 AutoJs6 6.8.0 (构建 5282) 或更高版本."
       ],
       "feature": [
         "插件标识 `angus-mail` (engine `mail`), 含 INFO 服务, Wake Activity 以及 `org.autojs.plugin.MAIL` 服务; 其 `IMailPlugin` Binder 应答插件信息, 能力, 服务商与已保存账户列表以及会话信封 (具体操作随 P2 落地)",

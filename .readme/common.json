@@ -4,6 +4,7 @@
   "icon_alt": "autojs6-plugin-angus-mail-ic-launcher",
   "autojs6_url": "https://github.com/SuperMonster003/AutoJs6",
   "docs_autojs6_url": "https://docs.autojs6.com",
+  "docs_mail_url": "https://docs.autojs6.com/#/mail",
   "angus_mail_url": "https://eclipse-ee4j.github.io/angus-mail/",
   "license_url": "{{ repo_url }}/blob/master/LICENSE",
   "third_party_notices_url": "{{ repo_url }}/blob/master/THIRD_PARTY_NOTICES.md",

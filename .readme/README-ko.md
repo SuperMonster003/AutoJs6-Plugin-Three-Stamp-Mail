@@ -52,7 +52,7 @@ Angus Mail은 AutoJs6 스크립트에 전역 객체 `mail`을 제공하여 메�
 
 ******
 
-버전 1.0.0은 개발 중입니다: 저장소 뼈대, 로컬 서버 테스트를 갖춘 메일 코어, AutoJs6 플러그인 센터용 플러그인 식별 정보가 준비되었으며, Binder 계약, 스크립트 API, 설정 페이지는 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md)의 단계에 따라 진행됩니다. AutoJs6 6.8.0 (빌드 5282) 이상이 필요합니다.
+버전 1.0.0은 첫 정식 릴리스입니다: 로드맵 P0 부터 P6 까지의 모든 항목 (메일 코어, Binder 계약, 스크립트 API, 설정 페이지와 저장된 계정, 새 메일 감시, 그리고 TLS, 문자 집합, 제공자, 수명 주기, 적대적 입력, 비밀 감사, 성능 매트릭스) 이 증거와 함께 완료되었으며 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) 에서 확인할 수 있습니다. AutoJs6 6.8.0 (빌드 5282) 이상이 필요합니다; 스크립트 API 의 전체 참조는 [AutoJs6 문서](https://docs.autojs6.com/#/mail) 에 있습니다.
 
 ******
 
@@ -75,10 +75,28 @@ Angus Mail은 AutoJs6 스크립트에 전역 객체 `mail`을 제공하여 메�
 
 ******
 
-1. AutoJs6 빌드 5282 (6.8.0) 이상이 설치된 기기에 [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases)에서 플러그인 APK를 설치합니다.
-2. AutoJs6 플러그인 센터를 열어 `Angus Mail`이 인식되는지 확인하고 활성화합니다.
-3. 계정을 준비합니다: 메일 제공자 설정에서 IMAP 또는 POP3를 켜고, 인증 코드나 앱 비밀번호 (QQ, 163, 126, Gmail, iCloud) 또는 OAuth 2.0 액세스 토큰 (Outlook.com)을 얻습니다.
+1. AutoJs6 빌드 5282 (6.8.0) 이상이 설치된 기기에 [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) 에서 플러그인 APK 를 설치합니다.
+2. AutoJs6 플러그인 센터를 열어 `Angus Mail` 이 인식되는지 확인하고 활성화합니다.
+3. 계정을 준비합니다: 메일 제공자의 웹 설정에서 IMAP 또는 POP3 와 SMTP 를 켜고, 인증 코드 (QQ, 163, 126, Sina), 앱 비밀번호 (Gmail, iCloud, Yahoo) 또는 OAuth 2.0 액세스 토큰 (Outlook.com) 을 얻습니다; 로그인 비밀번호 자체는 보통 받아들여지지 않습니다.
 4. 스크립트에서 `mail.connect(...)`를 호출하거나, 플러그인 설정 페이지 (플러그인의 런처 아이콘 또는 AutoJs6 개발자 옵션 > 메일 계정 설정) 에 계정을 저장한 뒤 별칭으로 연결합니다.
+
+******
+
+### 제공자 준비
+
+******
+
+모든 제공자는 먼저 웹 설정에서 IMAP (또는 POP3) 과 SMTP 를 켜야 하며, 로그인 비밀번호 대신 인증 코드, 앱 비밀번호 또는 액세스 토큰을 사용합니다; 각 프리셋 (`provider` 의 값) 의 요점:
+
+- QQ 메일 (`qq`): 웹 계정 설정에서 IMAP/SMTP 서비스를 켜고 인증 코드를 생성하여 `password` 로 사용합니다.
+- 163 / 126 / yeah.net (`163`, `126`; yeah.net 은 `163` 프리셋에 호스트를 덮어써서 사용): 웹 설정의 POP3/SMTP/IMAP 페이지에서 서비스를 켜고 인증 코드를 생성합니다; POP3 는 별도로 켜야 하며, 그렇지 않으면 IMAP 과 SMTP 가 받아들이는 코드를 POP3 가 거부합니다. 서버는 모든 IMAP 연결이 먼저 `ID` 명령을 보내도록 요구하며 (아니면 `Unsafe Login` 으로 응답), 플러그인이 이를 자동으로 수행합니다.
+- Sina 메일 (`sina`): 웹 클라이언트 설정에서 IMAP/SMTP 서비스를 켜고 인증 코드를 사용합니다. 서버는 보낸 메일 사본을 보관하지 않고 (플러그인이 보낸 편지함에 추가), IMAP 을 통한 폴더 생성을 거부하며, 텍스트 검색은 플러그인이 클라이언트에서 수행합니다.
+- Gmail (`gmail`): 2 단계 인증을 켠 뒤 Google 계정에서 앱 비밀번호를 생성하여 `password` 로 쓰거나, `https://mail.google.com/` 범위의 OAuth 2.0 액세스 토큰 (`accessToken` 과 `tokenProvider`) 을 제공합니다; 폴더는 `[Gmail]` 네임스페이스에 있고 새 메일은 IDLE 로 푸시됩니다. 프로젝트는 토큰으로 실제 계정을 검증했습니다.
+- Outlook.com / Hotmail (`outlook`) 과 Microsoft 365 (`office365`): Microsoft 가 개인 계정의 기본 인증을 비활성화했으므로 앱 비밀번호는 IMAP, POP3, SMTP 모두에서 거부되며, `outlook` 프리셋은 OAuth 2.0 액세스 토큰 (`accessToken` 과 `tokenProvider`) 만 받아들입니다; 직장 또는 학교 계정 (`office365`) 은 비밀번호나 토큰을 쓸 수 있지만 테넌트 정책이 IMAP, POP3 또는 SMTP AUTH 를 비활성화할 수 있습니다.
+- iCloud (`icloud`): Apple 계정에서 앱 전용 비밀번호를 생성합니다; POP3 서비스가 없습니다.
+- Yahoo (`yahoo`) 와 Aliyun 개인 메일 (`aliyun`): 앱 비밀번호 또는 인증 코드를 생성합니다; 이 두 프리셋은 공개 문서를 따르며 프로젝트에 테스트 계정이 없어 검증되지 않았습니다.
+
+그 밖의 서버는 `provider` 를 비우고 `imap` (또는 `pop3`) 과 `smtp` 의 `host`, `port`, `tls` (`ssl`, `starttls` 또는 `none`) 를 지정합니다; 프리셋의 어떤 필드도 덮어쓸 수 있습니다. 모든 옵션은 [MailAccountOptions](https://docs.autojs6.com/#/mailAccountOptionsType) 에 설명되어 있으며, 내장 프리셋은 `mail.providers.list()` 로 볼 수 있습니다.
 
 ******
 
@@ -86,10 +104,12 @@ Angus Mail은 AutoJs6 스크립트에 전역 객체 `mail`을 제공하여 메�
 
 ******
 
-보고서를 보내고, 첨부 파일이 있는 읽지 않은 메일을 읽고, 인증 코드를 기다리는 스크립트:
+별칭으로 연결하고, 보고서를 보내고, 첨부 파일이 있는 읽지 않은 메일을 읽고, 인증 코드를 감시하며, 비동기로 검색하는 스크립트:
 
 ```js
-let client = mail.connect({ provider: 'qq', address: 'me@qq.com', password: 'authorization-code' });
+// A saved alias keeps the credential inside the plugin; an inline account works as well:
+// mail.connect({ provider: 'qq', address: 'me@qq.com', password: 'authorization-code' })
+let client = mail.connect('work');
 
 client.send({ to: 'you@example.com', subject: 'Report', text: 'See the attachment', attachments: ['/sdcard/report.xlsx'] });
 
@@ -101,7 +121,53 @@ client.fetch({ unseenOnly: true, limit: 10 }).forEach(m => {
 
 let watch = client.watch('INBOX', { fetchBody: true });
 watch.on('message', m => { if (/code/i.test(m.subject)) console.log(m.text); });
+watch.on('error', e => console.warn(e.code, e.message));
+
+// Every network method also has an Async form; every failure is a MailError with a code.
+mail.setDefault(client);
+mail.searchAsync({ subject: 'invoice', since: '2026-09-01' }).then(list => console.log(list.length, list.fallback));
 ```
+
+******
+
+### 저장된 계정과 별칭
+
+******
+
+별칭은 플러그인 안에 저장된 계정입니다. 플러그인 설정 페이지 (런처 아이콘 또는 AutoJs6 개발자 옵션 > 메일 계정 설정) 에서 계정을 입력하고 연결을 테스트한 뒤 저장하면, 비밀번호나 토큰은 Android Keystore 키로 암호화되어 플러그인의 비공개 디렉터리에 저장되고 백업에서 제외됩니다; 이후 스크립트는 `mail.connect('별칭')` 으로 연결하며, 자격 증명은 스크립트도 Binder 도 거치지 않습니다.
+
+설정 페이지에서 계정 하나를 기본으로 표시할 수 있습니다; `mail.accounts.list()` 가 반환하는 항목에는 해당 계정에 `default: true` 가 붙고, `mail.accounts.has(alias)` 는 별칭의 존재를 확인합니다. 여러 계정을 동시에 쓸 때는 별칭마다 클라이언트를 하나씩 만듭니다; `mail.setDefault(client)` 이후에는 `mail.fetch(...)` 같은 전달 메서드가 기본 클라이언트에 작용합니다.
+
+******
+
+### 호환성
+
+******
+
+아래 결론은 로드맵 P6 의 실제 계정 매트릭스 (2026-09-19 와 09-20: 각 제공자가 중국어 제목, 본문, 표시 이름, 파일 이름을 가진 메일을 자기 자신에게 보낸 뒤 모든 작업을 검증) 와 TLS, 문자 집합, 수명 주기, 성능 매트릭스에서 나온 것입니다:
+
+- QQ 메일: 보내기, 목록, 본문, 첨부, 플래그, 이동 (`MOVE`), POP3 모두 통과; 중국어 검색에 서버가 오류 대신 0 건으로 응답하므로 `fallback: 'always'` 가 필요; 보낸 메일의 Message-ID 가 서버에서 다시 쓰임; 폴더 생성 거부; 감시는 폴링 (IDLE 은 푸시하지 않음) 이며 새 메일은 배달 후 15-40 초 뒤에 서버에서 보입니다.
+- 163 / 126 / yeah.net: 모두 통과; 서버가 보낸 사본을 보관; IDLE 이 없어 감시는 폴링; 163 은 최근 메일에 대한 텍스트 검색에 0 건으로 응답 (126 과 yeah.net 은 정상); 보낸 사람 표시 이름의 공백이 밑줄로 돌아옴; yeah.net 의 POP3 는 웹 설정에서 별도로 켜야 합니다.
+- Sina 메일: 통과; 서버는 ALL, SINCE, 플래그 조건만 받아들이므로 텍스트 검색은 자동으로 클라이언트 필터링으로 대체; IDLE 없음; 폴더 생성 거부; 보낸 사본은 플러그인이 추가합니다.
+- Gmail: OAuth 2.0 토큰으로 모든 행 통과, 새 메일은 IDLE 로 푸시 (약 30 초, Gmail 자체의 알림 주기); 중국어를 포함한 서버 검색 모두 적중 (플러그인은 `UTF8=ACCEPT` 를 켜지 않음); 사용자 지정 IMAP 키워드가 저장됨 (여섯 곳 중 유일); POP3 보기에는 계정이 자기 자신에게 보낸 메일이 없습니다.
+- Outlook.com / Hotmail: 세 계정의 앱 비밀번호가 IMAP, POP3, SMTP 모두에서 Microsoft 에 거부되어 (`AUTH_MECHANISM_UNSUPPORTED`) 작업 행은 토큰을 기다립니다; iCloud, Yahoo, Aliyun 은 테스트 계정이 없어 프리셋이 검증되지 않았습니다.
+- TLS 와 문자 집합: 암시적 SSL, STARTTLS, 평문, 자체 서명 인증서 (`tls.trustAll` 유무), 호스트 이름 불일치, 포트 모드 불일치를 IMAP, POP3, SMTP 에서 하나씩 테스트했고, 실패는 `TLS_FAILED`, `TIMEOUT` 같은 구별 가능한 코드로 매핑됩니다; GB18030, GBK, GB2312, Big5, ISO-2022-JP, EUC-KR, UTF-8 의 제목, 표시 이름, 본문, 파일 이름을 선언됨, 선언되지 않음, 잘못 선언됨 세 경우로 검증했습니다.
+- 기기와 수명 주기: Android 7.0 (API 24) 에뮬레이터와 Sony (Android 9), Redmi (Android 13) 실기; 스크립트 정상 종료, `exit()`, `engines.stopAll()`, 호스트 또는 플러그인 강제 중지, 제자리 업그레이드, 플러그인 비활성화와 제거의 여덟 가지 종료 방식에서 연결, 바인딩, 스레드가 해제됩니다; 화면이 꺼져 Doze 에 들어가면 감시는 연결을 잃고 기기가 깨어난 뒤 복구되며, 끊김 없는 감시가 필요하면 설정 페이지에서 배터리 최적화 제외를 요청할 수 있습니다.
+- 성능 기준선: 로컬 10000 통 받은 편지함과 50 MiB 첨부 파일에 대한 목록, 검색, 다운로드, 보내기, 1 시간 IDLE 대기를 JVM, Redmi, Sony 에서 측정하여 `docs/dev/p6-performance-baseline.md` 에 기록했습니다; 메일 문서에는 상한이 있어 (주소, 헤더, MIME 트리, 인라인 본문) 적대적 입력이 세션을 무너뜨리지 못합니다.
+
+******
+
+### 자주 묻는 질문
+
+******
+
+- **`AUTH_FAILED` 는 어떻게 해결하나요?** 로그인 비밀번호가 아니라 인증 코드나 앱 비밀번호를 쓰고 있는지, 웹 설정에서 해당 프로토콜이 켜져 있는지 (IMAP 과 POP3 는 따로 켬) 확인하고, `client.test()` 로 수신 엔드포인트와 SMTP 의 결과와 오류 코드를 따로 확인합니다. 토큰 계정의 `AUTH_FAILED` 는 보통 토큰 만료이며, `tokenProvider` 가 있으면 플러그인이 갱신하고 한 번 재시도합니다. 오류의 `code`, `details`, `retryable` 이 재시도할 가치가 있는지 알려 줍니다.
+- **163 / 126 이 `Unsafe Login` 으로 응답하나요?** NetEase 의 IMAP 서버는 `ID` 명령을 보내지 않은 연결을 거부합니다; 플러그인은 모든 IMAP 연결에서 로그인 직후 `ID` 를 보내므로 보통은 발생하지 않습니다. 그래도 발생하면 웹 설정에서 IMAP 서비스를 다시 켜고 인증 코드를 새로 생성하세요.
+- **중국어 검색에 결과가 없나요?** 서버마다 비 ASCII 검색을 다르게 처리합니다: Sina 는 거부하고 (플러그인이 스스로 클라이언트 필터링으로 대체), QQ 와 163 은 오류 없이 0 건을 반환합니다 (기본 `fallback: 'client'` 는 발동하지 않음). 이런 계정에서는 `fallback: 'always'` 를 쓰고 `since` 나 `limit` 으로 범위를 좁히세요; 클라이언트 본문 필터링은 후보를 한 통씩 가져오므로 큰 사서함에서는 느릴 수 있습니다.
+- **`mail.connect` 는 성공했는데 첫 `fetch` 에서 실패하나요?** `connect` 는 플러그인 세션만 열고 메일 서버에 접속하지 않습니다; 첫 네트워크 메서드가 로그인합니다 (SMTP 는 첫 보내기 때). 미리 확인하려면 `client.test()` 를 호출하세요.
+- **화면이 꺼지면 감시가 멈추나요?** Android 의 Doze 는 백그라운드 앱의 네트워크를 동결하므로 감시는 연결을 잃고, 새 메일은 기기가 깨어난 뒤 몇 분 안에 보고됩니다 (Doze 가 끝나면 플러그인이 즉시 다시 연결). 끊김 없는 감시가 필요하면 설정 페이지의 안내 버튼으로 플러그인의 배터리 최적화 제외를 요청하세요; 감시는 스크립트가 실행되는 동안만 유효하며 스크립트가 종료되면 닫힙니다.
+- **Outlook.com / Hotmail 은 어떻게 연결하나요?** Microsoft 가 개인 계정의 기본 인증을 비활성화했으므로 OAuth 2.0 인가 흐름 (등록된 애플리케이션 필요) 으로 IMAP, POP, SMTP 범위의 액세스 토큰을 얻어 `accessToken` 으로 전달하고 `tokenProvider` 로 갱신해야 합니다; 프리셋은 비밀번호를 받지 않습니다.
+- **POP3 계정으로 무엇을 할 수 있나요?** `INBOX` 만 있고 `uid` 는 UIDL 문자열입니다; 목록, 읽기, 다운로드, 삭제, 폴링 감시가 가능하고, 플래그, 이동, 복사, 추가, 비우기, 폴더 관리는 `UNSUPPORTED_OPERATION` 을 반환합니다; 검색은 클라이언트에서 봉투 조건으로만 수행됩니다.
 
 ******
 
@@ -161,7 +227,7 @@ minimum host build: 5282 (6.8.0)
 
 _2026/09/19_
 
-- `힌트` P0 개발 미리보기: 저장소 뼈대, 로컬 서버 테스트를 갖춘 메일 코어, AutoJs6 플러그인 센터용 플러그인 식별 정보. Binder 계약, 스크립트 API, 설정 페이지는 ROADMAP.md의 단계에 따라 진행됩니다.
+- `힌트` 첫 정식 릴리스: 메일 코어, Binder 계약, 스크립트 API `mail`, 설정 페이지와 저장된 계정, 새 메일 감시, 그리고 TLS, 문자 집합, 제공자, 수명 주기, 적대적 입력, 비밀 감사, 성능 매트릭스가 증거와 함께 완료되었습니다 (ROADMAP.md P0 부터 P6). AutoJs6 6.8.0 (빌드 5282) 이상이 필요합니다.
 - `기능` 플러그인 식별자 `angus-mail` (엔진 `mail`), INFO 서비스, Wake Activity, 그리고 `org.autojs.plugin.MAIL` 서비스; 해당 `IMailPlugin` Binder 는 플러그인 정보, 기능, 공급자 및 저장된 계정 목록과 세션 봉투에 응답 (개별 작업은 P2 에서 구현)
 - `기능` Eclipse Angus Mail 기반 메일 코어: SSL 또는 STARTTLS를 쓰는 IMAP / POP3 / SMTP 세션 속성, 비밀번호와 XOAUTH2 인증, SMTP 전송과 IMAP 받은 편지함 나열을 로컬 GreenMail 서버에서 검증
 - `기능` 메일 코어 계정 계층 (로드맵 P2.1): Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina, Aliyun 프로바이더 프리셋, 프로토콜별 타임아웃, `tls.trustAll`, IMAP `ID` 명령, 마스킹된 `debug` 트레이스를 갖춘 계정 옵션; 세션은 지연 연결하고 유휴 연결을 끊으며 끊김 후 재연결; `session.test` 는 Binder 를 통해 엔드포인트별 기능과 왕복 시간을 반환
@@ -280,5 +346,6 @@ app/src/main/res/raw-*/plugin_instruction.md
 
 - AutoJs6 프로젝트: https://github.com/SuperMonster003/AutoJs6
 - AutoJs6 문서: https://docs.autojs6.com
+- 메일 모듈 문서: https://docs.autojs6.com/#/mail
 - Eclipse Angus Mail: https://eclipse-ee4j.github.io/angus-mail/
 - 서드파티 고지: https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/THIRD_PARTY_NOTICES.md
