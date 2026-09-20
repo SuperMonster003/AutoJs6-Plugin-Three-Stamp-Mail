@@ -54,7 +54,7 @@ def main():
     props = read_properties(os.path.join(PLUGIN, "mail-test-accounts.properties"))
     kind, letter = args.profile.rsplit("_", 1)
     address = props[f"{kind}_USER_NAME_{letter}"]
-    if kind in TOKEN_KINDS:
+    if kind in TOKEN_KINDS or f"{kind}_ACCESS_TOKEN_{letter}" in props:
         secret = props[f"{kind}_ACCESS_TOKEN_{letter}"]
         secret_argument = "mail.smoke.accessToken"
     else:

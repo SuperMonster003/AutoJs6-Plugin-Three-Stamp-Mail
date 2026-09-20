@@ -99,7 +99,8 @@ class ProviderMatrixProbe {
     private fun runProfile(profile: String, props: Properties, idleSeconds: Long, pollIntervalMs: Long, pop3Leg: Boolean, keep: Boolean) {
         val (kind, letter) = profile.split("_")
         val address = requireNotNull(props.getProperty("${kind}_USER_NAME_$letter")) { "no address for $profile" }
-        val tokenAuth = kind == "GMAIL"
+        // A profile with an access token key (GMAIL, or OUTLOOK / HOTMAIL from .python/outlook_oauth_login.py) uses XOAUTH2.
+        val tokenAuth = props.getProperty("${kind}_ACCESS_TOKEN_$letter") != null
         val secret = requireNotNull(props.getProperty(if (tokenAuth) "${kind}_ACCESS_TOKEN_$letter" else "${kind}_AUTH_CODE_$letter")) { "no secret for $profile" }
         val domain = address.substringAfterLast('@').lowercase()
         val preset = ProviderPresets.all.firstOrNull { domain in it.domains }
