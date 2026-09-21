@@ -3,6 +3,7 @@ package io.github.supermonster003.autojs6.plugin.angus.mail.core.session
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.AuthMethod
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccount
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.ProviderPreset
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.TlsMode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.MimeLeniency
 import java.util.Properties
@@ -14,6 +15,13 @@ import java.util.Properties
  * the session can abort a blocked operation from another thread (roadmap P2.5 `cancel`).
  */
 object MailSessionProperties {
+
+    /** POP3 hosts of Microsoft's service, for accounts entered without the `outlook` / `office365` preset. */
+    private val MICROSOFT_POP3_HOST_SUFFIXES = listOf(".office365.com", ".outlook.com")
+
+    /** True when the POP3 `AUTH XOAUTH2` has to go out in the two-line form ([ProviderPreset.pop3Xoauth2TwoLine] or a Microsoft host). */
+    fun pop3Xoauth2TwoLine(account: MailAccount, host: String): Boolean =
+        account.provider?.pop3Xoauth2TwoLine == true || MICROSOFT_POP3_HOST_SUFFIXES.any { host.lowercase().endsWith(it) }
 
     /** Provider name of [protocol] under [tls]; Angus Mail registers `imaps`, `pop3s`, and `smtps` as separate providers. */
     fun providerName(protocol: MailProtocol, tls: TlsMode): String =
@@ -80,6 +88,12 @@ object MailSessionProperties {
             when (account.auth) {
                 AuthMethod.PASSWORD -> put("$prefix.auth.mechanisms", "LOGIN PLAIN")
                 AuthMethod.XOAUTH2 -> put("$prefix.auth.mechanisms", "XOAUTH2")
+            }
+            if (protocol == MailProtocol.POP3 && account.auth == AuthMethod.XOAUTH2 && pop3Xoauth2TwoLine(account, endpoint.host)) {
+                // Outlook.com answers the one-line `AUTH XOAUTH2 <base64>` with `-ERR Protocol error`
+                // (real account, 2026-09-21); with this switch Angus sends the bare command and the
+                // response after the server's `+` continuation, the form Microsoft documents.
+                put("$prefix.auth.xoauth2.two.line.authentication.format", "true")
             }
             if (protocol == MailProtocol.IMAP) {
                 // Fetch bodies in chunks (one FETCH per chunk, so the chunk size bounds both the memory a

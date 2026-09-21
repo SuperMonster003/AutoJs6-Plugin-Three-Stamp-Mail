@@ -4,8 +4,11 @@ the in-app flow is roadmap P9).
 
 Usage:
   py .python/outlook_oauth_login.py --client-id <application (client) id> [--tenant consumers|common|<tenant id>]
-                                    [--out build/outlook-token.properties] [--suffix A] [--timeout 300]
-  py .python/outlook_oauth_login.py --refresh [--out build/outlook-token.properties] [--suffix A]
+                                    [--out build/outlook-token.properties] [--suffix HOTMAIL_B] [--timeout 300]
+  py .python/outlook_oauth_login.py --refresh [--out build/outlook-token.properties] [--suffix HOTMAIL_B]
+
+`--suffix` names the account of mail-test-accounts.properties the token belongs to, in any of three forms:
+the profile (`HOTMAIL_B`, `OUTLOOK_A`), the address key (`HOTMAIL_USER_NAME_B`) or a bare letter (`A` = `OUTLOOK_A`).
 
 One-time registration (Microsoft Entra admin center, https://entra.microsoft.com, any Microsoft account):
   1. Identity > Applications > App registrations > New registration. Name: anything (for example
@@ -19,19 +22,26 @@ One-time registration (Microsoft Entra admin center, https://entra.microsoft.com
 
 The script asks the browser for the delegated Exchange scopes `IMAP.AccessAsUser.All`, `POP.AccessAsUser.All`
 and `SMTP.Send` plus `offline_access`, catches the redirect on a loopback port, exchanges the code with PKCE,
-and writes the tokens to the (git-ignored) output file as
-`OUTLOOK_ACCESS_TOKEN_<suffix>`, `OUTLOOK_REFRESH_TOKEN_<suffix>`, `OUTLOOK_TOKEN_EXPIRES_AT_<suffix>`
-(Unix seconds), `OUTLOOK_CLIENT_ID_<suffix>` and `OUTLOOK_TENANT_<suffix>`. `--refresh` reads the refresh token
-and the client id back from that file and replaces the access token (Outlook access tokens last about an
-hour, refresh tokens about 90 days of inactivity). Nothing secret is printed.
+and writes the tokens to the (git-ignored) output file under the profile's keys, for example
+`HOTMAIL_ACCESS_TOKEN_B`, `HOTMAIL_REFRESH_TOKEN_B`, `HOTMAIL_TOKEN_EXPIRES_AT_B` (Unix seconds),
+`HOTMAIL_CLIENT_ID_B` and `HOTMAIL_TENANT_B`. The provider matrix probe and the device runners overlay that
+file on mail-test-accounts.properties, so a profile with an `<KIND>_ACCESS_TOKEN_<letter>` key runs with
+XOAUTH2. `--refresh` reads the refresh token and the client id back from that file and replaces the access
+token (Outlook access tokens last about an hour, refresh tokens about 90 days of inactivity). After
+storing, the script authenticates once against `outlook.office365.com` IMAP with the profile's address
+from mail-test-accounts.properties (`<KIND>_USER_NAME_<letter>`) and logs out again, so a token obtained
+for a different account in the browser's account picker is reported at once (`AUTHENTICATE failed`, or
+`User is authenticated but not connected` for another Microsoft account). Nothing secret is printed.
 """
 import argparse
 import base64
 import hashlib
 import http.server
+import imaplib
 import io
 import json
 import os
+import re
 import secrets
 import sys
 import time
@@ -47,6 +57,31 @@ SCOPES = [
     "offline_access",
 ]
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FIELDS = ("ACCESS_TOKEN", "REFRESH_TOKEN", "TOKEN_EXPIRES_AT", "CLIENT_ID", "TENANT")
+
+
+def profile_of(suffix):
+    """HOTMAIL_B / HOTMAIL_USER_NAME_B / A -> (kind, letter); the bare letter means the OUTLOOK_<letter> profile."""
+    match = re.fullmatch(r"([A-Z][A-Z0-9]*?)(?:_USER_NAME)?_([A-Z])", suffix.upper())
+    if match:
+        return match.group(1), match.group(2)
+    if re.fullmatch(r"[A-Z]", suffix.upper()):
+        return "OUTLOOK", suffix.upper()
+    raise SystemExit(f"--suffix {suffix!r}: expected a profile such as HOTMAIL_B, an address key such as HOTMAIL_USER_NAME_B, or a letter")
+
+
+def key(kind, field, letter):
+    return f"{kind}_{field}_{letter}"
+
+
+def migrate(props):
+    """Keys written by the first version of this script with `--suffix <KIND>_USER_NAME_<L>` move to the profile keys."""
+    for name in list(props):
+        match = re.fullmatch(r"OUTLOOK_(" + "|".join(FIELDS) + r")_([A-Z][A-Z0-9]*)_USER_NAME_([A-Z])", name)
+        if match:
+            field, kind, letter = match.groups()
+            props.setdefault(key(kind, field, letter), props.pop(name))
+    return props
 
 
 def authority(tenant):
@@ -91,23 +126,51 @@ def token_request(tenant, form):
 
 
 def store(args, tenant, client_id, answer, props):
-    suffix = args.suffix
+    kind, letter = profile_of(args.suffix)
     expires_at = int(time.time()) + int(answer.get("expires_in", 0))
-    props[f"OUTLOOK_ACCESS_TOKEN_{suffix}"] = answer["access_token"]
+    props[key(kind, "ACCESS_TOKEN", letter)] = answer["access_token"]
     if answer.get("refresh_token"):
-        props[f"OUTLOOK_REFRESH_TOKEN_{suffix}"] = answer["refresh_token"]
-    props[f"OUTLOOK_TOKEN_EXPIRES_AT_{suffix}"] = str(expires_at)
-    props[f"OUTLOOK_CLIENT_ID_{suffix}"] = client_id
-    props[f"OUTLOOK_TENANT_{suffix}"] = tenant
+        props[key(kind, "REFRESH_TOKEN", letter)] = answer["refresh_token"]
+    props[key(kind, "TOKEN_EXPIRES_AT", letter)] = str(expires_at)
+    props[key(kind, "CLIENT_ID", letter)] = client_id
+    props[key(kind, "TENANT", letter)] = tenant
     write_properties(args.out, props)
     granted = answer.get("scope", "").split()
     missing = [s for s in SCOPES if s != "offline_access" and s not in granted]
-    print(f"tokens written to {args.out} (suffix {suffix}); access token expires in {answer.get('expires_in')} s "
+    print(f"tokens written to {args.out} (profile {kind}_{letter}); access token expires in {answer.get('expires_in')} s "
           f"({time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(expires_at))}); refresh token: "
           f"{'yes' if answer.get('refresh_token') else 'no'}")
     print("granted scopes:", " ".join(granted) or "(none reported)")
     if missing:
         print("WARNING: not granted:", " ".join(missing))
+    verify_identity(kind, letter, answer["access_token"])
+
+
+def verify_identity(kind, letter, access_token):
+    """One IMAP XOAUTH2 login with the profile's address: the only way to learn whose mailbox an opaque MSA token opens."""
+    accounts = read_properties(os.path.join(REPO, "mail-test-accounts.properties"))
+    address = accounts.get(key(kind, "USER_NAME", letter))
+    if not address:
+        print(f"identity check skipped: no {key(kind, 'USER_NAME', letter)} in mail-test-accounts.properties")
+        return
+    domain = address.rsplit("@", 1)[-1]
+    try:
+        imap = imaplib.IMAP4_SSL("outlook.office365.com", 993, timeout=30)
+        try:
+            imap.authenticate("XOAUTH2", lambda _: f"user={address}\x01auth=Bearer {access_token}\x01\x01".encode("utf-8"))
+            print(f"identity check: the token opens the mailbox of {kind}_{letter} (***@{domain})")
+        finally:
+            try:
+                imap.logout()
+            except Exception:
+                pass
+    except imaplib.IMAP4.error as error:
+        text = str(error).replace(access_token, "<token>").replace(address, "***@" + domain)
+        print(f"WARNING: identity check failed for {kind}_{letter} (***@{domain}): {text}")
+        print("         the browser's account picker probably signed in another account; run the login again with the")
+        print("         --suffix of the account you signed in with, or sign in with this one (prompt=select_account).")
+    except OSError as error:
+        print(f"identity check skipped: IMAP connection failed ({type(error).__name__})")
 
 
 class RedirectHandler(http.server.BaseHTTPRequestHandler):
@@ -128,6 +191,7 @@ class RedirectHandler(http.server.BaseHTTPRequestHandler):
 def login(args):
     if not args.client_id:
         raise SystemExit("--client-id is required (the Application (client) ID of the Entra app registration)")
+    profile_of(args.suffix)
     verifier = base64.urlsafe_b64encode(secrets.token_bytes(48)).rstrip(b"=").decode("ascii")
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest()).rstrip(b"=").decode("ascii")
     state = secrets.token_urlsafe(24)
@@ -166,17 +230,17 @@ def login(args):
         "code_verifier": verifier,
         "scope": " ".join(SCOPES),
     })
-    store(args, args.tenant, args.client_id, answer, read_properties(args.out))
+    store(args, args.tenant, args.client_id, answer, migrate(read_properties(args.out)))
 
 
 def refresh(args):
-    props = read_properties(args.out)
-    suffix = args.suffix
-    refresh_token = props.get(f"OUTLOOK_REFRESH_TOKEN_{suffix}")
-    client_id = args.client_id or props.get(f"OUTLOOK_CLIENT_ID_{suffix}")
-    tenant = props.get(f"OUTLOOK_TENANT_{suffix}") or args.tenant
+    props = migrate(read_properties(args.out))
+    kind, letter = profile_of(args.suffix)
+    refresh_token = props.get(key(kind, "REFRESH_TOKEN", letter))
+    client_id = args.client_id or props.get(key(kind, "CLIENT_ID", letter))
+    tenant = props.get(key(kind, "TENANT", letter)) or args.tenant
     if not refresh_token or not client_id:
-        raise SystemExit(f"{args.out} has no refresh token / client id for suffix {suffix}; run the login first")
+        raise SystemExit(f"{args.out} has no refresh token / client id for profile {kind}_{letter}; run the login first")
     answer = token_request(tenant, {
         "client_id": client_id,
         "grant_type": "refresh_token",
@@ -191,7 +255,7 @@ def main():
     parser.add_argument("--client-id", default=None, help="Application (client) ID of the public client app registration")
     parser.add_argument("--tenant", default="consumers", help="consumers (personal accounts, default), common, or a tenant id")
     parser.add_argument("--out", default=os.path.join(REPO, "build", "outlook-token.properties"), help="properties file for the tokens (git-ignored build/ by default)")
-    parser.add_argument("--suffix", default="A", help="key suffix, matching the OUTLOOK_USER_NAME_<suffix> account")
+    parser.add_argument("--suffix", default="A", help="the account the token belongs to: a profile (HOTMAIL_B), its address key (HOTMAIL_USER_NAME_B) or a letter (A = OUTLOOK_A)")
     parser.add_argument("--timeout", type=int, default=300, help="seconds to wait for the browser redirect")
     parser.add_argument("--refresh", action="store_true", help="exchange the stored refresh token for a new access token")
     args = parser.parse_args()

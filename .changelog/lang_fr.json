@@ -5,6 +5,15 @@
   "changelog_label_improvement": "Amélioration",
   "changelog_label_dependency": "Dépendance",
   "$data": {
+    "v1.0.1": {
+      "released_date": "2026/09/21",
+      "fix": [
+        "POP3 d'Outlook.com avec un jeton OAuth 2.0 (matrice des fournisseurs de la feuille de route mail P6, 2026-09-21) : le serveur répond au `AUTH XOAUTH2 <base64>` sur une ligne qu'Angus Mail envoie par défaut par `-ERR Protocol error. Connection is closed.` et coupe la connexion, si bien qu'un compte POP3 sur le préréglage `outlook` échouait avec `AUTH_FAILED` ; les préréglages gagnent `pop3Xoauth2TwoLine` (catalogue version 3, true pour `outlook` et `office365`) et le coeur mail envoie désormais la commande seule puis la réponse base64 après la continuation `+` du serveur pour ces préréglages et pour tout hôte POP3 Microsoft saisi sans préréglage (`Pop3OAuthScriptedTest`, 5 cas ; vérifié avec le compte réel sur la JVM et sur un appareil API 33)"
+      ],
+      "improvement": [
+        "Colonne Outlook.com de la matrice des fournisseurs (feuille de route mail P6) et lignes appareil de P5, exécutées avec un jeton de l'inscription de client public Entra du mainteneur sur un compte personnel : test de session, dossiers (rôles d'après les noms conventionnels, sans SPECIAL-USE), envoi (`sentCopy = server`, Message-ID réécrit par le serveur), listage (visible après 7 s environ), recherches serveur (toutes les clés aboutissent ; un sujet en chinois est trouvé mais le serveur met des minutes sur une boîte de 2300 messages), corps, pièce jointe, indicateurs (les mots-clés personnalisés ne sont pas conservés), création de dossier, `MOVE`, surveillance (IDLE notifie en 10 s environ après la soumission, le plus rapide des sept fournisseurs), POP3 (UIDL de 5 caractères, le message tout juste envoyé est visible) et nettoyage (copies envoyées adressables par UID), tout passe ; sur un Redmi (API 33) les scénarios baseline, plugin tué et Wi-Fi coupé arrivent en 9 à 14 s avec les mêmes séquences d'événements que Gmail ; les notes des préréglages, le README et les fichiers de preuve consignent les différences, dont le refus `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` que Microsoft renvoie aux boîtes personnelles récentes"
+      ]
+    },
     "v1.0.0": {
       "released_date": "2026/09/19",
       "hint": [

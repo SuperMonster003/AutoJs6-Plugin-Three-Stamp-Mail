@@ -5,6 +5,15 @@
   "changelog_label_improvement": "优化",
   "changelog_label_dependency": "依赖",
   "$data": {
+    "v1.0.1": {
+      "released_date": "2026/09/21",
+      "fix": [
+        "Outlook.com 的 POP3 以 OAuth 2.0 令牌登录 (邮件路线图 P6 服务商矩阵, 2026-09-21): 服务器对 Angus Mail 默认发送的单行 `AUTH XOAUTH2 <base64>` 答 `-ERR Protocol error. Connection is closed.` 并断开连接, `outlook` 预设的 POP3 账户因此以 `AUTH_FAILED` 失败; 服务商预设新增 `pop3Xoauth2TwoLine` (目录版本 3, `outlook` 与 `office365` 为 true), 邮件核心对这两个预设以及未用预设而填写的微软 POP3 主机改为先发裸命令, 收到服务器的 `+` 续行后再发 base64 响应 (`Pop3OAuthScriptedTest` 5 例; 已在真实账户上经 JVM 与 API 33 真机核实)"
+      ],
+      "improvement": [
+        "服务商矩阵的 Outlook.com 列 (邮件路线图 P6) 与 P5 设备行, 以维护者 Entra 公共客户端的令牌在一个个人账户上跑通: 会话测试, 文件夹 (角色来自常规名称, 无 SPECIAL-USE), 发信 (`sentCopy = server`, Message-ID 被服务器改写), 列表 (约 7 s 可见), 服务器搜索 (各键均命中; 中文主题能正确命中但服务器在 2300 封的收件箱上要花数分钟), 正文, 附件, 标记 (自定义关键字不存储), 建夹, `MOVE`, 监听 (IDLE 在提交后约 10 s 内推送, 七家中最快), POP3 (UIDL 5 字符, 刚发的邮件在视图中) 与清理 (已发送副本可按 UID 寻址) 全部通过; Redmi (API 33) 上 baseline / 杀插件 / 关 Wi-Fi 三个监听场景 9 到 14 s 到达, 事件顺序与 Gmail 一致; 预设 notes, README 与证据文件记录了差异, 包括微软对较新个人邮箱给出的 `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` 拒绝"
+      ]
+    },
     "v1.0.0": {
       "released_date": "2026/09/19",
       "hint": [

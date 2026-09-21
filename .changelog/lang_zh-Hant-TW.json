@@ -5,6 +5,15 @@
   "changelog_label_improvement": "優化",
   "changelog_label_dependency": "相依性",
   "$data": {
+    "v1.0.1": {
+      "released_date": "2026/09/21",
+      "fix": [
+        "Outlook.com 的 POP3 以 OAuth 2.0 權杖登入 (郵件路線圖 P6 服務商矩陣, 2026-09-21): 伺服器對 Angus Mail 預設傳送的單行 `AUTH XOAUTH2 <base64>` 答 `-ERR Protocol error. Connection is closed.` 並中斷連線, `outlook` 預設的 POP3 帳號因此以 `AUTH_FAILED` 失敗; 服務商預設新增 `pop3Xoauth2TwoLine` (目錄版本 3, `outlook` 與 `office365` 為 true), 郵件核心對這兩個預設以及未用預設而填寫的微軟 POP3 主機改為先傳送裸命令, 收到伺服器的 `+` 續行後再傳送 base64 回應 (`Pop3OAuthScriptedTest` 5 例; 已在真實帳號上經 JVM 與 API 33 真機核實)"
+      ],
+      "improvement": [
+        "服務商矩陣的 Outlook.com 欄 (郵件路線圖 P6) 與 P5 裝置列, 以維護者 Entra 公用用戶端的權杖在一個個人帳號上跑通: 工作階段測試, 資料夾 (角色來自常規名稱, 無 SPECIAL-USE), 傳送 (`sentCopy = server`, Message-ID 被伺服器改寫), 列表 (約 7 s 可見), 伺服器搜尋 (各鍵均命中; 中文主旨能正確命中但伺服器在 2300 封的收件匣上要花數分鐘), 內文, 附件, 標記 (自訂關鍵字不儲存), 建立資料夾, `MOVE`, 監聽 (IDLE 在提交後約 10 s 內推送, 七家中最快), POP3 (UIDL 5 字元, 剛傳送的郵件在檢視中) 與清理 (已傳送副本可按 UID 定址) 全部通過; Redmi (API 33) 上 baseline / 殺外掛 / 關 Wi-Fi 三個監聽情境 9 到 14 s 到達, 事件順序與 Gmail 一致; 預設 notes, README 與證據檔案記錄了差異, 包括微軟對較新個人信箱給出的 `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` 拒絕"
+      ]
+    },
     "v1.0.0": {
       "released_date": "2026/09/19",
       "hint": [

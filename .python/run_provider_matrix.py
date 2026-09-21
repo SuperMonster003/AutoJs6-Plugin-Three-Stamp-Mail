@@ -2,6 +2,10 @@
 
 Usage: python .python/run_provider_matrix.py QQ_A[,NETEASE_A,...] [--idle-seconds 120] [--poll-ms 30000] [--no-pop3] [--keep] [--ops folders,cleanup] [--diag 'LIST "" "*";STATUS X (MESSAGES)'] [--no-preset]
 
+A profile whose `<KIND>_ACCESS_TOKEN_<letter>` key exists (GMAIL_A in the accounts file, or OUTLOOK_A / HOTMAIL_B
+written to build/outlook-token.properties by .python/outlook_oauth_login.py) runs with XOAUTH2; the probe and this
+runner read the token file as an overlay of the accounts file.
+
 --no-preset spells the preset's hosts out and sends no `provider`, so the preset's authentication restriction is
 bypassed and the server's own refusal is what the mail core reports (Outlook.com with an app password).
 
@@ -26,13 +30,17 @@ diag = opts[opts.index('--diag') + 1] if '--diag' in opts else ''
 no_preset = '--no-preset' in opts
 
 props = {}
-for line in open('mail-test-accounts.properties', encoding='utf-8'):
-    line = line.strip()
-    if not line or line[0] in '#!':
+# the access tokens of .python/outlook_oauth_login.py overlay the accounts (the probe reads both files the same way)
+for source in ['mail-test-accounts.properties', 'build/outlook-token.properties']:
+    if not os.path.exists(source):
         continue
-    m = re.match(r'([^=:\s]+)\s*[=:]\s*(.*)', line)
-    if m:
-        props[m.group(1)] = m.group(2).strip()
+    for line in open(source, encoding='utf-8'):
+        line = line.strip()
+        if not line or line[0] in '#!':
+            continue
+        m = re.match(r'([^=:\s]+)\s*[=:]\s*(.*)', line)
+        if m:
+            props[m.group(1)] = m.group(2).strip()
 secrets = [v for k, v in props.items() if ('AUTH_CODE' in k or 'TOKEN' in k) and v]
 addresses = [v for k, v in props.items() if 'USER_NAME' in k and v]
 

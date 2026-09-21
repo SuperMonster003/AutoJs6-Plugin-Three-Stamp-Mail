@@ -65,6 +65,8 @@ class ProviderMatrixProbe {
         val settings = File("../build/p6/matrix.properties")
         assumeTrue("no real accounts / matrix settings", accounts.isFile && settings.isFile)
         val props = Properties().apply { accounts.inputStream().use { load(it) } }
+        // Access tokens obtained on the PC by .python/outlook_oauth_login.py (`<KIND>_ACCESS_TOKEN_<letter>` keys) overlay the accounts.
+        File("../build/outlook-token.properties").takeIf { it.isFile }?.inputStream()?.use { props.load(it) }
         val config = Properties().apply { settings.reader(Charsets.UTF_8).use { load(it) } }
         diag = config.getProperty("diag")?.split(';')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
         val profiles = config.getProperty("profiles", "QQ_A").split(',').map { it.trim() }.filter { it.isNotEmpty() }

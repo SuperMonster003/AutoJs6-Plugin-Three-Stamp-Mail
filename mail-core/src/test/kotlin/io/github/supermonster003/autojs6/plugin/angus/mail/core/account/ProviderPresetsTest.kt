@@ -20,7 +20,7 @@ class ProviderPresetsTest {
 
     @Test
     fun catalogMatchesAppendixC() {
-        assertEquals(2, ProviderPresets.version)
+        assertEquals(3, ProviderPresets.version)
         assertEquals(listOf("gmail", "outlook", "office365", "qq", "163", "126", "icloud", "yahoo", "sina", "aliyun"), ProviderPresets.ids)
     }
 
@@ -54,7 +54,7 @@ class ProviderPresetsTest {
         assertFalse(json.contains("@"))
         assertFalse(json.contains("password\":\""))
         val document = Json.parseToJsonElement(json).jsonObject
-        assertEquals(2, document["version"]!!.jsonPrimitive.content.toInt())
+        assertEquals(3, document["version"]!!.jsonPrimitive.content.toInt())
         assertEquals(ProviderPresets.all.size, document["providers"]!!.jsonArray.size)
         assertEquals(ProviderPresets.catalog, ProviderPresets.parse(json))
     }
@@ -96,6 +96,8 @@ class ProviderPresetsTest {
         listOf("qq", "sina").forEach { assertFalse("$it accepts IDLE but pushes nothing (real account, 2026-09-19)", ProviderPresets.require(it).idlePush) }
         listOf("163", "126").forEach { assertFalse("$it has no IDLE (real account, 2026-09-19)", ProviderPresets.require(it).idlePush) }
         listOf("gmail", "outlook", "office365", "icloud", "yahoo", "aliyun").forEach { assertTrue("$it: idlePush stays on", ProviderPresets.require(it).idlePush) }
+        listOf("outlook", "office365").forEach { assertTrue("$it takes POP3 AUTH XOAUTH2 only in the two-line form (real account, 2026-09-21)", ProviderPresets.require(it).pop3Xoauth2TwoLine) }
+        listOf("gmail", "qq", "163", "126", "icloud", "yahoo", "sina", "aliyun").forEach { assertFalse("$it: one-line POP3 XOAUTH2", ProviderPresets.require(it).pop3Xoauth2TwoLine) }
         assertEquals("imap.126.com", mail126.imap!!.host)
         assertEquals("imap.163.com", mail163.imap!!.host)
         assertNull(ProviderPresets.require("icloud").pop3)

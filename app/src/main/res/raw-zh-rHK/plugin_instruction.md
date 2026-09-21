@@ -1,6 +1,6 @@
 Angus Mail 為 AutoJs6 腳本提供全域物件 `mail`, 用於傳送郵件, 列出和搜尋郵箱, 讀取內文, 下載附件, 管理標記與資料夾, 以及監聽資料夾中的新郵件. 它基於 Jakarta Mail 的參考實作 [Eclipse Angus Mail](https://eclipse-ee4j.github.io/angus-mail/) 2.0.5, 透過 TLS 使用 IMAP, POP3 和 SMTP 協定.
 
-版本 1.0.0 是首個正式版本: 路線圖 P0 至 P6 的全部條目 (郵件核心, Binder 契約, 腳本 API, 設定頁與別名帳戶, 新郵件監聽, 以及 TLS, 字元集, 服務商, 生命週期, 敵意輸入, 秘密審計與效能矩陣) 均已完成並附有證據, 見 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). 需要 AutoJs6 6.8.0 (組建 5282) 或更高版本; 腳本 API 的完整參考見 [AutoJs6 文件](https://docs.autojs6.com/#/mail).
+版本 1.0.1 是首個正式版本: 路線圖 P0 至 P6 的全部條目 (郵件核心, Binder 契約, 腳本 API, 設定頁與別名帳戶, 新郵件監聽, 以及 TLS, 字元集, 服務商, 生命週期, 敵意輸入, 秘密審計與效能矩陣) 均已完成並附有證據, 見 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). 需要 AutoJs6 6.8.0 (組建 5282) 或更高版本; 腳本 API 的完整參考見 [AutoJs6 文件](https://docs.autojs6.com/#/mail).
 
 ### 使用方法
 

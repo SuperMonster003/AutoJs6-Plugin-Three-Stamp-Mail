@@ -5,6 +5,15 @@
   "changelog_label_improvement": "개선",
   "changelog_label_dependency": "의존성",
   "$data": {
+    "v1.0.1": {
+      "released_date": "2026/09/21",
+      "fix": [
+        "OAuth 2.0 토큰을 쓰는 Outlook.com 의 POP3 (메일 로드맵 P6 제공자 매트릭스, 2026-09-21): 서버가 Angus Mail 이 기본으로 보내는 한 줄 형식의 `AUTH XOAUTH2 <base64>` 에 `-ERR Protocol error. Connection is closed.` 로 답하고 연결을 끊어 `outlook` 프리셋의 POP3 계정이 `AUTH_FAILED` 로 실패했습니다; 제공자 프리셋에 `pop3Xoauth2TwoLine` (카탈로그 버전 3, `outlook` 과 `office365` 에서 true) 을 추가하고, 메일 코어는 이 프리셋들과 프리셋 없이 입력된 Microsoft POP3 호스트에 대해 명령만 먼저 보낸 뒤 서버의 `+` 계속 응답 후에 base64 응답을 보냅니다 (`Pop3OAuthScriptedTest` 5 건; 실제 계정으로 JVM 과 API 33 실기기에서 검증)"
+      ],
+      "improvement": [
+        "제공자 매트릭스의 Outlook.com 열 (메일 로드맵 P6) 과 P5 기기 행을 관리자의 Entra 공용 클라이언트 등록으로 얻은 토큰으로 개인 계정 하나에서 실행: 세션 테스트, 폴더 (역할은 관례적 이름에서, SPECIAL-USE 없음), 보내기 (`sentCopy = server`, Message-ID 는 서버가 다시 씀), 목록 (약 7 초 후 표시), 서버 검색 (모든 키 적중; 중국어 제목도 정확히 적중하지만 2300 통의 받은 편지함에서 서버가 수 분 소요), 본문, 첨부, 플래그 (사용자 키워드는 저장되지 않음), 폴더 생성, `MOVE`, 감시 (IDLE 이 제출 후 약 10 초 안에 푸시, 일곱 제공자 중 가장 빠름), POP3 (5 자 UIDL, 방금 보낸 메일도 표시) 와 정리 (보낸 사본을 UID 로 지정 가능) 모두 통과; Redmi (API 33) 에서 baseline / 플러그인 강제 종료 / Wi-Fi 끄기 세 시나리오가 9 에서 14 초에 도착하고 이벤트 순서는 Gmail 과 같음; 프리셋 notes, README, 증거 파일에 차이를 기록 (Microsoft 가 최근 개인 사서함에 주는 `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` 거부 포함)"
+      ]
+    },
     "v1.0.0": {
       "released_date": "2026/09/19",
       "hint": [

@@ -42,6 +42,13 @@ data class ProviderPreset(
      * watch in mode `auto` then polls from the start instead of idling.
      */
     val idlePush: Boolean = true,
+    /**
+     * True when the POP3 server takes `AUTH XOAUTH2` only in the two-line form (the bare command,
+     * then the base64 response after the `+` continuation): Outlook.com and Microsoft 365 answer
+     * the one-line form with `-ERR Protocol error` (verified with a real account on 2026-09-21,
+     * roadmap P6 provider matrix). Sets Angus's `two.line.authentication.format` switch.
+     */
+    val pop3Xoauth2TwoLine: Boolean = false,
     /** Provider help page describing the client settings. */
     val docsUrl: String,
     @SerialName("notes")

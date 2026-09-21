@@ -6,7 +6,8 @@ The plugin side landed as builds 33 (`IdleWatcher`), 34 (`PollWatcher`) and 35
 (`MailWatchBinder`), the host side as `ade3bd21c` (code and tests) and `d37b764e3` (docs); this
 document and the matrix tooling are build 36, which also carries the provider finding below
 (`idlePush`). The Gmail rows were added on 2026-09-20 (build 46) once the maintainer had renewed
-the access token.
+the access token, the Outlook.com rows on 2026-09-21 (build 56) with a token from the maintainer's
+Entra public-client registration (`.python/outlook_oauth_login.py`).
 
 Real accounts come only from the git-ignored `mail-test-accounts.properties`: the watched
 account reaches a device as instrumentation arguments of the host smoke test (as in P3 / P4),
@@ -20,7 +21,7 @@ for the secret afterwards ("report leak check: clean" in each run).
 | emulator-5554 | AVD_API_24 (x86) | 7.0 (API 24) | oldest supported API; baseline, plugin kill, network loss (no Wi-Fi on the AVD: `net-off`), forced Doze |
 | BH900ASK9E | Sony G8441 | 9 (API 28) | phone without SIM: baseline, plugin kill, Wi-Fi off 30 s, forced Doze 15 min |
 | QV770340J7 | Sony XQ-DQ72 | 13 (API 33) | the only phone with a SIM: Wi-Fi to cellular |
-| bek749scrwv4wo8h | Redmi 22120RN86C | 13 (API 33) | 163 (no IDLE on the server, poll path) and the QQ `mode: 'idle'` control run |
+| bek749scrwv4wo8h | Redmi 22120RN86C | 13 (API 33) | 163 (no IDLE on the server, poll path), the QQ `mode: 'idle'` control run, and the Gmail and Outlook.com IDLE rows (2026-09-20 / 21) |
 
 Plugin build 36 (this commit) installed with `adb install -r -t` on all four; the host debug
 APK of `ade3bd21c` is installed by the connected test itself (the AGP test engine installs
@@ -42,6 +43,8 @@ trace to `build/p5/probe-jvm.log`):
 | 163 (`imap.163.com`) | no `IDLE` | `BAD command not support` | n/a | poll path verified in the matrix below | preset `idlePush: false` (saves the failed `IDLE` attempt; the runtime fallback `IdleUnavailable -> PollWatcher` stays for unknown servers) |
 | 126 (`imap.126.com`) | no `IDLE` | `BAD command not support` | n/a | same policy as 163 | preset `idlePush: false` |
 | Gmail (`imap.gmail.com`, 2026-09-20) | advertises `IDLE` | `+ idling` | yes, on a cadence of about 30 s: from the PC (`build/p6/gmail_idle_probe.py`, `imaplib` with XOAUTH2) the untagged `EXISTS` for a message sent from the QQ B account came 30.0 s after the SMTP submission and for a message the account sent to itself 60.1 s after it, while a fresh `messages.list` right after a send saw the message within 1.6 s (P6 matrix); the watch matrix below saw 30.8 to 49.3 s | immediate to a new `EXAMINE` (1.6 s in the P6 matrix `list` row) | preset `idlePush: true` stands: `mode: auto` idles, the plugin's own IDLE connection reports the message when Gmail gets round to it; a 60 s poll would be no faster |
+
+| Outlook.com (`outlook.office365.com`, 2026-09-21, XOAUTH2) | advertises `IDLE` | `+ idling` | yes, within seconds: on the Redmi (plugin release build 54, host 5282) the `message` event came 8.9 / 9.4 / 9.0 / 10.8 / 10.3 / 13.8 s after the PC's SMTP submission from the QQ B account in the three scenarios below | not probed separately (the push is faster than a poll would be) | preset `idlePush: true`: `mode: auto` idles from the start |
 
 Decision D38 in the roadmap records the preset field `ProviderPreset.idlePush` (default true;
 `providers.json` version 2) and `Watchers.open`: `mode: auto` on an IMAP account whose preset
@@ -165,14 +168,18 @@ latency is Gmail's own notification cadence (about 30 s, see the provider table 
 | baseline | Redmi API 33 | Gmail (XOAUTH2) | auto -> idle | 35.6 s | none | 30.8 s | message #1, message #2, close(stopped) | yes |
 | kill-plugin | Redmi API 33 | Gmail (XOAUTH2) | auto -> idle | 34.8 s | `am force-stop` of the plugin: re-watched with generation 2 about 1.7 s after the kill, still in IDLE mode | 34.3 s (generation 2) | message #1, error(PLUGIN_UNAVAILABLE), resync(rewatched), message #2, close(stopped) | yes |
 | wifi-off (30 s) | Redmi API 33 | Gmail (XOAUTH2) | auto -> idle | 34.6 s | the IDLE connection is reported lost, five reconnects fail during the outage (`error(CONNECT_FAILED)` x6 in all), reconnect on the network callback | 49.3 s | message #1, error(CONNECT_FAILED) x6, message #2, close(stopped) | yes |
+| baseline (2026-09-21) | Redmi API 33 | Outlook.com (XOAUTH2, Hotmail account) | auto -> idle | 8.9 s | none | 9.4 s | message #1, message #2, close(stopped) | yes |
+| kill-plugin (2026-09-21) | Redmi API 33 | Outlook.com (XOAUTH2) | auto -> idle | 9.0 s | `am force-stop` of the plugin: re-watched with generation 2 about 1.7 s after the kill, still in IDLE mode | 10.8 s (generation 2) | message #1, error(PLUGIN_UNAVAILABLE), resync(rewatched), message #2, close(stopped) | yes |
+| wifi-off (30 s, 2026-09-21) | Redmi API 33 | Outlook.com (XOAUTH2) | auto -> idle | 10.3 s | the IDLE connection is reported lost, five reconnects fail during the outage (`error(CONNECT_FAILED)` x6 in all), reconnect on the network callback | 13.8 s | message #1, error(CONNECT_FAILED) x6, message #2, close(stopped) | yes |
 
 Recovery summary: a plugin kill is healed by the host in under 2 s (new generation, one
 `error` and one `resync`, no duplicate message); a network loss produces one `error` per failed
 reconnect and heals within seconds of the network's return through the plugin's default-network
 callback; a Wi-Fi to cellular switch costs one `error`; Doze is the only disturbance that delays
-mail by minutes, see below. The IDLE path behaves the same way on Gmail: the same events in the
-same order, the re-watch after a plugin kill keeps IDLE, and the arrival after the outage is the
-reconnect plus Gmail's next notification.
+mail by minutes, see below. The IDLE path behaves the same way on Gmail and Outlook.com: the same
+events in the same order, the re-watch after a plugin kill keeps IDLE, and the arrival after the
+outage is the reconnect plus the server's next notification (about 30 s on Gmail, seconds on
+Outlook.com, whose IDLE push is the fastest of the seven providers measured).
 
 ## Doze
 

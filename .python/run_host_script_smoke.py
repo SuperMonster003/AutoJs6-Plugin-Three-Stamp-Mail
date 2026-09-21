@@ -2,9 +2,10 @@
 
 Usage: python .python/run_host_script_smoke.py <PROFILE> <serial> [--script docs/smoke/x.js] [--log <name>]
 
-PROFILE is QQ_A / QQ_B / NETEASE_A / NETEASE_B (password accounts) or GMAIL_A (access token).
-Credentials come from the git-ignored mail-test-accounts.properties next to this repository's
-root and reach the device only as instrumentation arguments of the host tests in
+PROFILE is QQ_A / QQ_B / NETEASE_A / NETEASE_B (password accounts), GMAIL_A (access token) or any
+profile whose access token .python/outlook_oauth_login.py wrote to build/outlook-token.properties
+(HOTMAIL_B, OUTLOOK_A). Credentials come from the git-ignored mail-test-accounts.properties next to
+this repository's root (plus that token file) and reach the device only as instrumentation arguments of the host tests in
 `org.autojs.autojs.runtime.api.augment.mail.MailScriptSmokeDeviceTest` (host repository
 `../AutoJs6`): `#realProviderConnectAndTest` without `--script`, `#realProviderScript` with
 `--script`, which first pushes the script to /data/local/tmp/autojs6-mail-smoke/ on the device.
@@ -25,8 +26,10 @@ PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOST = os.path.join(os.path.dirname(PLUGIN), "AutoJs6")
 TEST_CLASS = "org.autojs.autojs.runtime.api.augment.mail.MailScriptSmokeDeviceTest"
 DEVICE_DIR = "/data/local/tmp/autojs6-mail-smoke"
-PROVIDERS = {"qq.com": "qq", "foxmail.com": "qq", "163.com": "163", "126.com": "126", "yeah.net": "163", "sina.com": "sina", "sina.cn": "sina", "gmail.com": "gmail"}
+PROVIDERS = {"qq.com": "qq", "foxmail.com": "qq", "163.com": "163", "126.com": "126", "yeah.net": "163", "sina.com": "sina", "sina.cn": "sina", "gmail.com": "gmail",
+             "outlook.com": "outlook", "hotmail.com": "outlook", "live.com": "outlook", "msn.com": "outlook"}
 TOKEN_KINDS = {"GMAIL"}
+TOKEN_FILE = os.path.join(PLUGIN, "build", "outlook-token.properties")
 
 
 def read_properties(path):
@@ -41,6 +44,14 @@ def read_properties(path):
     return props
 
 
+def read_accounts():
+    """mail-test-accounts.properties plus the access tokens .python/outlook_oauth_login.py wrote (`<KIND>_ACCESS_TOKEN_<letter>`)."""
+    props = read_properties(os.path.join(PLUGIN, "mail-test-accounts.properties"))
+    if os.path.exists(TOKEN_FILE):
+        props.update(read_properties(TOKEN_FILE))
+    return props
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("profile", help="QQ_A, QQ_B, NETEASE_A, NETEASE_B, NETEASE126_A, SINA_A or GMAIL_A (the part before the last underscore names the property prefix)")
@@ -51,7 +62,7 @@ def main():
     parser.add_argument("--timeout", type=int, default=None, help="milliseconds the host test waits for the script's report (mail.smoke.timeoutMs, default 300000; the P5 watch matrix needs more for Doze)")
     args = parser.parse_args()
 
-    props = read_properties(os.path.join(PLUGIN, "mail-test-accounts.properties"))
+    props = read_accounts()
     kind, letter = args.profile.rsplit("_", 1)
     address = props[f"{kind}_USER_NAME_{letter}"]
     if kind in TOKEN_KINDS or f"{kind}_ACCESS_TOKEN_{letter}" in props:

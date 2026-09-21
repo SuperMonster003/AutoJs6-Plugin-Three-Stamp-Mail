@@ -5,6 +5,15 @@
   "changelog_label_improvement": "改善",
   "changelog_label_dependency": "依存関係",
   "$data": {
+    "v1.0.1": {
+      "released_date": "2026/09/21",
+      "fix": [
+        "OAuth 2.0 トークンによる Outlook.com の POP3 (メールロードマップ P6 プロバイダーマトリクス, 2026-09-21): サーバーは Angus Mail が既定で送る 1 行形式の `AUTH XOAUTH2 <base64>` に `-ERR Protocol error. Connection is closed.` と答えて接続を切るため, `outlook` プリセットの POP3 アカウントは `AUTH_FAILED` で失敗していました; プロバイダープリセットに `pop3Xoauth2TwoLine` (カタログバージョン 3, `outlook` と `office365` で true) を追加し, メールコアはこれらのプリセットとプリセットなしで入力された Microsoft の POP3 ホストに対して, コマンドだけを送りサーバーの `+` 継続の後に base64 応答を送るようになりました (`Pop3OAuthScriptedTest` 5 件; 実アカウントで JVM と API 33 実機の両方で検証済み)"
+      ],
+      "improvement": [
+        "プロバイダーマトリクスの Outlook.com 列 (メールロードマップ P6) と P5 の実機行を, メンテナーの Entra パブリッククライアント登録によるトークンで 1 つの個人アカウントについて実施: セッションテスト, フォルダー (役割は慣用名から, SPECIAL-USE なし), 送信 (`sentCopy = server`, Message-ID はサーバーが書き換え), 一覧 (約 7 秒で可視), サーバー検索 (すべてのキーがヒット; 中国語の件名も正しくヒットするが 2300 通の受信トレイではサーバーが数分かかる), 本文, 添付, フラグ (カスタムキーワードは保存されない), フォルダー作成, `MOVE`, 監視 (IDLE は送信後約 10 秒以内にプッシュ, 7 社中最速), POP3 (UIDL 5 文字, 送信直後のメールも表示) とクリーンアップ (送信済みコピーは UID で操作可能) がすべて通過; Redmi (API 33) の baseline / プラグイン強制終了 / Wi-Fi オフの 3 シナリオは 9 から 14 秒で到達し, イベント順序は Gmail と同じ; プリセットの notes, README, 証拠ファイルに差異を記録 (Microsoft が新しめの個人メールボックスに返す `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` を含む)"
+      ]
+    },
     "v1.0.0": {
       "released_date": "2026/09/19",
       "hint": [

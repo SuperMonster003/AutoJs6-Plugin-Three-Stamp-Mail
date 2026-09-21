@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "providers": [
     {
       "id": "gmail",
@@ -65,8 +65,9 @@
       "autoSavesSent": true,
       "sentFolder": "Sent",
       "requiresClientId": false,
+      "pop3Xoauth2TwoLine": true,
       "docsUrl": "https://support.microsoft.com/office/pop-imap-and-smtp-settings-for-outlook-com-d088b986-291d-42b8-9564-9c414e2aa040",
-      "notes": "Personal Microsoft accounts. IMAP advertises LOGINDISABLED and only AUTH=XOAUTH2, and IMAP, POP3 and SMTP all refuse an app password (Basic authentication is disabled, SMTP 535; three accounts, 2026-09-20): an access token is required."
+      "notes": "Personal Microsoft accounts. IMAP advertises LOGINDISABLED and only AUTH=XOAUTH2, and IMAP, POP3 and SMTP all refuse an app password (Basic authentication is disabled, SMTP 535; three accounts, 2026-09-20): an access token is required. With a token (one account, 2026-09-21): folder roles come from the conventional names (no SPECIAL-USE, no XLIST), the server keeps the sent copy in Sent and rewrites the Message-ID of outgoing mail, custom keywords are not stored, CREATE and MOVE work, IDLE pushes within about 10 s, a SEARCH with a non-ASCII text key is answered correctly but can take minutes on a large mailbox, and POP3 takes AUTH XOAUTH2 only in the two-line form (pop3Xoauth2TwoLine). Newer personal mailboxes may have SMTP AUTH disabled by Microsoft (535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox), which no user setting changes."
     },
     {
       "id": "office365",
@@ -95,8 +96,9 @@
       "autoSavesSent": true,
       "sentFolder": "Sent Items",
       "requiresClientId": false,
+      "pop3Xoauth2TwoLine": true,
       "docsUrl": "https://learn.microsoft.com/exchange/clients-and-mobile-in-exchange-online/pop3-and-imap4/pop3-and-imap4",
-      "notes": "Work or school accounts; tenant policy may disable IMAP, POP3 or SMTP AUTH entirely."
+      "notes": "Work or school accounts; tenant policy may disable IMAP, POP3 or SMTP AUTH entirely. POP3 takes AUTH XOAUTH2 in the two-line form like Outlook.com (pop3Xoauth2TwoLine)."
     },
     {
       "id": "qq",

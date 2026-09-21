@@ -1,6 +1,6 @@
 Angus Mail은 AutoJs6 스크립트에 전역 객체 `mail`을 제공하여 메일 보내기, 메일함 나열과 검색, 본문 읽기, 첨부 파일 다운로드, 플래그와 폴더 관리, 폴더의 새 메일 감시를 지원합니다. Jakarta Mail의 참조 구현인 [Eclipse Angus Mail](https://eclipse-ee4j.github.io/angus-mail/) 2.0.5을 기반으로 하며 TLS 위에서 IMAP, POP3, SMTP를 사용합니다.
 
-버전 1.0.0은 첫 정식 릴리스입니다: 로드맵 P0 부터 P6 까지의 모든 항목 (메일 코어, Binder 계약, 스크립트 API, 설정 페이지와 저장된 계정, 새 메일 감시, 그리고 TLS, 문자 집합, 제공자, 수명 주기, 적대적 입력, 비밀 감사, 성능 매트릭스) 이 증거와 함께 완료되었으며 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) 에서 확인할 수 있습니다. AutoJs6 6.8.0 (빌드 5282) 이상이 필요합니다; 스크립트 API 의 전체 참조는 [AutoJs6 문서](https://docs.autojs6.com/#/mail) 에 있습니다.
+버전 1.0.1은 첫 정식 릴리스입니다: 로드맵 P0 부터 P6 까지의 모든 항목 (메일 코어, Binder 계약, 스크립트 API, 설정 페이지와 저장된 계정, 새 메일 감시, 그리고 TLS, 문자 집합, 제공자, 수명 주기, 적대적 입력, 비밀 감사, 성능 매트릭스) 이 증거와 함께 완료되었으며 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) 에서 확인할 수 있습니다. AutoJs6 6.8.0 (빌드 5282) 이상이 필요합니다; 스크립트 API 의 전체 참조는 [AutoJs6 문서](https://docs.autojs6.com/#/mail) 에 있습니다.
 
 ### 사용 방법
 

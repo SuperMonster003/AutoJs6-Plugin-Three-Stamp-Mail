@@ -52,7 +52,7 @@ Angus Mail 為 AutoJs6 腳本提供全域物件 `mail`, 用於傳送郵件, 列�
 
 ******
 
-版本 1.0.0 是首個正式版本: 路線圖 P0 至 P6 的全部條目 (郵件核心, Binder 契約, 腳本 API, 設定頁與別名帳戶, 新郵件監聽, 以及 TLS, 字元集, 服務商, 生命週期, 敵意輸入, 秘密審計與效能矩陣) 均已完成並附有證據, 見 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). 需要 AutoJs6 6.8.0 (組建 5282) 或更高版本; 腳本 API 的完整參考見 [AutoJs6 文件](https://docs.autojs6.com/#/mail).
+版本 1.0.1 是首個正式版本: 路線圖 P0 至 P6 的全部條目 (郵件核心, Binder 契約, 腳本 API, 設定頁與別名帳戶, 新郵件監聽, 以及 TLS, 字元集, 服務商, 生命週期, 敵意輸入, 秘密審計與效能矩陣) 均已完成並附有證據, 見 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). 需要 AutoJs6 6.8.0 (組建 5282) 或更高版本; 腳本 API 的完整參考見 [AutoJs6 文件](https://docs.autojs6.com/#/mail).
 
 ******
 
@@ -92,7 +92,7 @@ Angus Mail 為 AutoJs6 腳本提供全域物件 `mail`, 用於傳送郵件, 列�
 - 163 / 126 / yeah.net (`163`, `126`; yeah.net 使用 `163` 預設並覆蓋主機): 在網頁版設定的 POP3/SMTP/IMAP 頁開啟服務並產生授權碼; POP3 需要單獨開啟, 否則 IMAP 與 SMTP 接受的授權碼會被 POP3 拒絕. 伺服器要求每個 IMAP 連線先發送 `ID` 命令 (否則回答 `Unsafe Login`), 插件自動完成.
 - 新浪郵箱 (`sina`): 在網頁版的客戶端設定中開啟 IMAP/SMTP 服務並使用授權碼. 伺服器不儲存已寄郵件副本 (插件追加到 `已发送`), 不允許經 IMAP 新建資料夾, 文字搜尋由插件在客戶端完成.
 - Gmail (`gmail`): 開啟兩步驟驗證後在 Google 帳戶中產生應用程式專用密碼作為 `password`, 或提供帶 `https://mail.google.com/` 範圍的 OAuth 2.0 存取權杖 (`accessToken` 與 `tokenProvider`); 資料夾位於 `[Gmail]` 命名空間, 新郵件由 IDLE 推送. 專案以權杖完成了真實帳戶核實.
-- Outlook.com / Hotmail (`outlook`) 與 Microsoft 365 (`office365`): 微軟已關閉個人帳戶的基本驗證, 應用程式密碼在 IMAP, POP3 與 SMTP 上都會被拒絕, `outlook` 預設因此只接受 OAuth 2.0 存取權杖 (`accessToken` 與 `tokenProvider`); 工作或學校帳戶 (`office365`) 可用密碼或權杖, 但租戶政策可能停用 IMAP, POP3 或 SMTP AUTH.
+- Outlook.com / Hotmail (`outlook`) 與 Microsoft 365 (`office365`): 微軟已關閉個人帳戶的基本驗證, 應用程式密碼在 IMAP, POP3 與 SMTP 上都會被拒絕, `outlook` 預設因此只接受 OAuth 2.0 存取權杖 (`accessToken` 與 `tokenProvider`); 工作或學校帳戶 (`office365`) 可用密碼或權杖, 但租戶政策可能停用 IMAP, POP3 或 SMTP AUTH. 權杖需要 `https://outlook.office.com/` 的委派權限 `IMAP.AccessAsUser.All`, `POP.AccessAsUser.All` 與 `SMTP.Send` (專案已用這樣的權杖核實一個個人帳戶: IMAP, POP3, SMTP 與 IDLE 推送); 部分較新的個人郵箱被微軟停用了 SMTP AUTH (`535 5.7.139`), 使用者設定中沒有開關.
 - iCloud (`icloud`): 在 Apple 帳戶中產生 App 專用密碼; 沒有 POP3 服務.
 - Yahoo (`yahoo`) 與阿里雲個人郵箱 (`aliyun`): 產生應用程式密碼或授權碼; 這兩個預設按公開文件編寫, 專案沒有可用的測試帳戶, 未經核實.
 
@@ -150,7 +150,7 @@ mail.searchAsync({ subject: 'invoice', since: '2026-09-01' }).then(list => conso
 - 163 / 126 / yeah.net: 全部通過; 伺服器儲存已寄副本; 沒有 IDLE, 監聽輪詢; 163 對近期郵件的文字搜尋回答 0 命中 (126 與 yeah.net 正常); 寄件人顯示名中的空格回讀為底線; yeah.net 的 POP3 需在網頁端單獨開啟.
 - 新浪郵箱: 通過; 伺服器只接受 ALL, SINCE 與標記類搜尋條件, 文字搜尋自動回退到客戶端過濾; 沒有 IDLE; 不允許新建資料夾; 已寄副本由插件追加.
 - Gmail: 以 OAuth 2.0 權杖通過全部行, 新郵件經 IDLE 推送 (約 30 s, 為 Gmail 自身的通知節奏); 含中文的伺服器搜尋全部命中 (插件不啟用 `UTF8=ACCEPT`); 自訂 IMAP 關鍵字會被儲存 (六家中唯一); POP3 視圖不含帳戶自己寄出的郵件.
-- Outlook.com / Hotmail: 三個帳戶的應用程式密碼在 IMAP, POP3 與 SMTP 上均被微軟拒絕 (`AUTH_MECHANISM_UNSUPPORTED`), 操作行等待權杖; iCloud, Yahoo 與 Aliyun 沒有可用的測試帳戶, 預設未經核實.
+- Outlook.com / Hotmail: 以 OAuth 2.0 權杖在一個個人帳戶上通過全部行 (2026-09-21): 資料夾角色來自常規名稱, 伺服器保存已傳送副本並改寫 Message-ID, `MOVE` 與建立資料夾正常, POP3 以兩行式 `AUTH XOAUTH2` 登入, IDLE 約 10 s 內推送 (七家中最快); 中文主旨的伺服器搜尋能命中但可能耗時數分鐘; 應用程式密碼在 IMAP, POP3 與 SMTP 上仍被拒絕 (`AUTH_MECHANISM_UNSUPPORTED`), 部分較新的個人郵箱被微軟停用了 SMTP AUTH (`535 5.7.139`); iCloud, Yahoo 與 Aliyun 沒有可用的測試帳戶, 預設未經核實.
 - TLS 與字元集: 隱式 SSL, STARTTLS, 明文, 自簽憑證 (帶與不帶 `tls.trustAll`), 主機名不匹配與連接埠模式錯配在 IMAP, POP3 與 SMTP 上逐一測試, 失敗對應為 `TLS_FAILED`, `TIMEOUT` 等可判斷的錯誤碼; GB18030, GBK, GB2312, Big5, ISO-2022-JP, EUC-KR 與 UTF-8 的主題, 顯示名, 內文與檔名在宣告, 未宣告與誤宣告三種情形下逐一斷言.
 - 裝置與生命週期: Android 7.0 (API 24) 模擬器, Sony (Android 9) 與 Redmi (Android 13) 實機; 腳本正常結束, `exit()`, `engines.stopAll()`, 強制停止宿主或插件, 原地升級, 停用與解除安裝插件八種結束方式下連線, 綁定與執行緒均被回收; 熄屏進入 Doze 後監聽中斷並在裝置喚醒後恢復, 需要持續監聽時可在設定頁申請電池最佳化豁免.
 - 效能基線: 本機 10000 封收件匣與 50 MiB 附件在 JVM, Redmi 與 Sony 上的列表, 搜尋, 下載, 寄送與一小時 IDLE 待機資料見 `docs/dev/p6-performance-baseline.md`; 郵件文件有界 (地址, 信頭, MIME 樹與內嵌內文均有上限), 敵意輸入不會撐爆會話.
@@ -222,6 +222,13 @@ minimum host build: 5282 (6.8.0)
 ### 發行歷史
 
 ******
+
+#### v1.0.1
+
+_2026/09/21_
+
+- `修復` Outlook.com 的 POP3 以 OAuth 2.0 權杖登入 (郵件路線圖 P6 服務商矩陣, 2026-09-21): 伺服器對 Angus Mail 預設傳送的單行 `AUTH XOAUTH2 <base64>` 答 `-ERR Protocol error. Connection is closed.` 並中斷連線, `outlook` 預設的 POP3 帳戶因此以 `AUTH_FAILED` 失敗; 服務商預設新增 `pop3Xoauth2TwoLine` (目錄版本 3, `outlook` 與 `office365` 為 true), 郵件核心對這兩個預設以及未用預設而填寫的微軟 POP3 主機改為先傳送裸命令, 收到伺服器的 `+` 續行後再傳送 base64 回應 (`Pop3OAuthScriptedTest` 5 例; 已在真實帳戶上經 JVM 與 API 33 真機核實)
+- `優化` 服務商矩陣的 Outlook.com 列 (郵件路線圖 P6) 與 P5 裝置行, 以維護者 Entra 公共用戶端的權杖在一個個人帳戶上跑通: 工作階段測試, 資料夾 (角色來自常規名稱, 無 SPECIAL-USE), 傳送 (`sentCopy = server`, Message-ID 被伺服器改寫), 列表 (約 7 s 可見), 伺服器搜尋 (各鍵均命中; 中文主旨能正確命中但伺服器在 2300 封的收件匣上要花數分鐘), 正文, 附件, 標記 (自訂關鍵字不儲存), 建立資料夾, `MOVE`, 監聽 (IDLE 在提交後約 10 s 內推送, 七家中最快), POP3 (UIDL 5 字元, 剛傳送的郵件在檢視中) 與清理 (已傳送副本可按 UID 定址) 全部通過; Redmi (API 33) 上 baseline / 殺插件 / 關 Wi-Fi 三個監聽情境 9 到 14 s 到達, 事件順序與 Gmail 一致; 預設 notes, README 與證據檔案記錄了差異, 包括微軟對較新個人郵箱給出的 `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` 拒絕
 
 #### v1.0.0
 

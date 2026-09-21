@@ -1,6 +1,6 @@
 Angus Mail gives AutoJs6 scripts a global `mail` object for sending messages, listing and searching mailboxes, reading bodies, downloading attachments, managing flags and folders, and watching a folder for new mail. It is built on [Eclipse Angus Mail](https://eclipse-ee4j.github.io/angus-mail/) 2.0.5, the reference implementation of Jakarta Mail, and speaks IMAP, POP3, and SMTP over TLS.
 
-Version 1.0.0 is the first release: every item of roadmap phases P0 to P6 (the mail core, the Binder contract, the script API, the settings page with saved accounts, new-mail watching, and the TLS, charset, provider, lifecycle, hostile-input, secret-audit and performance matrices) is complete with evidence in [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Requires AutoJs6 6.8.0 (build 5282) or later; the full script API reference is in the [AutoJs6 documentation](https://docs.autojs6.com/#/mail).
+Version 1.0.1 is the first release: every item of roadmap phases P0 to P6 (the mail core, the Binder contract, the script API, the settings page with saved accounts, new-mail watching, and the TLS, charset, provider, lifecycle, hostile-input, secret-audit and performance matrices) is complete with evidence in [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Requires AutoJs6 6.8.0 (build 5282) or later; the full script API reference is in the [AutoJs6 documentation](https://docs.autojs6.com/#/mail).
 
 ### Usage
 

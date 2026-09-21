@@ -3,9 +3,10 @@
 Usage: python .python/run_watch_matrix.py <PROFILE> <serial> --sender <PROFILE> --scenario <name> [--mode auto|idle|poll]
 
 PROFILE (the watched account) and --sender (the account whose SMTP the PC uses to send) are
-QQ_A / QQ_B / NETEASE_A / NETEASE_B / NETEASE126_A / SINA_A (password accounts) or GMAIL_A
-(access token, watched only). Credentials come from the git-ignored
-mail-test-accounts.properties; the watched account reaches the device only as instrumentation
+QQ_A / QQ_B / NETEASE_A / NETEASE_B / NETEASE126_A / SINA_A (password accounts) or GMAIL_A,
+OUTLOOK_A, HOTMAIL_B (access token, watched only; the Outlook.com tokens come from
+build/outlook-token.properties written by .python/outlook_oauth_login.py). Credentials come from the
+git-ignored mail-test-accounts.properties; the watched account reaches the device only as instrumentation
 arguments (see run_host_script_smoke.py), the sender's stay on the PC. Nothing secret is printed.
 
 Scenarios (the disturbance happens from the PC through adb while docs/smoke/watch.js watches):
@@ -43,7 +44,7 @@ import time
 from email.message import EmailMessage
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from run_host_script_smoke import PROVIDERS, TOKEN_KINDS, read_properties  # noqa: E402
+from run_host_script_smoke import PROVIDERS, TOKEN_KINDS, read_accounts  # noqa: E402
 
 PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOST_PACKAGE = "org.autojs.autojs6"
@@ -131,7 +132,7 @@ def wait_progress(serial, predicate, timeout_s, what, process=None):
 class Sender:
     def __init__(self, props, profile):
         kind, letter = profile.rsplit("_", 1)
-        if kind in TOKEN_KINDS:
+        if kind in TOKEN_KINDS or f"{kind}_ACCESS_TOKEN_{letter}" in props:
             raise SystemExit("the sender must be a password account")
         self.address = props[f"{kind}_USER_NAME_{letter}"]
         self.secret = props[f"{kind}_AUTH_CODE_{letter}"]
@@ -163,7 +164,7 @@ def main():
     parser.add_argument("--alias", default=None, help="run by saved-account alias through the host's run intent instead of the instrumentation")
     args = parser.parse_args()
 
-    props = read_properties(os.path.join(PLUGIN, "mail-test-accounts.properties"))
+    props = read_accounts()
     kind, letter = args.profile.rsplit("_", 1)
     watched = props[f"{kind}_USER_NAME_{letter}"]
     sender = Sender(props, args.sender)

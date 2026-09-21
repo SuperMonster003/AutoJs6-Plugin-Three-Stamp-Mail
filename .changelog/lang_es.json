@@ -5,6 +5,15 @@
   "changelog_label_improvement": "Mejora",
   "changelog_label_dependency": "Dependencia",
   "$data": {
+    "v1.0.1": {
+      "released_date": "2026/09/21",
+      "fix": [
+        "POP3 de Outlook.com con un token OAuth 2.0 (matriz de proveedores del roadmap de correo P6, 2026-09-21): el servidor responde al `AUTH XOAUTH2 <base64>` de una línea que Angus Mail envía por defecto con `-ERR Protocol error. Connection is closed.` y corta la conexión, así que una cuenta POP3 con el preajuste `outlook` fallaba con `AUTH_FAILED`; los preajustes ganan `pop3Xoauth2TwoLine` (catálogo versión 3, true en `outlook` y `office365`) y el núcleo de correo envía ahora solo el comando y la respuesta base64 tras la continuación `+` del servidor para esos preajustes y para cualquier host POP3 de Microsoft indicado sin preajuste (`Pop3OAuthScriptedTest`, 5 casos; verificado con la cuenta real en la JVM y en un dispositivo API 33)"
+      ],
+      "improvement": [
+        "Columna Outlook.com de la matriz de proveedores (roadmap de correo P6) y filas de dispositivo de P5, ejecutadas con un token del registro de cliente público de Entra del mantenedor en una cuenta personal: prueba de sesión, carpetas (roles por los nombres convencionales, sin SPECIAL-USE), envío (`sentCopy = server`, Message-ID reescrito por el servidor), listado (visible a los 7 s), búsquedas en el servidor (todas las claves aciertan; un asunto en chino se responde bien pero el servidor tarda minutos en una bandeja de 2300 mensajes), cuerpo, adjunto, marcas (las palabras clave propias no se guardan), creación de carpetas, `MOVE`, vigilancia (IDLE avisa en unos 10 s desde el envío, el más rápido de los siete proveedores), POP3 (UIDL de 5 caracteres, el mensaje recién enviado aparece) y limpieza (copias enviadas direccionables por UID), todo pasa; en un Redmi (API 33) los escenarios baseline, plugin terminado y Wi-Fi apagado llegan en 9 a 14 s con las mismas secuencias de eventos que Gmail; las notas de los preajustes, el README y los archivos de evidencia registran las diferencias, incluido el rechazo `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` que Microsoft da a buzones personales recientes"
+      ]
+    },
     "v1.0.0": {
       "released_date": "2026/09/19",
       "hint": [

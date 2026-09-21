@@ -4,6 +4,13 @@
 
 ******
 
+# v1.0.1
+
+###### 2026/09/21
+
+* `Fix` Outlook.com POP3 with an OAuth 2.0 token (mail roadmap P6 provider matrix, 2026-09-21): the server answers the one-line `AUTH XOAUTH2 <base64>` that Angus Mail sends by default with `-ERR Protocol error. Connection is closed.` and drops the connection, so a POP3 account on the `outlook` preset failed with `AUTH_FAILED`; the provider presets gained `pop3Xoauth2TwoLine` (catalog version 3, true for `outlook` and `office365`) and the mail core now sends the bare command and the base64 response after the server's `+` continuation for these presets and for any Microsoft POP3 host entered without a preset (`Pop3OAuthScriptedTest`, 5 cases; verified against the real account on the JVM and on an API 33 device)
+* `Improvement` Outlook.com column of the provider matrix (mail roadmap P6) and the P5 device rows, run with a token from the maintainer's Entra public-client registration on one personal account: session test, folders (roles from the conventional names, no SPECIAL-USE), send (`sentCopy = server`, Message-ID rewritten by the server), listing (visible after about 7 s), server searches (every key hits; a Chinese subject is answered correctly but the server takes minutes over a 2300-message inbox), body, attachment, flags (custom keywords not stored), folder creation, `MOVE`, watch (IDLE pushes within about 10 s of the submission, the fastest of the seven providers), POP3 (5-character UIDLs, the just-sent message in the view) and cleanup (sent copies addressable by UID) all pass; on a Redmi (API 33) the baseline, plugin-kill and Wi-Fi-off watch scenarios arrive in 9 to 14 s with the same event sequences as Gmail; the preset notes, the README and the evidence files record the differences, including the `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` refusal Microsoft gives newer personal mailboxes
+
 # v1.0.0
 
 ###### 2026/09/19
