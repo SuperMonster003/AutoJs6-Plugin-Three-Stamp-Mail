@@ -231,26 +231,26 @@ minimum host build: 5282 (6.8.0)
 
 _2026/09/22_
 
-- `提示` 只有携带对应服务商 OAuth 2.0 客户端 id 的构建才提供浏览器登录 (维护者的注册信息在构建时从 Git 忽略的 `oauth-clients.properties` 读取); 没有它们的构建保留令牌与应用专用密码路径, 并在认证方式对话框中说明. Google 客户端需先通过 Google Cloud 项目的敏感 scope 审核, 之后任意账户才能登录; 在此之前 Google 只允许项目的测试用户.
-- `新增` Google 与 Microsoft 账号的浏览器登录 (邮件路线图 P9): 账户编辑器为 Gmail 预设提供 "使用 Google 账号登录 (浏览器)", 为 Outlook.com 与 Microsoft 365 预设提供 "使用 Microsoft 账号登录 (浏览器)"; 登录在 Custom Tab (回退为任意浏览器) 中打开服务商页面, 携带 PKCE (`S256`) 与随机 `state` 的 OAuth 2.0 授权码请求, 重定向 (`<applicationId>://oauth2/microsoft`, 或 Google 反转客户端 id 的 scheme) 落在 `OAuthRedirectActivity`, 由它交给等待中的登录页面; 页面拒绝任何 `state` 不匹配的重定向, 经 HTTPS 在令牌端点交换授权码 (`HttpsFormPoster`, 插件唯一的 HTTP 客户端), 并从 id 令牌预填地址
-- `新增` 令牌存储与续期: 浏览器登录的令牌是账户存储中新种类 `OAUTH2` 的一条加密记录 (从不作为 Binder 字段, 从不出现在 `mail.accounts.list()`), 账户文档带有 `oauth` 对象 (`provider`, `authorizedAt`, `expiresAt`, `needsReauth`), `mail.accounts.list()` 会报告它; 该别名的每个会话 (脚本, 连接测试, 后台守望) 都从 `AccountSecrets` 取访问令牌, 剩余不足五分钟时经刷新令牌续期, 按账户串行; 续期被拒 (`invalid_grant`) 时记录标记 `needsReauth`, 会话以 `AUTH_FAILED` ("sign in again") 失败, 账户页在该账户旁显示 "需要重新登录"
-- `新增` 账户页操作 "重新登录" (新的浏览器登录存入同一记录) 与 "撤销登录" (记录的令牌立即换成已撤销标记, 请求 Google 撤销刷新令牌, 账户在重新登录前停止工作); `gmail`, `outlook` 与 `office365` 预设的 `authHint` 首先提及浏览器登录 (`providers.json` 版本 4); 11 语言各 35 条新字符串; JVM 测试覆盖 PKCE, 授权请求与重定向解析, 基于脚本化传输的令牌客户端, 令牌文档, 服务商表, 构建的客户端与重定向 URI, `AccountSecrets` (续期, 拒绝标记, 已撤销记录, 擦除) 以及账户选项, 表单与账户文档中的 `oauth` 对象
+- `提示` 浏览器登录需要构建时配置对应服务商的 OAuth 2.0 客户端 ID, 未配置时仍可使用访问令牌或应用专用密码 (Google 客户端通过敏感权限审核前仅限项目测试用户登录)
+- `新增` Gmail, Outlook.com 及 Microsoft 365 账户支持通过浏览器登录, 使用 OAuth 2.0 授权码流程及 PKCE 校验, 并自动填入邮箱地址
+- `新增` 浏览器登录的令牌支持加密保存及自动续期, mail.accounts.list 仅返回授权状态, 续期被拒时提示重新登录
+- `新增` 账户页增加 "重新登录" 及 "撤销登录" 操作, 撤销后账户停止工作, Google 账户同时请求撤销刷新令牌
 
 #### v1.1.0
 
 _2026/09/21_
 
-- `提示` 1.1.0 新增后台守望 (邮件路线图 P8): 设置页的守望页面在没有脚本运行时以前台服务保持已保存账户的守望, 并唤醒 AutoJs6 的 "邮件到达时" 任务. 该任务及其守望选择器需要携带邮件契约版本 2 的宿主构建 (AutoJs6 6.8.0 构建 5282 之后); 旧版宿主上页面会提示无法唤醒 AutoJs6, 新邮件只进入守望的记录列表. 此功能新增四项权限, 理由见 README 安全章节: FOREGROUND_SERVICE 与 FOREGROUND_SERVICE_SPECIAL_USE (守望服务), POST_NOTIFICATIONS (其常驻通知, 仅在启用守望时申请) 与 RECEIVE_BOOT_COMPLETED (守望页面的开机自启开关, 默认关闭).
-- `新增` 后台守望 (邮件路线图 P8): 设置页新增守望页面, 可为已保存账户配置至多 16 个守望 (`MAX_TRIGGERS`), 每个含名称, 账户别名, 文件夹, 模式 (自动, IDLE 或带间隔的轮询) 与可选的发件人 / 主题过滤, 存于 no-backup 目录下的 `mail-triggers/triggers.json`; `specialUse` 前台服务 `MailWatchService` 在没有脚本运行时以 P5 的监听器运行已启用的守望 (服务器推送时用 IDLE, 否则轮询, 断线按退避重连, 网络变化时立即重连) 并显示一条低优先级通知; 每封新邮件进入守望的记录列表 (最近 100 条信封摘要, `MAX_TRIGGER_RECORDS`, 不含正文), 页面显示连接状态, 最近错误, 记录与重连操作; 开机自启开关 (默认关闭) 启用 `BOOT_COMPLETED` 接收器, 重启后重新拉起服务
-- `新增` 邮件契约版本 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, 能力特性 `backgroundWatch`): 宿主以 generation 与可选过滤订阅已配置的守望, 立即收到当前状态, 之后收到 `onStatus` (stopped, connecting, connected 或 failed, 附原因与最近错误) 与每封匹配邮件的 `onMail(generation, seq, event)`, `mail` 事件携带守望 id, 别名, 地址, 文件夹, 邮件信封与 `receivedAt`; 每个守望至多 4 个订阅者 (`MAX_TRIGGER_SUBSCRIBERS`), 已禁用或不存在的守望与不可用的选项以 reason 为 `refused` 的 `stopped` 状态拒绝, `update` 替换订阅者的过滤, `stop` 只结束订阅; 没有活动订阅者时每个事件以显式广播 `org.autojs.autojs6.action.MAIL_TRIGGER` 发往 AutoJs6 (受其 `PLUGIN` 签名权限保护), 即使没有脚本运行也能启动宿主的 "邮件到达时" 任务 (`MailTriggerBinderTest` 于 API 37 AVD; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)
-- `新增` 邮件核心新增页面, 服务与 Binder 共用的触发文档与规则 (`TriggerConfig`, 发件人与主题子串不区分大小写的 `TriggerFilter`, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) 与上限 `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS`, `MIN_TRIGGER_INTERVAL_MS` (3 s, 宿主每任务的节流间隔), 监听器新增 `onConnected` 回调, 后台守望在文件夹打开后即显示 `connected`
+- `提示` 后台守望唤醒 "邮件到达时" 任务需要支持邮件契约版本 2 的 AutoJs6 6.8.0 构建 (5282 之后), 旧版宿主仅记录新邮件; 守望使用前台服务及通知权限, 开机自启默认关闭 (权限说明参阅 README)
+- `新增` 后台守望页面, 支持为已保存账户配置最多 16 个守望, 无脚本运行时仍可通过 IDLE 或轮询监听新邮件, 断线后自动重连, 保留最近 100 条邮件摘要并支持开机自启 (默认关闭)
+- `新增` 后台守望支持唤醒 AutoJs6 的 "邮件到达时" 任务, 宿主可订阅连接状态及邮件事件并更新筛选条件 (每个守望最多 4 个订阅者)
+- `新增` 后台守望支持按发件人及主题进行不区分大小写的子串筛选, 文件夹打开后显示已连接状态, 宿主每项任务的最短触发间隔为 3 s
 
 #### v1.0.1
 
 _2026/09/21_
 
-- `修复` Outlook.com 的 POP3 以 OAuth 2.0 令牌登录 (邮件路线图 P6 服务商矩阵, 2026-09-21): 服务器对 Angus Mail 默认发送的单行 `AUTH XOAUTH2 <base64>` 答 `-ERR Protocol error. Connection is closed.` 并断开连接, `outlook` 预设的 POP3 账户因此以 `AUTH_FAILED` 失败; 服务商预设新增 `pop3Xoauth2TwoLine` (目录版本 3, `outlook` 与 `office365` 为 true), 邮件核心对这两个预设以及未用预设而填写的微软 POP3 主机改为先发裸命令, 收到服务器的 `+` 续行后再发 base64 响应 (`Pop3OAuthScriptedTest` 5 例; 已在真实账户上经 JVM 与 API 33 真机核实)
-- `优化` 服务商矩阵的 Outlook.com 列 (邮件路线图 P6) 与 P5 设备行, 以维护者 Entra 公共客户端的令牌在一个个人账户上跑通: 会话测试, 文件夹 (角色来自常规名称, 无 SPECIAL-USE), 发信 (`sentCopy = server`, Message-ID 被服务器改写), 列表 (约 7 s 可见), 服务器搜索 (各键均命中; 中文主题能正确命中但服务器在 2300 封的收件箱上要花数分钟), 正文, 附件, 标记 (自定义关键字不存储), 建夹, `MOVE`, 监听 (IDLE 在提交后约 10 s 内推送, 七家中最快), POP3 (UIDL 5 字符, 刚发的邮件在视图中) 与清理 (已发送副本可按 UID 寻址) 全部通过; Redmi (API 33) 上 baseline / 杀插件 / 关 Wi-Fi 三个监听场景 9 到 14 s 到达, 事件顺序与 Gmail 一致; 预设 notes, README 与证据文件记录了差异, 包括微软对较新个人邮箱给出的 `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` 拒绝
+- `修复` Outlook.com 及 Microsoft 365 的 POP3 账户使用 OAuth 2.0 令牌登录时出现 AUTH_FAILED 的问题, 兼容 Microsoft 服务器的两步 XOAUTH2 认证
+- `优化` 补充 Outlook.com 的 OAuth 2.0 兼容性说明, 包含服务器保存已发送副本, 中文搜索延迟及不保留自定义关键字等差异 (部分个人邮箱可能被服务器拒绝 SMTP 登录)
 
 ##### 更多发行历史
 

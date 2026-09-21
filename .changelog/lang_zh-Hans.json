@@ -8,83 +8,83 @@
     "v1.2.0": {
       "released_date": "2026/09/22",
       "hint": [
-        "只有携带对应服务商 OAuth 2.0 客户端 id 的构建才提供浏览器登录 (维护者的注册信息在构建时从 Git 忽略的 `oauth-clients.properties` 读取); 没有它们的构建保留令牌与应用专用密码路径, 并在认证方式对话框中说明. Google 客户端需先通过 Google Cloud 项目的敏感 scope 审核, 之后任意账户才能登录; 在此之前 Google 只允许项目的测试用户."
+        "浏览器登录需要构建时配置对应服务商的 OAuth 2.0 客户端 ID, 未配置时仍可使用访问令牌或应用专用密码 (Google 客户端通过敏感权限审核前仅限项目测试用户登录)"
       ],
       "feature": [
-        "Google 与 Microsoft 账号的浏览器登录 (邮件路线图 P9): 账户编辑器为 Gmail 预设提供 \"使用 Google 账号登录 (浏览器)\", 为 Outlook.com 与 Microsoft 365 预设提供 \"使用 Microsoft 账号登录 (浏览器)\"; 登录在 Custom Tab (回退为任意浏览器) 中打开服务商页面, 携带 PKCE (`S256`) 与随机 `state` 的 OAuth 2.0 授权码请求, 重定向 (`<applicationId>://oauth2/microsoft`, 或 Google 反转客户端 id 的 scheme) 落在 `OAuthRedirectActivity`, 由它交给等待中的登录页面; 页面拒绝任何 `state` 不匹配的重定向, 经 HTTPS 在令牌端点交换授权码 (`HttpsFormPoster`, 插件唯一的 HTTP 客户端), 并从 id 令牌预填地址",
-        "令牌存储与续期: 浏览器登录的令牌是账户存储中新种类 `OAUTH2` 的一条加密记录 (从不作为 Binder 字段, 从不出现在 `mail.accounts.list()`), 账户文档带有 `oauth` 对象 (`provider`, `authorizedAt`, `expiresAt`, `needsReauth`), `mail.accounts.list()` 会报告它; 该别名的每个会话 (脚本, 连接测试, 后台守望) 都从 `AccountSecrets` 取访问令牌, 剩余不足五分钟时经刷新令牌续期, 按账户串行; 续期被拒 (`invalid_grant`) 时记录标记 `needsReauth`, 会话以 `AUTH_FAILED` (\"sign in again\") 失败, 账户页在该账户旁显示 \"需要重新登录\"",
-        "账户页操作 \"重新登录\" (新的浏览器登录存入同一记录) 与 \"撤销登录\" (记录的令牌立即换成已撤销标记, 请求 Google 撤销刷新令牌, 账户在重新登录前停止工作); `gmail`, `outlook` 与 `office365` 预设的 `authHint` 首先提及浏览器登录 (`providers.json` 版本 4); 11 语言各 35 条新字符串; JVM 测试覆盖 PKCE, 授权请求与重定向解析, 基于脚本化传输的令牌客户端, 令牌文档, 服务商表, 构建的客户端与重定向 URI, `AccountSecrets` (续期, 拒绝标记, 已撤销记录, 擦除) 以及账户选项, 表单与账户文档中的 `oauth` 对象"
+        "Gmail, Outlook.com 及 Microsoft 365 账户支持通过浏览器登录, 使用 OAuth 2.0 授权码流程及 PKCE 校验, 并自动填入邮箱地址",
+        "浏览器登录的令牌支持加密保存及自动续期, mail.accounts.list 仅返回授权状态, 续期被拒时提示重新登录",
+        "账户页增加 \"重新登录\" 及 \"撤销登录\" 操作, 撤销后账户停止工作, Google 账户同时请求撤销刷新令牌"
       ]
     },
     "v1.1.0": {
       "released_date": "2026/09/21",
       "hint": [
-        "1.1.0 新增后台守望 (邮件路线图 P8): 设置页的守望页面在没有脚本运行时以前台服务保持已保存账户的守望, 并唤醒 AutoJs6 的 \"邮件到达时\" 任务. 该任务及其守望选择器需要携带邮件契约版本 2 的宿主构建 (AutoJs6 6.8.0 构建 5282 之后); 旧版宿主上页面会提示无法唤醒 AutoJs6, 新邮件只进入守望的记录列表. 此功能新增四项权限, 理由见 README 安全章节: FOREGROUND_SERVICE 与 FOREGROUND_SERVICE_SPECIAL_USE (守望服务), POST_NOTIFICATIONS (其常驻通知, 仅在启用守望时申请) 与 RECEIVE_BOOT_COMPLETED (守望页面的开机自启开关, 默认关闭)."
+        "后台守望唤醒 \"邮件到达时\" 任务需要支持邮件契约版本 2 的 AutoJs6 6.8.0 构建 (5282 之后), 旧版宿主仅记录新邮件; 守望使用前台服务及通知权限, 开机自启默认关闭 (权限说明参阅 README)"
       ],
       "feature": [
-        "后台守望 (邮件路线图 P8): 设置页新增守望页面, 可为已保存账户配置至多 16 个守望 (`MAX_TRIGGERS`), 每个含名称, 账户别名, 文件夹, 模式 (自动, IDLE 或带间隔的轮询) 与可选的发件人 / 主题过滤, 存于 no-backup 目录下的 `mail-triggers/triggers.json`; `specialUse` 前台服务 `MailWatchService` 在没有脚本运行时以 P5 的监听器运行已启用的守望 (服务器推送时用 IDLE, 否则轮询, 断线按退避重连, 网络变化时立即重连) 并显示一条低优先级通知; 每封新邮件进入守望的记录列表 (最近 100 条信封摘要, `MAX_TRIGGER_RECORDS`, 不含正文), 页面显示连接状态, 最近错误, 记录与重连操作; 开机自启开关 (默认关闭) 启用 `BOOT_COMPLETED` 接收器, 重启后重新拉起服务",
-        "邮件契约版本 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, 能力特性 `backgroundWatch`): 宿主以 generation 与可选过滤订阅已配置的守望, 立即收到当前状态, 之后收到 `onStatus` (stopped, connecting, connected 或 failed, 附原因与最近错误) 与每封匹配邮件的 `onMail(generation, seq, event)`, `mail` 事件携带守望 id, 别名, 地址, 文件夹, 邮件信封与 `receivedAt`; 每个守望至多 4 个订阅者 (`MAX_TRIGGER_SUBSCRIBERS`), 已禁用或不存在的守望与不可用的选项以 reason 为 `refused` 的 `stopped` 状态拒绝, `update` 替换订阅者的过滤, `stop` 只结束订阅; 没有活动订阅者时每个事件以显式广播 `org.autojs.autojs6.action.MAIL_TRIGGER` 发往 AutoJs6 (受其 `PLUGIN` 签名权限保护), 即使没有脚本运行也能启动宿主的 \"邮件到达时\" 任务 (`MailTriggerBinderTest` 于 API 37 AVD; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)",
-        "邮件核心新增页面, 服务与 Binder 共用的触发文档与规则 (`TriggerConfig`, 发件人与主题子串不区分大小写的 `TriggerFilter`, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) 与上限 `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS`, `MIN_TRIGGER_INTERVAL_MS` (3 s, 宿主每任务的节流间隔), 监听器新增 `onConnected` 回调, 后台守望在文件夹打开后即显示 `connected`"
+        "后台守望页面, 支持为已保存账户配置最多 16 个守望, 无脚本运行时仍可通过 IDLE 或轮询监听新邮件, 断线后自动重连, 保留最近 100 条邮件摘要并支持开机自启 (默认关闭)",
+        "后台守望支持唤醒 AutoJs6 的 \"邮件到达时\" 任务, 宿主可订阅连接状态及邮件事件并更新筛选条件 (每个守望最多 4 个订阅者)",
+        "后台守望支持按发件人及主题进行不区分大小写的子串筛选, 文件夹打开后显示已连接状态, 宿主每项任务的最短触发间隔为 3 s"
       ]
     },
     "v1.0.1": {
       "released_date": "2026/09/21",
       "fix": [
-        "Outlook.com 的 POP3 以 OAuth 2.0 令牌登录 (邮件路线图 P6 服务商矩阵, 2026-09-21): 服务器对 Angus Mail 默认发送的单行 `AUTH XOAUTH2 <base64>` 答 `-ERR Protocol error. Connection is closed.` 并断开连接, `outlook` 预设的 POP3 账户因此以 `AUTH_FAILED` 失败; 服务商预设新增 `pop3Xoauth2TwoLine` (目录版本 3, `outlook` 与 `office365` 为 true), 邮件核心对这两个预设以及未用预设而填写的微软 POP3 主机改为先发裸命令, 收到服务器的 `+` 续行后再发 base64 响应 (`Pop3OAuthScriptedTest` 5 例; 已在真实账户上经 JVM 与 API 33 真机核实)"
+        "Outlook.com 及 Microsoft 365 的 POP3 账户使用 OAuth 2.0 令牌登录时出现 AUTH_FAILED 的问题, 兼容 Microsoft 服务器的两步 XOAUTH2 认证"
       ],
       "improvement": [
-        "服务商矩阵的 Outlook.com 列 (邮件路线图 P6) 与 P5 设备行, 以维护者 Entra 公共客户端的令牌在一个个人账户上跑通: 会话测试, 文件夹 (角色来自常规名称, 无 SPECIAL-USE), 发信 (`sentCopy = server`, Message-ID 被服务器改写), 列表 (约 7 s 可见), 服务器搜索 (各键均命中; 中文主题能正确命中但服务器在 2300 封的收件箱上要花数分钟), 正文, 附件, 标记 (自定义关键字不存储), 建夹, `MOVE`, 监听 (IDLE 在提交后约 10 s 内推送, 七家中最快), POP3 (UIDL 5 字符, 刚发的邮件在视图中) 与清理 (已发送副本可按 UID 寻址) 全部通过; Redmi (API 33) 上 baseline / 杀插件 / 关 Wi-Fi 三个监听场景 9 到 14 s 到达, 事件顺序与 Gmail 一致; 预设 notes, README 与证据文件记录了差异, 包括微软对较新个人邮箱给出的 `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` 拒绝"
+        "补充 Outlook.com 的 OAuth 2.0 兼容性说明, 包含服务器保存已发送副本, 中文搜索延迟及不保留自定义关键字等差异 (部分个人邮箱可能被服务器拒绝 SMTP 登录)"
       ]
     },
     "v1.0.0": {
       "released_date": "2026/09/19",
       "hint": [
-        "首个正式版本: 邮件核心, Binder 契约, 脚本 API `mail`, 设置页与别名账户, 新邮件监听, 以及 TLS, 字符集, 服务商, 生命周期, 敌意输入, 秘密审计与性能矩阵均已完成并附有证据 (ROADMAP.md P0 至 P6). 需要 AutoJs6 6.8.0 (构建 5282) 或更高版本."
+        "需要 AutoJs6 6.8.0 (构建 5282) 或更高版本"
       ],
       "feature": [
-        "插件标识 `angus-mail` (engine `mail`), 含 INFO 服务, Wake Activity 以及 `org.autojs.plugin.MAIL` 服务; 其 `IMailPlugin` Binder 应答插件信息, 能力, 服务商与已保存账户列表以及会话信封 (具体操作随 P2 落地)",
-        "基于 Eclipse Angus Mail 的邮件核心: IMAP / POP3 / SMTP 的会话属性 (SSL 或 STARTTLS), 密码与 XOAUTH2 认证, SMTP 发信与 IMAP 收件箱列表, 已在本地 GreenMail 服务器上验证",
-        "邮件核心账户层 (路线图 P2.1): 账户选项支持 Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina 与 Aliyun 的服务商预设, 按协议区分的超时, `tls.trustAll`, IMAP `ID` 命令与脱敏的 `debug` 协议摘要; 会话懒连接, 空闲时断开并在断线后重连; `session.test` 经 Binder 返回各端点的能力与往返耗时",
-        "发信 (路线图 P2.2): `mail.send` 支持 to / cc / bcc / replyTo, 纯文本与 HTML 正文 (`multipart/alternative`), 经宿主传入的文件描述符读取的附件与内联图片 (`multipart/mixed` / `multipart/related`), 自定义头, 优先级, `inReplyTo` / `references` 与日期; 收件人, 附件与头的上限, 拒绝头注入; `saveToSent` 仅在服务商不自动保存时经 IMAP 追加副本; `messages.append` 写入草稿并返回 UID; 已在真机上对 QQ 邮箱与 Gmail 验证",
-        "收信 (路线图 P2.3): `folders.list` (树形, special-use 角色取自 LIST / XLIST 属性或约定名称, 可选计数), `folders.status` / `create` / `delete` / `rename`; `messages.list` 以 UID 为游标 (`before` / `after`), 支持 `order` 与 `unseenOnly`, 只取信封 (`hasAttachments` 由 BODYSTRUCTURE 判定); `messages.search` 把查询 JSON (`from` / `to` / `subject` / `body` / `text` / 日期 / 标记 / 大小 / `header` / `messageId` / `uid` 与 `and` / `or` / `not`) 编译为 IMAP SEARCH, 服务器拒绝时在客户端过滤 (`fallback`); `messages.get` 返回纯文本与 HTML 正文 (只有 HTML 的邮件派生文本), 全部头, 带 `partId` 的附件列表, 内联预算 (`bodyTruncated` / `bodyParts`) 与 `includeRaw`; `attachments.download` 与 `messages.raw` 流式写入宿主描述符并报告进度; `messages.setFlags` / `move` / `copy` / `delete` / `expunge`; 字符集恢复覆盖 GBK / GB 18030 / ISO-2022-JP, 未声明与未知字符集, 原始 8 位头与 RFC 2231 / 2047 文件名, 文件名净化; IMAP `ID` 命令在每条连接上发送 (163 / 126 拒绝未识别的连接), 服务器不能解析 `UID EXPUNGE` 时改用整夹 `EXPUNGE`; 已在真机上对 QQ 邮箱, 163 邮箱与 Gmail 验证",
-        "POP3 (路线图 P2.4): `receive: \"pop3\"` 的账户通过同一组操作读取唯一的 `INBOX`, `uid` 为 UIDL 字符串: `folders.list` 只返回 `INBOX` (可带计数), `messages.list` 按 UIDL 游标分页且只取信头 (`TOP`), `messages.search` 在客户端按信头由新到旧过滤, 凑够 `limit` 条即停 (最多 200 个候选, 每个一次 `TOP` 往返), `messages.get` / `messages.raw` / `attachments.download` 下载整封邮件, `messages.delete` 发 `DELE` 并在邮箱关闭时生效; 标记, 移动, 复制, expunge, 追加, `folders.status` / `create` / `delete` / `rename`, `unseenOnly` 与正文搜索在连接之前即返回 `UNSUPPORTED_OPERATION`; 已在真机上对 QQ 邮箱验证",
-        "Binder 会话控制 (路线图 P2.5): 只有已安装且与本插件同签名的 AutoJs6 宿主能打开会话或列出已保存账户 (否则 `SecurityException`, 规则与 MCP Server 插件一致); 请求与响应信封不超过 `MAX_ENVELOPE_BYTES`, 错误消息不超过 `MAX_ERROR_MESSAGE_BYTES`; 每个会话顺序执行调用, 执行中的调用之后最多排队 `MAX_QUEUED_CALLS` 个, 再多则 `LIMIT_EXCEEDED`; `cancel` 立即应答排队中的调用, 并通过关闭套接字打断执行中的调用, 服务器无响应时不再等到读超时; `close` 让全部待处理调用应答 `SESSION_CLOSED`; `getStatus` 报告 `queued` 与 `active`; 操作表标明每个操作支持的收信协议, POP3 账户在解析参数前即被拒绝; 能力集宣告 `append` 与 `clientSearchFallback`",
+        "mail 插件服务, 用于向宿主提供插件信息, 能力, 服务商预设, 已保存账户及邮件会话",
+        "基于 Eclipse Angus Mail 的邮件核心, 支持 IMAP/POP3/SMTP, SSL/STARTTLS 及密码/XOAUTH2 认证",
+        "Gmail/Outlook.com/Microsoft 365/QQ/163/126/iCloud/Yahoo/Sina/Aliyun 服务商预设, 支持连接测试, 超时配置, 断线重连及脱敏的协议调试摘要",
+        "mail.send 支持收件人/抄送/密送, 文本及 HTML 正文, 附件, 内联图片和回复信息, 可按服务商行为保存已发送副本, messages.append 支持写入草稿",
+        "IMAP 文件夹管理及邮件分页, 搜索, 正文读取, 附件下载, 标记, 移动和删除, 支持客户端搜索回退及常见邮件字符集 (服务器不支持 UID EXPUNGE 时改用整夹 EXPUNGE)",
+        "POP3 账户支持收件箱分页, 信头搜索, 正文及附件下载和删除, 搜索最多检查 200 封候选邮件 (不支持标记, 移动, 复制, 正文搜索及文件夹管理)",
+        "邮件会话支持排队, 取消及关闭, 取消可中断无响应的网络连接, 超出队列上限时返回 LIMIT_EXCEEDED (仅接受与插件同签名的 AutoJs6 宿主)",
         "10 种语言的 README, 插件中心说明与更新日志",
-        "已保存账户存储 (路线图 P4.1): 在插件内保存的账户把非秘密的账户文档与经 Android Keystore 主密钥 AES-256-GCM 加密的密码或访问令牌存在一起; 认证数据绑定别名, 秘密类型与账户文档, 在磁盘上被改动或移动的记录不再能解密; 记录存于 `noBackupFilesDir` (本已排除在备份之外), 在文件锁下原子写入, 秘密只经过用后即清零的 `CharArray` / `ByteArray` 缓冲; 别名去除首尾空白, 经 NFC 规范化且不区分大小写",
-        "已保存账户会话 (路线图 P4.3): `openSession` 接受别名形态 (`accountAlias`) 并在插件进程内解密秘密, `mail.connect('alias')` 因此不经 Binder 传递任何凭据; `listSavedAccounts` 返回每个已保存账户的别名, 地址, 用户名, 服务商, 认证方式, 收信协议, 端点与默认标记, 不含任何秘密; 能力集合新增 `savedAccounts`",
-        "设置页 (路线图 P4.2): 启动器图标打开账户页, 列出每个已保存账户的地址, 服务商, 收信协议与认证方式, 提供编辑, 测试连接, 设为或取消默认以及删除; 账户编辑页可按服务商预设自动填充, 也可填写自定义 IMAP / POP3 / SMTP 服务器及其加密方式与端口, 密码或访问令牌直接从输入框读入用后即清零的 `CharArray`, 编辑时留空则沿用已保存的秘密, 保存前可对所填服务器执行 `session.test` 并按协议展示结果与耗时而不落盘; 页面跟随 AutoJs6 宿主的主题, 夜间模式与语言, 编辑页重建后恢复除秘密外的全部字段",
-        "设置入口 (路线图 P4.3): AutoJs6 宿主经导出的 `org.autojs.plugin.MAIL_SETTINGS` 活动打开账户页, 该活动要求插件权限, 只接受无参数的请求并立即结束; 能力集合宣告 `mailSettingsVersion` 1; 启动器入口本身不带该权限",
-        "发行历史 (路线图 P4.5): 设置页与关于页可打开发行历史页, 内容取自随插件打包的当前语言更新日志 (无对应翻译时回退英语), 每个版本一张卡片, 含日期与带标签的条目; 插件不做自身的更新检查, 更新跟随 AutoJs6 插件中心",
-        "电池优化引导 (路线图 P4.6): 设置页显示系统是否可能在后台暂停本插件 (`PowerManager.isIgnoringBatteryOptimizations`), 说明影响后经 `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` 打开系统对话框; 清单因此声明 `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`; 启动时不发起任何请求, 也没有功能依赖该排除",
-        "新邮件监听, IMAP IDLE (路线图 P5): 邮件内核以独立连接用 `IMAPFolder.idle` 监听文件夹, 每 24 分钟续期一次 IDLE, 新邮件按 UID 抓取 (信封, 或按需正文) 且只报一次, 断线后按指数退避重连 (1 s 起, 上限 5 min, 带抖动), 文件夹 UIDVALIDITY 变化时报 `resync`; 服务器无 IDLE 或 IDLE 连续失败 3 次则切换为轮询并发 `mode` 事件; 每个会话最多 `MAX_WATCHES_PER_SESSION` 个监听, 会话关闭时一并关闭",
-        "新邮件监听, 轮询 (路线图 P5): `mode: \"poll\"` 的监听每 `pollIntervalMs` (默认 60 s, 下限 `MIN_POLL_INTERVAL_MS`, 上限 1 小时) 按 UID 对文件夹做差分, 连接在轮次之间保持; POP3 账户一律轮询, 按 UIDL 差分且每轮登录一次, 轮次之间不锁定邮箱, 只报新增, 不报删除; 首轮只取快照, 不报积压",
-        "经 Binder 的新邮件监听 (路线图 P5): `IMailSession.watch` 在邮件内核的监听器上打开监听并立即应答 (会话已关闭, 达到 `MAX_WATCHES_PER_SESSION`, 参数不可用或宿主回调已死亡时返回 null, 原因记入会话状态); 事件由投递线程带宿主的 `generation` 与自 1 起计数的 `seq` 送达宿主的 `oneway` 回调, 宿主停止消费时 `MAX_WATCH_QUEUE` 条事件的队列折叠为一条 `resync`, 超过 `MAX_ENVELOPE_BYTES` 的事件去掉正文或退化为 `resync` 后送出, `stop`, 会话关闭与宿主死亡均以单条 `closed` 事件结束监听, 默认网络变化或丢失时运行中的监听立即重连, 能力集现在宣告 `idle`"
+        "账户密码及访问令牌通过 Android Keystore 加密保存并排除备份, 账户别名支持 Unicode 规范化及不区分大小写的匹配",
+        "mail.connect 支持通过账户别名连接, 凭据仅在插件进程内解密, 已保存账户列表仅返回账户信息及默认标记",
+        "账户设置页, 支持服务商预设, 自定义服务器, 连接测试, 默认账户及编辑/删除操作, 跟随宿主主题与语言 (编辑时密码留空可沿用已保存凭据)",
+        "宿主可通过插件设置入口打开账户页, 启动器也可独立打开 (宿主入口需要插件权限)",
+        "发行历史页面, 支持按当前语言显示及英文回退, 可从设置页或关于页打开 (更新检查由 AutoJs6 插件中心提供)",
+        "设置页增加电池优化状态及系统授权入口, 用于减少后台监听被暂停的情况 (仅由用户主动申请, 不作为功能前提)",
+        "新邮件监听支持 IMAP IDLE, 断线后自动重连, 服务器不支持或连续失败时回退轮询, 邮件去重上报, 会话关闭时停止监听",
+        "新邮件监听支持轮询, 默认间隔 60 s, 首轮仅建立快照, POP3 账户仅报告新增邮件且在轮询间隔内释放邮箱",
+        "宿主可订阅及停止新邮件监听, 网络变化时立即重连, 事件积压或数据过大时通过 resync 通知重新同步, 宿主退出时自动关闭监听"
       ],
       "fix": [
-        "服务商预设 (路线图 P3.2): 163 邮箱与 126 邮箱会在服务器端保存每封经 SMTP 发出的邮件, 两者的 `autoSavesSent` 改为 true, 默认 `saveToSent` 不再向 `已发送` 追加第二份副本 (真实 163 账户核实: `saveToSent: false` 发出的邮件数分钟后出现在已发送文件夹)",
-        "AGP 9.1 构建时的 SDK XML v4 解析警告及 JVM 单元测试组装任务误触发 APK 原生库对齐检查的问题 (共享构建插件 1.8.3)",
-        "账户编辑器 (路线图 P4.7): 整个表单退出 Android 自动填充框架, 密码管理器不再索取授权码; 此前 HyperOS (API 35) 会在保存后关闭编辑器时弹出 \"自动保存账号密码\".",
-        "QQ, Sina, 163 与 126 的新邮件监听 (邮件路线图 P5 设备矩阵): 服务商预设新增 `idlePush` (预设表版本 2), 这四家上 `mode: auto` 从一开始就轮询而不再进入 IDLE, 因为 QQ 与 Sina 接受 IMAP IDLE 却在客户端空闲期间从不推送 (真实账户, 2026-09-19: 10 分钟内没有任何未标记响应; Sina 还会在 60 s 后断开连接), 而 163 与 126 根本没有 IDLE; 显式 `mode: 'idle'` 仍会进入 IDLE. 矩阵本身 (QQ 在 API 24 模拟器与两台 Sony 手机, 163 在一台 Redmi: 杀插件进程, 断网, Wi-Fi 切蜂窝, 强制 Doze) 记录于 `docs/dev/p5-watch-evidence.md`, 配套冒烟脚本 `docs/smoke/watch.js` 与驱动 `.python/run_watch_matrix.py`; 同一矩阵还表明 Doze 会冻结后台应用的网络 (监听的重连超时, Android 9 上新邮件在唤醒后约四分钟才报告), 因此插件现在在设备离开 Doze 的瞬间重连其监听, 设置页的电池优化引导文案说明了该排除的用途",
-        "TLS 矩阵 (邮件路线图 P6): 隐式 SSL, STARTTLS (经 GreenMail 前置的 STARTTLS 代理), 明文, 带 / 不带 `tls.trustAll` 的自签证书, 主机名不匹配的受信证书, 端口模式错配以及不提供升级的端口, 现已对 IMAP / POP3 / SMTP 逐一测试 (`TlsMatrixTest`, `docs/dev/p6-tls-matrix.md`); 测试发现 Angus 的 POP3 存储把缺失的 STLS 升级与握手前超时报告为认证失败, 错误映射器现改为 `TLS_FAILED` 与 `TIMEOUT` 而非 `AUTH_FAILED`; `TlsDeviceTest` 在 API 24 / 28 / 33 上确认邮件内核以平台默认设置即可连接仅 TLS 1.2 的服务器, 并自 API 29 起协商 TLS 1.3",
-        "字符集矩阵 (邮件路线图 P6): GB18030 / GBK / GB2312 / Big5 / ISO-2022-JP / EUC-KR / UTF-8 在主题, 显示名, 正文与两种文件名形态中按声明, 未声明与误声明三种情形逐一断言 (`CharsetMatrixTest`, `docs/dev/p6-charset-matrix.md`), 并在 API 24 / 28 / 33 上核对 (`CharsetDeviceTest`); 本轮修复两处解码缺口: 声明为 `us-ascii` / ISO-8859-1 却携带 UTF-8 或 GB 18030 字节的正文或信头此前解出 Latin-1 乱码 (Jakarta 把 `us-ascii` 映射为永不失败的 ISO-8859-1), 现改走猜测链; 无编码词的原始 ISO-2022-JP 主题与正文现按其转义序列识别; Big5 与 EUC-KR 仍需声明 (其字节对在 GB 18030 中同样合法)",
-        "服务商兼容矩阵 (邮件路线图 P6): QQ, 163, 126, yeah.net 与 Sina 以真实账户跑完发信, 列表, 服务器与客户端中文搜索, 正文, 附件字节, 标记, 建夹, 移动, 监听与 POP3 (`ProviderMatrixProbe`, `.python/run_provider_matrix.py`, `docs/dev/p6-provider-matrix.md`), 差异记入预设 notes: QQ 对中文 SEARCH 答 OK 零命中 (请用 `fallback: 'always'`), 改写 Message-ID 与 ENVELOPE 的 To 显示名, 拒绝 CREATE, 且其自存的已发送副本一段时间内不可按 UID 寻址; 163 对近期邮件的文本搜索零命中; Sina 只接受 ALL, SINCE 与标志搜索键; 五家均不存储自定义关键字. 本轮同时修复一处客户端缺陷: POP3 XOAUTH2 登录被以 SASL continuation 拒绝时 (Gmail) 因 Angus Mail 忽略拒绝而报为可重试的 `IO_FAILED`, 现由邮件核心核实登录并返回 `AUTH_FAILED` (`Pop3OAuthScriptedTest`). Gmail (令牌过期), Outlook.com 与 iCloud (无账户) 仍为未核实",
-        "生命周期矩阵 (邮件路线图 P6): 在 Redmi (API 33) 上以八种方式结束一个持有会话与 watch 的脚本: 正常退出, 开着 watch 与客户端 `exit()`, `engines.stopAll()`, 强停宿主, 强停插件, 原地升级插件, 禁用插件, 卸载插件; 每种情况下插件的连接, 绑定与文件描述符都在 30 s 内回到脚本前的状态, 宿主从不直接连接服务器 (`docs/dev/p6-lifecycle-matrix.md`, `.python/run_lifecycle_matrix.py`, `docs/smoke/lifecycle.js`). 矩阵发现并修复一处泄漏: Angus Mail 为每个套接字的写超时自建线程池, 只在 TLS 套接字经该包装层关闭时才关掉它, 而底层明文套接字已被 cancel 或 watch 停止关闭后 Android 会跳过这一步, 于是每条这样的连接在进程存续期间留下一条线程; 邮件核心现在把一个共享的守护定时器交给 Angus (`WriteTimeouts`, `WriteTimeoutExecutorTest`)",
-        "服务商矩阵的 Gmail 与 Outlook.com 列 (邮件路线图 P6, 维护者更新 Gmail 令牌并提供三个 Outlook.com / Hotmail 账户后回填): Gmail 以令牌通过会话测试, 文件夹, 发信, 列表, 服务器搜索, 正文, 附件, 标记与关键字, 建夹, 移动, 监听与 POP3, 其 IDLE 确实推送 (新邮件在投递后约 30 s 报告, 即 Gmail 的通知节奏), P5 设备矩阵 (基线, 杀插件, 关 Wi-Fi) 在 Redmi (API 33) 上以 IDLE 路径重跑 (`docs/dev/p6-provider-matrix.md`, `docs/dev/p5-watch-evidence.md`). 两个发现改动了邮件核心: Gmail 广告 `UTF8=ACCEPT`, Angus Mail 启用后 Gmail 反而拒绝所有含非 ASCII 文本的搜索 (`BAD Could not parse command`), 中文主题搜索因此回退到客户端; 现不再启用该扩展, 搜索像在其他服务器上一样携带 `CHARSET UTF-8` (`Utf8SearchTest`). 客户端过滤现在每 25 个候选向调试轨迹报告一次进度, 因为 `fallback: 'always'` 的正文搜索在命中不足 `limit` 时会扫完 2000 个候选的整个窗口, 每个候选两到三次往返, 在本网络下对 Gmail 约 43 分钟. Outlook.com: 三个账户对应用密码在 IMAP 与 POP3 上都答 `Basic authentication is disabled`, SMTP 答 `535`, 预设的仅 XOAUTH2 规则成立, 操作行等待令牌 (路线图 P9); 绕过预设后服务器自身的拒绝 (`LOGINDISABLED`, 仅 `AUTH=XOAUTH2`) 报为 `AUTH_MECHANISM_UNSUPPORTED` 而非 `SERVER_ERROR` (`LoginDisabledTest`)"
+        "163 及 126 邮箱默认重复保存已发送邮件副本的问题",
+        "AGP 9.1 构建时的 SDK XML v4 解析警告, 以及 JVM 单元测试误触发 APK 原生库对齐检查的问题 (共享构建插件 1.8.3)",
+        "部分系统关闭账户编辑器时弹出密码管理器保存提示的问题 (账户表单退出系统自动填充)",
+        "QQ/Sina/163/126 邮箱自动监听模式无法及时收到新邮件的问题, 改为优先轮询, 设备退出 Doze 后立即重连 (显式指定 IDLE 时保留该模式)",
+        "POP3 缺少 STLS 升级或握手前超时时被误报为 AUTH_FAILED 的问题, 分别返回 TLS_FAILED 或 TIMEOUT",
+        "字符集误声明为 US-ASCII/ISO-8859-1 的 UTF-8 或 GB18030 邮件出现乱码, 以及未声明编码的 ISO-2022-JP 邮件解码失败的问题 (Big5/EUC-KR 仍需声明字符集)",
+        "POP3 XOAUTH2 登录被服务器拒绝时误报为可重试 IO_FAILED 的问题, 改为返回 AUTH_FAILED; 补充 QQ/163/126/yeah.net/Sina 的搜索及已发送副本限制 (QQ 中文搜索可使用 `fallback: 'always'`)",
+        "取消调用或停止监听后写超时线程未释放的问题",
+        "Gmail 中文搜索被拒绝的问题, 改用 CHARSET UTF-8 并为客户端搜索提供进度; Outlook.com 禁用密码认证时返回 AUTH_MECHANISM_UNSUPPORTED (客户端正文搜索仍可能耗时较长)"
       ],
       "improvement": [
-        "错误映射: POP3 服务器在登录后因账户未开启 POP 访问而拒绝邮箱 (Gmail 对 STAT 答 `[SYS/PERM] Your account is not enabled for POP access`) 时, 现在得到说明原因的 `UNSUPPORTED_OPERATION`, 而不是可重试的 `IO_FAILED` \"I/O failed\"",
-        "服务商预设: Sina 邮箱补上已发送文件夹名 (`已发送`), 并注明服务器不保存已发邮件副本且拒绝 IMAP CREATE (文件夹只能在网页端创建); 126 邮箱服务器保存已发邮件副本已用真实账户验证",
-        "服务商预设: Yahoo Mail 与 Aliyun Mail 的说明注明这两个预设未经真实账户核实 (项目无法获得测试账户), 其已发送副本行为按公开文档推定.",
-        "秘密审计 (邮件路线图 P6): 对邮件内核与应用搜索日志语句, 控制台输出, Jakarta 调试开关以及每一处秘密被实体化的位置; 结果 (`docs/dev/p6-secret-audit.md`) 由 `SecretAuditTest` 强制执行: 任何日志或调试语句都会使构建失败, `reveal()` 被固定在三处 Jakarta 认证调用, 并检查 Jakarta 会话永不调试, 账户 JSON 中的秘密被拒绝且不回显, 值对象, 异常映射器与协议摘要在秘密传播的每种形式下都将其掩盖",
-        "敌意输入 (邮件路线图 P6): 无论邮件携带什么, 邮件文档现在都有界 (四个地址列表合计 500 项, 地址与显示名截至 320 字符, 主题 / 标识 / 信头值截至 4096 字符, `headers` 映射至多 64 KiB, MIME 树深度至多 32 且部件至多 256, 未知大小的正文按内联预算截读), 单封敌意邮件不再能以 `LIMIT_EXCEEDED` 封死整页列表; 损坏的 base64, 未知传输编码, 无 boundary 或空的 multipart 改为宽松解码而不再被误判为断线; 过深或无法解析的 multipart 作为一个叶子保持可下载; `HostileInputTest` 与 `HostileInputGreenMailTest` (17 例, `docs/dev/p6-hostile-input.md`) 覆盖超深 / 超宽 MIME, 20000 收件人, 信头炸弹, 缺失 Content-Type, 非法 base64, 递归 `message/rfc822`, 敌意文件名, 大小不符与非法 UTF-8",
-        "性能基线 (邮件路线图 P6): 以本地种子服务器 (10000 封收件箱, 一封 50 MiB 附件) 在 JVM, Redmi (API 33) 与 Sony (API 28) 上跑列表, 搜索, 下载, 发送与一小时 IDLE 待机, 数据记入 `docs/dev/p6-performance-baseline.md`. 由此改动两处: IMAP 分段抓取由 64 KiB 提高到 1 MiB, 50 MiB 附件从约 1100 次往返降到 69 次 (回环 10 MiB/s, 下载常驻内存仍约 2 MiB); 客户端搜索在命中 `limit` 条后即停止而不再扫遍全部候选. 待机显示插件约 32 MiB PSS, 每小时 3.5 s CPU 与 40 KB 流量, 且长时监听需要宿主的前台服务 (否则 Android 9 在 31 分钟时把宿主与插件当作缓存空进程杀掉)",
-        "发布体积 (邮件路线图 P6): R8 规则不再按原名保留整个 `jakarta.mail`, `jakarta.activation` 与 Angus Mail 命名空间, 只保留库按名加载的 20 个类 (IMAP / POP3 / SMTP 的 store 与 transport, 其 Provider, 流提供者, activation 注册表与五个数据内容处理器), 每条规则的依据资源记入 `app/proguard-rules.pro` 与 `docs/dev/p6-size.md`. release universal APK 由 2,254,035 字节降至 2,153,957 字节 (下载体积 1,507,931 -> 1,407,295), 去掉 2,319 个 DEX 方法与 162 个库类 (`MailHandler` 日志组件, GraalVM 特性, 图片处理器, SASL 客户端); 仪器测试套件在真机上对裁剪后的构建通过 (27 例)"
+        "账户未开启 POP 访问时返回带原因的 UNSUPPORTED_OPERATION, 避免误报为可重试的 IO_FAILED",
+        "补充 Sina 的已发送文件夹预设及限制说明, 文件夹需在网页端创建, 服务器不自动保存已发送副本; 更新 126 邮箱自动保存副本的说明",
+        "补充 Yahoo Mail 及 Aliyun Mail 预设的验证范围, 已发送副本行为依据公开文档, 尚未经真实账户核实",
+        "加强凭据保护及日志检查, 账户文档拒绝明文凭据, 异常与调试摘要隐藏敏感内容",
+        "限制超长信头, 收件人及 MIME 层级的处理开销, 单封异常邮件不再阻断整页列表, 损坏编码及 multipart 内容支持宽松解码或原样下载",
+        "IMAP 分段抓取大小由 64 KiB 提升至 1 MiB, 减少大附件下载的网络往返, 客户端搜索达到结果上限后即停止 (长时间监听需要宿主保持前台服务)",
+        "精简邮件库的 R8 保留规则, 减小发行安装包体积"
       ],
       "dependency": [
-        "Eclipse Angus Mail 2.0.5 (`org.eclipse.angus:jakarta.mail`) 及 Angus Activation 2.0.3 与 Jakarta Activation API 2.1.4",
-        "附加 GreenMail 2.1.13 用于 JVM 邮件核心测试 (仅测试范围)",
-        "附加 `common-plugin-api.aar` (AutoJs6 模块 `plugin-api/common-plugin-api`, 宿主构建 6.8.0 / 5282, MPL 2.0) 作为共享插件契约, 并在 `locks/host-api-aars.lock` 中锁定哈希",
-        "附加 `mail-api.aar` (AutoJs6 模块 `plugin-api/mail-api`, 宿主构建 6.8.0 / 5282, MPL 2.0) 作为邮件 Binder 契约 (六个 AIDL 接口, `MailContract`, `MailActions`, `MailIds`, `MailCapabilityKeys`, `MailErrorCodes`), 并在 `locks/host-api-aars.lock` 中锁定哈希"
+        "附加 Eclipse Angus Mail 版本 2.0.5, Angus Activation 版本 2.0.3 及 Jakarta Activation API 版本 2.1.4",
+        "附加 GreenMail 版本 2.1.13 (仅用于 JVM 测试)",
+        "附加 common-plugin-api 本地模块, 用于共享插件契约 (来源: AutoJs6 6.8.0/5282, MPL 2.0, 锁定文件哈希)",
+        "附加 mail-api 本地模块, 用于邮件契约 (来源: AutoJs6 6.8.0/5282, MPL 2.0, 锁定文件哈希)"
       ]
     }
   }
