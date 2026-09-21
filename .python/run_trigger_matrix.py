@@ -72,8 +72,18 @@ def log(text):
     print(time.strftime("%H:%M:%S"), text, flush=True)
 
 
+MARKERS = {"installsAMailArrivedTask": ("MailTriggerTask", "installed task"), "removesTheMailArrivedTasks": ("MailTriggerTask", "removed "),
+           "configuresAWatchForTheHost": ("RealAccountWatch", "configured watch="), "removesTheWatch": ("RealAccountWatch", "removed watch=")}
+
+
+def marker_count(serial, tag, marker):
+    return len([l for l in adb(serial, "logcat", "-d", "-v", "raw", "-s", f"{tag}:I", check=False).splitlines() if marker in l])
+
+
 def instrument(serial, test_package, test_class, method, arguments):
-    """Runs one test method through `am instrument -w -r`; returns (passed, output)."""
+    """Runs one test method through `am instrument -w -r`; returns (passed, output). The pass is judged by the
+    test's own log line as well: on Android 9 the runner's result is sometimes reported as "Process crashed"
+    (code 0) at the force-stop of the finished instrumentation although the test ran to its end."""
     command = ["shell", "am", "instrument", "-w", "-r", "-e", "class", f"{test_class}#{method}"]
     for key, value in arguments.items():
         if value is None or value == "":
@@ -81,10 +91,18 @@ def instrument(serial, test_package, test_class, method, arguments):
         assert re.match(r"^[A-Za-z0-9._/#@,:+=\-]+$", str(value)), f"instrumentation argument {key} has characters unsafe for the shell"
         command += ["-e", key, str(value)]
     command.append(f"{test_package}/{RUNNER}")
+    tag, marker = MARKERS[method]
+    before = marker_count(serial, tag, marker)
     output = adb(serial, *command, check=False)
-    passed = "OK (1 test)" in output and "INSTRUMENTATION_STATUS_CODE: -2" not in output and "INSTRUMENTATION_STATUS_CODE: -3" not in output \
-        and "INSTRUMENTATION_FAILED" not in output and "FAILURES" not in output
+    failed_status = "INSTRUMENTATION_STATUS_CODE: -2" in output or "INSTRUMENTATION_STATUS_CODE: -3" in output
+    passed = "OK (1 test)" in output and not failed_status and "INSTRUMENTATION_FAILED" not in output and "FAILURES" not in output
+    if not passed and not failed_status:
+        time.sleep(1.5)  # the log line may still be on its way
+        if marker_count(serial, tag, marker) > before:
+            log(f"  {method}: the runner reported '{output.strip().splitlines()[-2][:80] if len(output.strip().splitlines()) > 1 else output.strip()[:80]}' but the test's log line is there; taken as passed")
+            passed = True
     if not passed:
+        log(f"  {method}: runner output tail: {output.strip()[-240:]!r}")
         for line in output.splitlines():
             if line.startswith("INSTRUMENTATION_STATUS: stack=") or "Error" in line or "Exception" in line or "INSTRUMENTATION_STATUS_CODE: -3" in line:
                 log("  " + line[:400])
@@ -145,11 +163,44 @@ def pid(serial, package):
     return int(text.split()[0]) if text and text.split()[0].isdigit() else None
 
 
+def ensure_root(serial):
+    """An emulator's adbd runs as root when asked (a reboot drops it): root may start the non-exported service
+    directly, which matters on API 31+ where `run-as` (the plugin's own uid, in the background) is refused by the
+    background foreground-service restriction. A production device keeps its shell user; nothing changes there."""
+    if shell(serial, "id").strip().startswith("uid=0("):
+        return True
+    if not serial.startswith("emulator-"):
+        return False
+    subprocess.run(["adb", "-s", serial, "root"], capture_output=True, text=True, timeout=30)
+    subprocess.run(["adb", "-s", serial, "wait-for-device"], timeout=60, check=False)
+    deadline = time.time() + 20
+    while time.time() < deadline:
+        if shell(serial, "id").strip().startswith("uid=0("):
+            return True
+        time.sleep(1)
+    return False
+
+
 def start_watch_service(serial):
-    result = shell(serial, f"am start-foreground-service -n {WATCH_SERVICE}")
-    if "Error" in result or "Exception" in result:
-        result = shell(serial, f"run-as {PLUGIN_PACKAGE} am start-foreground-service --user 0 -n {WATCH_SERVICE}")
-    return result.strip()
+    """Starts the (non-exported) watch service the way the Watches page would. The shell user may start it on
+    recent Android versions; Android 9 denies the shell access to a non-exported service (only logcat says so),
+    then the start goes through `run-as` under the plugin's own uid (debug build)."""
+    ensure_root(serial)
+    result = shell(serial, f"am start-foreground-service -n {WATCH_SERVICE}").strip()
+    try:
+        wait_for(lambda: service_running(serial) or None, 8, "the service start", interval_s=1.0)
+    except TimeoutError:
+        result = shell(serial, f"run-as {PLUGIN_PACKAGE} am start-foreground-service --user 0 -n {WATCH_SERVICE}").strip() + " (via run-as)"
+        try:
+            wait_for(lambda: service_running(serial) or None, 8, "the service start", interval_s=1.0)
+        except TimeoutError:
+            result += " [service not in the foreground afterwards]"
+            # the crash buffer, before anything rotates it away (a service that crashes at start lands here)
+            crash = adb(serial, "logcat", "-d", "-b", "crash", "-v", "threadtime", check=False)
+            tail = [l.rstrip() for l in crash.splitlines() if PLUGIN_PACKAGE in l or "AndroidRuntime" in l or "FATAL" in l][-40:]
+            if tail:
+                result += "\n    crash buffer:\n    " + "\n    ".join(tail)
+    return result
 
 
 def service_running(serial):
@@ -302,7 +353,17 @@ def main():
     restore = []
     try:
         if args.scenario == "reboot":
-            log("rebooting the device")
+            # a package the instrumentation force-stopped is in the stopped state and gets no BOOT_COMPLETED;
+            # starting the service (as the Watches page does) clears it, and the running watch is what a user reboots with
+            started = start_watch_service(args.serial)
+            log(f"service start before the reboot: {started or 'ok'}")
+            try:
+                wait_for(lambda: (lambda s: s if s[0] == "connected" else None)(watch_state(args.serial, args.watch_id)), 120, "the connected state before the reboot")
+            except TimeoutError as e:
+                log(str(e))
+            time.sleep(12)  # the package manager writes the component state a few seconds after the change
+            summary["stoppedBeforeReboot"] = "stopped=true" in shell(args.serial, f"dumpsys package {PLUGIN_PACKAGE} | grep -m1 ' stopped='")
+            log(f"rebooting the device (plugin stopped state {summary['stoppedBeforeReboot']})")
             adb(args.serial, "reboot", check=False)
             time.sleep(15)
             wait_for_boot(args.serial)

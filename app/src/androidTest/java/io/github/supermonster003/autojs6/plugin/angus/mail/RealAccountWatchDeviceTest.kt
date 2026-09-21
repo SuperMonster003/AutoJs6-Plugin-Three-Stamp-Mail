@@ -1,6 +1,7 @@
 package io.github.supermonster003.autojs6.plugin.angus.mail
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -8,6 +9,7 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.trigger.TriggerC
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.trigger.TriggerFilter
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStores
 import io.github.supermonster003.autojs6.plugin.angus.mail.trigger.BootReceiver
+import io.github.supermonster003.autojs6.plugin.angus.mail.trigger.MailWatchService
 import io.github.supermonster003.autojs6.plugin.angus.mail.trigger.TriggerStores
 import io.github.supermonster003.autojs6.plugin.angus.mail.trigger.WatchKeeper
 import org.junit.Assert.assertEquals
@@ -41,6 +43,7 @@ class RealAccountWatchDeviceTest {
         val alias = arguments.getString("mailAlias")
         val watchId = arguments.getString("watchId")
         assumeTrue("mailAlias / watchId not given", !alias.isNullOrBlank() && !watchId.isNullOrBlank())
+        stopWatchService()
         assertNotNull("the account '$alias' must be saved first (run_settings_real_account.py)", AccountStores.of(context).get(alias!!))
         val config = TriggerConfig(
             triggerId = watchId!!,
@@ -67,11 +70,22 @@ class RealAccountWatchDeviceTest {
     fun removesTheWatch() {
         val watchId = arguments.getString("watchId")
         assumeTrue("watchId not given", !watchId.isNullOrBlank())
+        stopWatchService()
         WatchKeeper.of(context).stopAll("instrumentation")
         val removed = TriggerStores.of(context).remove(watchId!!)
         BootReceiver.setEnabled(context, false)
         Log.i(TAG, "removed watch=$watchId existed=$removed remaining=${TriggerStores.of(context).list().size}")
         assertTrue(TriggerStores.of(context).get(watchId) == null)
+    }
+
+    /**
+     * The instrumentation's force-stop makes Android restart the sticky watch service inside this
+     * process one second later; a service still running when the instrumentation finishes is
+     * reported as "Process crashed" on Android 9. Stopping it first keeps the run deterministic;
+     * the driver starts the service afterwards.
+     */
+    private fun stopWatchService() {
+        context.stopService(Intent(context, MailWatchService::class.java))
     }
 
     private companion object {

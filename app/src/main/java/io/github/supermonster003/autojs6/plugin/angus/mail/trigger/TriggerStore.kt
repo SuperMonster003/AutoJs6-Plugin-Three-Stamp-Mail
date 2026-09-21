@@ -10,12 +10,10 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.trigger.TriggerC
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.trigger.TriggerConfigsDocument
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.trigger.TriggerId
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.io.RandomAccessFile
-import java.nio.channels.FileChannel
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import java.nio.file.StandardOpenOption
 import java.security.MessageDigest
 import java.util.UUID
 
@@ -148,18 +146,25 @@ class TriggerStore(
         return String(file.readBytes(), StandardCharsets.UTF_8)
     }
 
-    /** fsync + atomic rename, so a reader sees either the old or the new document. */
+    /**
+     * fsync + atomic rename, so a reader sees either the old or the new document. `java.io` only:
+     * `java.nio.file` needs API 26 and the plugin runs from API 24 (the store shares the pattern of
+     * the account store's record files).
+     */
     private fun publish(target: File, text: String) {
         val bytes = text.toByteArray(StandardCharsets.UTF_8)
         require(bytes.size <= MAX_FILE_BYTES) { "trigger document is too large" }
         val temporary = File(directory, ".publish-${UUID.randomUUID()}.tmp")
         try {
-            FileChannel.open(temporary.toPath(), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use { channel ->
-                val buffer = java.nio.ByteBuffer.wrap(bytes)
-                while (buffer.hasRemaining()) channel.write(buffer)
-                channel.force(true)
+            FileOutputStream(temporary).use { output ->
+                output.write(bytes)
+                output.fd.sync()
             }
-            Files.move(temporary.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+            // rename(2) replaces the target atomically on the same file system (Android); a JVM test on
+            // Windows cannot replace by renaming, so it deletes the stale target first (never taken on a device)
+            if (!temporary.renameTo(target)) {
+                if (!(target.exists() && target.delete() && temporary.renameTo(target))) throw IOException("could not replace ${target.name}")
+            }
             syncDirectory()
         } finally {
             if (temporary.exists()) temporary.delete()
@@ -168,7 +173,7 @@ class TriggerStore(
 
     /** Directory fsync; not every file system offers it (Windows in the JVM tests), so a failure is ignored. */
     private fun syncDirectory() {
-        runCatching { FileChannel.open(directory.toPath(), StandardOpenOption.READ).use { it.force(true) } }
+        runCatching { RandomAccessFile(directory, "r").use { it.channel.force(true) } }
     }
 
     private fun recordsFile(id: String): File {
