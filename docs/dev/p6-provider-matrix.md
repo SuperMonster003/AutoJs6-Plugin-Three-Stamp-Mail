@@ -3,7 +3,8 @@
 Roadmap P6 "服务商兼容矩阵", run on 2026-09-19 against plugin build 40 (`abfaa76`) with the accounts
 of the git-ignored `mail-test-accounts.properties`; the Gmail and Outlook.com columns were run on
 2026-09-20 against build 45 (`2057ad4`) plus the working tree of build 46, and the Outlook.com column was
-filled on 2026-09-21 (build 56) with an OAuth 2.0 token. The driver is `.python/run_provider_matrix.py`
+filled on 2026-09-21 (build 56) with an OAuth 2.0 token; the other two Outlook.com accounts were
+retried the same day with their own client registrations (build 57, below). The driver is `.python/run_provider_matrix.py`
 (JVM, `ProviderMatrixProbe` in `mail-core`, skipped without `build/p6/matrix.properties`); it runs
 every row through the same `MailSession` the Binder uses, prints only masked addresses
 (`***@domain`) and checks the Gradle output, the XML report and the probe logs for the secrets.
@@ -126,6 +127,19 @@ the project. Yahoo and Aliyun: excluded by the maintainer on 2026-09-19 (no vali
   accounts that no user setting changes (Microsoft Q&A threads of 2026), so that account may be
   unable to send even with its own token; the third answered the generic `535 5.7.3` and IMAP `NO
   User is authenticated but not connected`, which is what a token for another mailbox gets.
+- Outlook.com, the other two accounts with their own client registrations (2026-09-21, build 57):
+  the helper now also asks for the OpenID `openid email` claims at sign-in and reports the address
+  the browser's account picker chose, so a token filed under the wrong profile is named at once.
+  Both logins started for the Hotmail account B signed in the Outlook.com account A instead (account
+  B has not been signed in yet; the token filed under its keys was removed from the token file). The
+  Outlook.com account A, signed in as itself, gets `235 2.7.0 Authentication successful` from SMTP
+  587 with its token but `NO User is authenticated but not connected` from IMAP and, after the `+`
+  continuation, `-ERR Authentication failure: unknown user name or bad password` from POP3: the
+  token is valid and for this mailbox, and the mailbox takes no IMAP or POP connection (the mirror
+  image of account B, whose SMTP is disabled at the mailbox level). Its operation rows cannot run
+  until the account's IMAP / POP access is enabled in Outlook on the web (Settings > Mail > Sync
+  email) or its primary alias is found to differ from the address on file; no client defect is
+  involved.
 
 ## Defect found and fixed: POP3 XOAUTH2 refusals reported as `IO_FAILED`
 
@@ -213,6 +227,7 @@ py -X utf8 .python/run_provider_matrix.py QQ_A --ops diag --diag 'UID SEARCH SUB
 py -X utf8 .python/run_provider_matrix.py GMAIL_A --idle-seconds 90 --ops test,folders,send,list,search-server,body,attachment,flags,move,watch,pop3,cleanup
 py -X utf8 .python/run_provider_matrix.py OUTLOOK_A,HOTMAIL_A,HOTMAIL_B --ops test --no-pop3 --no-preset
 py .python\outlook_oauth_login.py --client-id <application (client) id> --suffix HOTMAIL_A
+py .python\outlook_oauth_login.py --client-id <application (client) id> --suffix OUTLOOK_A
 py -X utf8 .python/run_provider_matrix.py HOTMAIL_A --idle-seconds 150 --ops test,folders,send,list,search-server,body,attachment,flags,move,watch,pop3,cleanup
 py -X utf8 .python/run_host_script_smoke.py HOTMAIL_A bek749scrwv4wo8h --script docs/smoke/pop3.js
 py -X utf8 .python/run_watch_matrix.py HOTMAIL_A bek749scrwv4wo8h --sender QQ_B --scenario baseline
