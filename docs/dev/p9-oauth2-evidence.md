@@ -2,7 +2,8 @@
 
 Evidence for roadmap P9 collected on 2026-09-22 in this repository (Gradle 9.5.0, AGP 9.3.2,
 Kotlin 2.3.20, JDK 21, Windows 11), plugin build 61 (`3e35ad6`, the P9 feature) plus the device
-tests and the driver of build 62 (this document), against the host debug build 5282
+tests and the driver of build 62 (this document), rerun on build 63 (the binder resolving a saved
+alias through the store it was given, found by the 1.2.0 gate's full connected suite), against the host debug build 5282
 (`04c55ac78a`, mail contract version 2; the host is unchanged by P9). The Microsoft client id of
 the build is the maintainer's Entra registration with the mobile redirect URI
 `io.github.supermonster003.autojs6.plugin.angus.mail://oauth2/microsoft` (git-ignored
@@ -61,22 +62,22 @@ every log and report is scanned for the tokens and the address afterwards.
 
 ### emulator-5556: AVD_API_37.1_16K (x86_64), Android 16 QPR (API 37)
 
-Plugin versionCode 62, host versionCode 5282, the build's Microsoft client id (the `HOTMAIL_A` registration), preset `outlook` (provider `microsoft`), alias `outlook-oauth`, the PC's access token already expired at the seed.
+Plugin versionCode 63, host versionCode 5282, the build's Microsoft client id (the `HOTMAIL_A` registration), preset `outlook` (provider `microsoft`), alias `outlook-oauth`, the PC's access token already expired at the seed.
 
 | Step | Result | Detail |
 | --- | --- | --- |
-| sign-in screen opens the provider page in the browser | ok | top activity `com.android.chrome/org.chromium.chrome.browser.customtabs.CustomTabActivity`; browser opened for provider=microsoft, state length 22 |
-| foreign `state` refused, matching `state` exchanged at the token endpoint, late redirect refused | ok | foreign state refused: The browser's answer was not accepted: the redirect carries no matching state; matching state exchanged, provider answered: The sign-in failed: the authorization code was refused; sign in again - invalid_grant: AADSTS7000012: The grant was obtained for a different tenant. Trace ID: dcbc4e30-b8eb-4154-9d29-f6d3d0b26d00 Correlation ID: b4467c34-9595-4d31-acfb-bce3424c3756 Timestamp: 2026-09-21 16:52:33Z; late redirect refused: The browser's answer was not accepted: no sign-in is waiting |
+| sign-in screen opens the provider page in the browser | ok | top activity `com.android.chrome/com.google.android.apps.chrome.IntentDispatcher`; browser opened for provider=microsoft, state length 22 |
+| foreign `state` refused, matching `state` exchanged at the token endpoint, late redirect refused | ok | foreign state refused: The browser's answer was not accepted: the redirect carries no matching state; matching state exchanged, provider answered: The sign-in failed: the authorization code was refused; sign in again - invalid_grant: AADSTS7000012: The grant was obtained for a different tenant. Trace ID: 802c22ac-cceb-45ab-a958-3f317dd06600 Correlation ID: 59872d88-acdb-458c-b31c-39688c55c994 Timestamp: 2026-09-21 17:12:04Z; late redirect refused: The browser's answer was not accepted: no sign-in is waiting |
 | OAUTH2 record round trip (Keystore), renewal, refusal marked `needsReauth` | ok | - |
 | revoked record refuses sessions, re-authorization restores it | ok | - |
-| real record seeded from the PC tokens; stale access token renewed at the provider | ok | seeded alias=outlook-oauth provider=microsoft staleAtSeed=true renewed=true expiresIn=3596 s in 3821 ms |
-| host `mail.accounts.list()`: `oauth` object, live | ok | `ok` True, `auth` xoauth2, `oauth` = provider microsoft, needsReauth False, expires in 3582 s, keys authorizedAt, expiresAt, needsReauth, provider; 16.0 s |
-| host `mail.connect(alias)` -> `test` -> `fetch`, live | ok | `ok` true, test {'ok': True, 'imap': True, 'smtp': True}, fetched 3, closed True; accounts.list 96 ms, accounts.has 8 ms, connect 118 ms, test 8467 ms, fetch 940 ms, close 5 ms; 24.5 s |
-| "Revoke sign-in": sessions fail with `AUTH_FAILED`, accounts page says "sign in again" | ok | revoked alias=outlook-oauth provider=microsoft in 2333 ms; sessions now fail with AUTH_FAILED |
-| host `mail.accounts.list()`: `needsReauth` after the revocation | ok | `ok` True, `auth` xoauth2, `oauth` = provider microsoft, needsReauth True, expiresAt 0 (no expiry left), keys authorizedAt, expiresAt, needsReauth, provider; 42.6 s |
-| host `mail.connect(alias)` refused after the revocation | ok | `ok` false, `AUTH_FAILED`: MailError [AUTH_FAILED]: the account has no refresh token; sign in again; 31.3 s |
-| "Sign in again": a new grant on the same record | ok | re-authorized alias=outlook-oauth provider=microsoft expiresIn=3596 s in 4669 ms |
-| host `mail.connect(alias)` -> `test` -> `fetch` after the re-authorization | ok | `ok` true, test {'ok': True, 'imap': True, 'smtp': True}, fetched 3, closed True; accounts.list 607 ms, accounts.has 17 ms, connect 122 ms, test 7844 ms, fetch 1103 ms, close 8 ms; 25.5 s |
+| real record seeded from the PC tokens; stale access token renewed at the provider | ok | seeded alias=outlook-oauth provider=microsoft staleAtSeed=true renewed=true expiresIn=3595 s in 5006 ms |
+| host `mail.accounts.list()`: `oauth` object, live | ok | `ok` True, `auth` xoauth2, `oauth` = provider microsoft, needsReauth False, expires in 3580 s, keys authorizedAt, expiresAt, needsReauth, provider; 16.1 s |
+| host `mail.connect(alias)` -> `test` -> `fetch`, live | ok | `ok` true, test {'ok': True, 'imap': True, 'smtp': True}, fetched 3, closed True; accounts.list 109 ms, accounts.has 9 ms, connect 98 ms, test 7097 ms, fetch 966 ms, close 6 ms; 23.2 s |
+| "Revoke sign-in": sessions fail with `AUTH_FAILED`, accounts page says "sign in again" | ok | revoked alias=outlook-oauth provider=microsoft in 2606 ms; sessions now fail with AUTH_FAILED |
+| host `mail.accounts.list()`: `needsReauth` after the revocation | ok | `ok` True, `auth` xoauth2, `oauth` = provider microsoft, needsReauth True, expiresAt 0 (no expiry left), keys authorizedAt, expiresAt, needsReauth, provider; 16.2 s |
+| host `mail.connect(alias)` refused after the revocation | ok | `ok` false, `AUTH_FAILED`: MailError [AUTH_FAILED]: the account has no refresh token; sign in again; 15.9 s |
+| "Sign in again": a new grant on the same record | ok | re-authorized alias=outlook-oauth provider=microsoft expiresIn=3596 s in 3739 ms |
+| host `mail.connect(alias)` -> `test` -> `fetch` after the re-authorization | ok | `ok` true, test {'ok': True, 'imap': True, 'smtp': True}, fetched 3, closed True; accounts.list 665 ms, accounts.has 20 ms, connect 89 ms, test 8956 ms, fetch 713 ms, close 10 ms; 25.0 s |
 | record removed | ok | - |
 
 Leak check: secret in logcat no, in the Gradle logs no; address in logcat no, in the Gradle logs no.
@@ -94,27 +95,27 @@ The plugin's `MailOAuth` state lines of the run (ids, states, counts and duratio
     provider=microsoft sign-in revoked locally
     provider=microsoft provider-side revocation not done
     provider=microsoft refresh failed: AUTH_FAILED (reauthorize)
-    provider=microsoft sign-in stored, expires in -19843 s
+    provider=microsoft sign-in stored, expires in -20971 s
     provider=microsoft refresh ok, expires in 3598 s
 
 ### emulator-5554: AVD_API_24 (x86), Android 7.0 (API 24)
 
-Plugin versionCode 62, host versionCode 5282, the build's Microsoft client id (the `HOTMAIL_A` registration), preset `outlook` (provider `microsoft`), alias `outlook-oauth`, the PC's access token already expired at the seed.
+Plugin versionCode 63, host versionCode 5282, the build's Microsoft client id (the `HOTMAIL_A` registration), preset `outlook` (provider `microsoft`), alias `outlook-oauth`, the PC's access token already expired at the seed.
 
 | Step | Result | Detail |
 | --- | --- | --- |
 | sign-in screen opens the provider page in the browser | ok | top activity `android/com.android.internal.app.ResolverActivity`; browser opened for provider=microsoft, state length 22 |
-| foreign `state` refused, matching `state` exchanged at the token endpoint, late redirect refused | ok | foreign state refused: The browser's answer was not accepted: the redirect carries no matching state; matching state exchanged, provider answered: The sign-in failed: the authorization code was refused; sign in again - invalid_grant: AADSTS7000012: The grant was obtained for a different tenant. Trace ID: 11bcceb7-ce0e-4a2c-af71-abf7cecb6c00 Correlation ID: 3ca92a3e-af14-4c5e-9c0a-d330ac6cea98 Timestamp: 2026-09-21 16:55:49Z; late redirect refused: The browser's answer was not accepted: no sign-in is waiting |
+| foreign `state` refused, matching `state` exchanged at the token endpoint, late redirect refused | ok | foreign state refused: The browser's answer was not accepted: the redirect carries no matching state; matching state exchanged, provider answered: The sign-in failed: the authorization code was refused; sign in again - invalid_grant: AADSTS7000012: The grant was obtained for a different tenant. Trace ID: fd65c702-74e1-4977-a000-684dc0da6b00 Correlation ID: e312dc18-00e7-4f9f-8ffa-a511cdecc6d4 Timestamp: 2026-09-21 17:14:36Z; late redirect refused: The browser's answer was not accepted: no sign-in is waiting |
 | OAUTH2 record round trip (Keystore), renewal, refusal marked `needsReauth` | ok | - |
 | revoked record refuses sessions, re-authorization restores it | ok | - |
-| real record seeded from the PC tokens; stale access token renewed at the provider | ok | seeded alias=outlook-oauth provider=microsoft staleAtSeed=true renewed=true expiresIn=3598 s in 3377 ms |
-| host `mail.accounts.list()`: `oauth` object, live | ok | `ok` True, `auth` xoauth2, `oauth` = provider microsoft, needsReauth False, expires in 3575 s, keys authorizedAt, expiresAt, needsReauth, provider; 24.5 s |
-| host `mail.connect(alias)` -> `test` -> `fetch`, live | ok | `ok` true, test {'ok': True, 'imap': True, 'smtp': True}, fetched 3, closed True; accounts.list 42 ms, accounts.has 9 ms, connect 36 ms, test 4495 ms, fetch 1068 ms, close 5 ms; 29.8 s |
-| "Revoke sign-in": sessions fail with `AUTH_FAILED`, accounts page says "sign in again" | ok | revoked alias=outlook-oauth provider=microsoft in 891 ms; sessions now fail with AUTH_FAILED |
-| host `mail.accounts.list()`: `needsReauth` after the revocation | ok | `ok` True, `auth` xoauth2, `oauth` = provider microsoft, needsReauth True, expiresAt 0 (no expiry left), keys authorizedAt, expiresAt, needsReauth, provider; 24.4 s |
-| host `mail.connect(alias)` refused after the revocation | ok | `ok` false, `AUTH_FAILED`: MailError [AUTH_FAILED]: the account has no refresh token; sign in again; 24.1 s |
-| "Sign in again": a new grant on the same record | ok | re-authorized alias=outlook-oauth provider=microsoft expiresIn=3598 s in 1877 ms |
-| host `mail.connect(alias)` -> `test` -> `fetch` after the re-authorization | ok | `ok` true, test {'ok': True, 'imap': True, 'smtp': True}, fetched 3, closed True; accounts.list 99 ms, accounts.has 8 ms, connect 45 ms, test 3801 ms, fetch 771 ms, close 3 ms; 28.6 s |
+| real record seeded from the PC tokens; stale access token renewed at the provider | ok | seeded alias=outlook-oauth provider=microsoft staleAtSeed=true renewed=true expiresIn=3597 s in 3065 ms |
+| host `mail.accounts.list()`: `oauth` object, live | ok | `ok` True, `auth` xoauth2, `oauth` = provider microsoft, needsReauth False, expires in 3575 s, keys authorizedAt, expiresAt, needsReauth, provider; 23.8 s |
+| host `mail.connect(alias)` -> `test` -> `fetch`, live | ok | `ok` true, test {'ok': True, 'imap': True, 'smtp': True}, fetched 3, closed True; accounts.list 37 ms, accounts.has 9 ms, connect 37 ms, test 4037 ms, fetch 847 ms, close 5 ms; 29.5 s |
+| "Revoke sign-in": sessions fail with `AUTH_FAILED`, accounts page says "sign in again" | ok | revoked alias=outlook-oauth provider=microsoft in 859 ms; sessions now fail with AUTH_FAILED |
+| host `mail.accounts.list()`: `needsReauth` after the revocation | ok | `ok` True, `auth` xoauth2, `oauth` = provider microsoft, needsReauth True, expiresAt 0 (no expiry left), keys authorizedAt, expiresAt, needsReauth, provider; 23.8 s |
+| host `mail.connect(alias)` refused after the revocation | ok | `ok` false, `AUTH_FAILED`: MailError [AUTH_FAILED]: the account has no refresh token; sign in again; 23.5 s |
+| "Sign in again": a new grant on the same record | ok | re-authorized alias=outlook-oauth provider=microsoft expiresIn=3598 s in 1826 ms |
+| host `mail.connect(alias)` -> `test` -> `fetch` after the re-authorization | ok | `ok` true, test {'ok': True, 'imap': True, 'smtp': True}, fetched 3, closed True; accounts.list 97 ms, accounts.has 8 ms, connect 48 ms, test 5425 ms, fetch 921 ms, close 4 ms; 30.8 s |
 | record removed | ok | - |
 
 Leak check: secret in logcat no, in the Gradle logs no; address in logcat no, in the Gradle logs no.
@@ -132,7 +133,7 @@ The plugin's `MailOAuth` state lines of the run (ids, states, counts and duratio
     provider=microsoft sign-in revoked locally
     provider=microsoft provider-side revocation not done
     provider=microsoft refresh failed: AUTH_FAILED (reauthorize)
-    provider=microsoft sign-in stored, expires in -20021 s
+    provider=microsoft sign-in stored, expires in -21145 s
     provider=microsoft refresh ok, expires in 3598 s
 
 ### 968e9f18: Xiaomi (HyperOS), Android 15 (API 35)

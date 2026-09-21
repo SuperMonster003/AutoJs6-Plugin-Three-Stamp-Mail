@@ -49,7 +49,7 @@ internal class MailPluginBinder(
     private val context: Context,
     private val guard: CallerGuard,
     private val accounts: AccountStore = AccountStores.of(context),
-    private val secrets: AccountSecrets = AccountSecrets.of(context),
+    private val secrets: AccountSecrets = AccountSecrets.of(context, accounts),
     private val keeper: () -> WatchKeeper = { WatchKeeper.of(context) },
 ) : IMailPlugin.Stub() {
 

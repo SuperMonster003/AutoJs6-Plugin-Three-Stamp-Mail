@@ -211,8 +211,13 @@ class OAuthDeviceTest {
         }
     }
 
+    /**
+     * A fresh sign-in screen on a cleared task: the previous case leaves the browser's Custom Tab
+     * on top of the plugin's task, and a plain launch into that task never reached the resumed
+     * state in the same process (`startActivitySync` timed out), while a cleared task starts clean.
+     */
     private fun launchSignIn(): OAuthSignInActivity {
-        val intent = OAuthSignInActivity.intent(context, OAuthProviderId.MICROSOFT).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val intent = OAuthSignInActivity.intent(context, OAuthProviderId.MICROSOFT).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         return instrumentation.startActivitySync(intent) as OAuthSignInActivity
     }
 

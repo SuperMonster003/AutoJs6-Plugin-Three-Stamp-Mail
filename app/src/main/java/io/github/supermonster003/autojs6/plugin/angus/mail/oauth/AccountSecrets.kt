@@ -100,6 +100,15 @@ class AccountSecrets(
             instance ?: AccountSecrets(AccountStores.of(context), OAuthClients.of(context), TokenClient(HttpsFormPoster())) { priority, message -> Log.println(priority, TAG, message) }.also { instance = it }
         }
 
+        /**
+         * The helper over [store]: the process-wide one when [store] is the installed plugin's (so
+         * the binder and the watches share one refresh lock), otherwise a fresh one over [store]
+         * with this build's clients (a binder over an injected store, as the device tests build).
+         */
+        fun of(context: Context, store: AccountStore): AccountSecrets =
+            if (store === AccountStores.of(context)) of(context)
+            else AccountSecrets(store, OAuthClients.of(context), TokenClient(HttpsFormPoster())) { priority, message -> Log.println(priority, TAG, message) }
+
         /** The account document with its `oauth` object replaced. */
         fun withLink(accountJson: String, link: OAuthLink): String {
             val root = MailJson.format.parseToJsonElement(accountJson) as? JsonObject ?: throw MailException.invalidArgument("account must be a JSON object")
