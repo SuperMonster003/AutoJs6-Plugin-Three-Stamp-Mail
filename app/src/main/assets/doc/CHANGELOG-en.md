@@ -6,7 +6,7 @@
 
 # v1.2.0
 
-###### 2026/09/21
+###### 2026/09/22
 
 * `Hint` The browser sign-in is offered only by builds that carry an OAuth 2.0 client id for the provider (the maintainer's registrations, read at build time from the git-ignored `oauth-clients.properties`); a build without them keeps the token and app-password paths and says so in the authentication dialog. The Google client needs the sensitive-scope verification of the Google Cloud project before the sign-in works for arbitrary accounts; until then Google limits it to test users of the project.
 * `Feature` Browser sign-in for Google and Microsoft accounts (mail roadmap P9): the account editor offers "Sign in with Google (browser)" for the Gmail preset and "Sign in with Microsoft (browser)" for the Outlook.com and Microsoft 365 presets; the sign-in opens the provider's page in a Custom Tab (any browser as the fallback) with an OAuth 2.0 authorization-code request carrying PKCE (`S256`) and a random `state`, the redirect (`<applicationId>://oauth2/microsoft`, or the reversed Google client id scheme) lands on `OAuthRedirectActivity`, which hands it to the waiting sign-in screen; the screen refuses any redirect whose `state` does not match, exchanges the code at the token endpoint over HTTPS (`HttpsFormPoster`, the only HTTP client of the plugin) and prefills the address from the id token

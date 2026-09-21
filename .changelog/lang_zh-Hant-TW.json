@@ -6,7 +6,7 @@
   "changelog_label_dependency": "相依性",
   "$data": {
     "v1.2.0": {
-      "released_date": "2026/09/21",
+      "released_date": "2026/09/22",
       "hint": [
         "只有攜帶對應服務商 OAuth 2.0 用戶端 id 的建置才提供瀏覽器登入 (維護者的註冊資訊在建置時從 Git 忽略的 `oauth-clients.properties` 讀取); 沒有它們的建置保留權杖與應用程式專用密碼路徑, 並在驗證方式對話框中說明. Google 用戶端需先通過 Google Cloud 專案的敏感 scope 審核, 之後任意帳戶才能登入; 在此之前 Google 只允許專案的測試使用者."
       ],

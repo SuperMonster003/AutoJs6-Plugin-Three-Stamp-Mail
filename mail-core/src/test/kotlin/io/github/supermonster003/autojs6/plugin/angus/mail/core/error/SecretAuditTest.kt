@@ -138,7 +138,7 @@ class SecretAuditTest {
         val forms = listOf(
             "raw" to secretText,
             "base64" to encoder.encodeToString(secretText.toByteArray()),
-            "sasl-plain" to encoder.encodeToString(" alice@qq.com $secretText".toByteArray()),
+            "sasl-plain" to encoder.encodeToString("\u0000alice@qq.com\u0000$secretText".toByteArray()),
             "xoauth2" to encoder.encodeToString("user=alice@qq.comauth=Bearer $secretText".toByteArray()),
         )
         forms.forEach { (name, form) ->

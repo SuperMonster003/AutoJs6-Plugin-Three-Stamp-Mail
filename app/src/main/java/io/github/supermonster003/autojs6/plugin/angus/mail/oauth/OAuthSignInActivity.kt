@@ -107,6 +107,15 @@ class OAuthSignInActivity : ConfiguredActivity() {
         super.onDestroy()
     }
 
+    /** The `state` of the request this screen is waiting for, null when none (device tests). */
+    internal val pendingState: String? get() = state
+
+    /** What the screen says right now (device tests). */
+    internal val statusText: CharSequence get() = statusView.text
+
+    /** True once the authorization page was handed to a browser (device tests). */
+    internal val isBrowserOpened: Boolean get() = browserOpened
+
     private fun buildContent(content: LinearLayout) {
         statusView = TextView(this).apply {
             setTextSize(TypedValue.COMPLEX_UNIT_SP, Ui.TEXT_BODY)

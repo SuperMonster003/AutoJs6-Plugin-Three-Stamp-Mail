@@ -229,7 +229,7 @@ minimum host build: 5282 (6.8.0)
 
 #### v1.2.0
 
-_2026/09/21_
+_2026/09/22_
 
 - `提示` 只有携带对应服务商 OAuth 2.0 客户端 id 的构建才提供浏览器登录 (维护者的注册信息在构建时从 Git 忽略的 `oauth-clients.properties` 读取); 没有它们的构建保留令牌与应用专用密码路径, 并在认证方式对话框中说明. Google 客户端需先通过 Google Cloud 项目的敏感 scope 审核, 之后任意账户才能登录; 在此之前 Google 只允许项目的测试用户.
 - `新增` Google 与 Microsoft 账号的浏览器登录 (邮件路线图 P9): 账户编辑器为 Gmail 预设提供 "使用 Google 账号登录 (浏览器)", 为 Outlook.com 与 Microsoft 365 预设提供 "使用 Microsoft 账号登录 (浏览器)"; 登录在 Custom Tab (回退为任意浏览器) 中打开服务商页面, 携带 PKCE (`S256`) 与随机 `state` 的 OAuth 2.0 授权码请求, 重定向 (`<applicationId>://oauth2/microsoft`, 或 Google 反转客户端 id 的 scheme) 落在 `OAuthRedirectActivity`, 由它交给等待中的登录页面; 页面拒绝任何 `state` 不匹配的重定向, 经 HTTPS 在令牌端点交换授权码 (`HttpsFormPoster`, 插件唯一的 HTTP 客户端), 并从 id 令牌预填地址

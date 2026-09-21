@@ -6,7 +6,7 @@
   "changelog_label_dependency": "의존성",
   "$data": {
     "v1.2.0": {
-      "released_date": "2026/09/21",
+      "released_date": "2026/09/22",
       "hint": [
         "브라우저 로그인은 해당 제공업체의 OAuth 2.0 클라이언트 id 를 담은 빌드에서만 제공됩니다 (관리자의 등록 정보는 빌드 시 Git 이 무시하는 `oauth-clients.properties` 에서 읽습니다). 이것이 없는 빌드는 토큰과 앱 비밀번호 경로를 유지하며 인증 방식 대화 상자에서 그렇게 말합니다. Google 클라이언트는 Google Cloud 프로젝트의 민감한 scope 검증을 통과해야 임의의 계정으로 로그인할 수 있으며, 그 전까지 Google 은 프로젝트의 테스트 사용자로 제한합니다."
       ],

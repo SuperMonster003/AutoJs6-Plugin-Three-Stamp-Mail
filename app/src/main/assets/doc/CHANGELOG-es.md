@@ -6,7 +6,7 @@
 
 # v1.2.0
 
-###### 2026/09/21
+###### 2026/09/22
 
 * `Aviso` El inicio de sesion en el navegador solo lo ofrecen las compilaciones que llevan un id de cliente OAuth 2.0 para el proveedor (los registros del mantenedor, leidos al compilar desde `oauth-clients.properties`, ignorado por Git); una compilacion sin ellos conserva las vias por token y por contrasena de aplicacion y lo dice en el dialogo de autenticacion. El cliente de Google necesita la verificacion de ambitos sensibles del proyecto de Google Cloud antes de que el inicio de sesion funcione para cuentas arbitrarias; hasta entonces Google lo limita a los usuarios de prueba del proyecto.
 * `Función` Inicio de sesion en el navegador para cuentas de Google y Microsoft (hoja de ruta de correo P9): el editor de cuentas ofrece "Iniciar sesion con Google (navegador)" para el preajuste de Gmail e "Iniciar sesion con Microsoft (navegador)" para los preajustes de Outlook.com y Microsoft 365; el inicio de sesion abre la pagina del proveedor en un Custom Tab (cualquier navegador como alternativa) con una peticion de codigo de autorizacion OAuth 2.0 que lleva PKCE (`S256`) y un `state` aleatorio, la redireccion (`<applicationId>://oauth2/microsoft`, o el esquema del id de cliente de Google invertido) llega a `OAuthRedirectActivity`, que la entrega a la pantalla de inicio de sesion en espera; la pantalla rechaza cualquier redireccion cuyo `state` no coincida, intercambia el codigo en el punto de token por HTTPS (`HttpsFormPoster`, el unico cliente HTTP del plugin) y rellena la direccion desde el token de identidad

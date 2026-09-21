@@ -6,7 +6,7 @@
 
 # v1.2.0
 
-###### 2026/09/21
+###### 2026/09/22
 
 * `提示` 只有攜帶對應服務商 OAuth 2.0 用戶端 id 的建置才提供瀏覽器登入 (維護者的註冊資訊在建置時從 Git 忽略的 `oauth-clients.properties` 讀取); 沒有它們的建置保留權杖與應用程式專用密碼路徑, 並在驗證方式對話框中說明. Google 用戶端需先通過 Google Cloud 專案的敏感 scope 審核, 之後任意帳戶才能登入; 在此之前 Google 只允許專案的測試用戶.
 * `新增` Google 與 Microsoft 帳號的瀏覽器登入 (郵件路線圖 P9): 帳戶編輯器為 Gmail 預設提供 "使用 Google 帳號登入 (瀏覽器)", 為 Outlook.com 與 Microsoft 365 預設提供 "使用 Microsoft 帳號登入 (瀏覽器)"; 登入在 Custom Tab (回退為任意瀏覽器) 中開啟服務商頁面, 攜帶 PKCE (`S256`) 與隨機 `state` 的 OAuth 2.0 授權碼請求, 重新導向 (`<applicationId>://oauth2/microsoft`, 或 Google 反轉用戶端 id 的 scheme) 落在 `OAuthRedirectActivity`, 由它交給等待中的登入頁面; 頁面拒絕任何 `state` 不匹配的重新導向, 經 HTTPS 在權杖端點交換授權碼 (`HttpsFormPoster`, 外掛唯一的 HTTP 用戶端), 並從 id 權杖預填地址

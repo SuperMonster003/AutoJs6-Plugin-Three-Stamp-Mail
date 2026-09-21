@@ -6,7 +6,7 @@
   "changelog_label_dependency": "Dependencia",
   "$data": {
     "v1.2.0": {
-      "released_date": "2026/09/21",
+      "released_date": "2026/09/22",
       "hint": [
         "El inicio de sesion en el navegador solo lo ofrecen las compilaciones que llevan un id de cliente OAuth 2.0 para el proveedor (los registros del mantenedor, leidos al compilar desde `oauth-clients.properties`, ignorado por Git); una compilacion sin ellos conserva las vias por token y por contrasena de aplicacion y lo dice en el dialogo de autenticacion. El cliente de Google necesita la verificacion de ambitos sensibles del proyecto de Google Cloud antes de que el inicio de sesion funcione para cuentas arbitrarias; hasta entonces Google lo limita a los usuarios de prueba del proyecto."
       ],

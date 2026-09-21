@@ -229,7 +229,7 @@ Les plans et l'avancement du plugin sont tenus sous forme de liste cochable dans
 
 #### v1.2.0
 
-_2026/09/21_
+_2026/09/22_
 
 - `Note` La connexion par le navigateur n'est proposee que par les versions qui portent un identifiant de client OAuth 2.0 pour le fournisseur (les enregistrements du mainteneur, lus a la compilation depuis `oauth-clients.properties`, ignore par Git); une version sans eux conserve les chemins par jeton et par mot de passe d'application et le dit dans le dialogue d'authentification. Le client Google doit passer la verification des portees sensibles du projet Google Cloud avant que la connexion fonctionne pour n'importe quel compte; d'ici la, Google la limite aux utilisateurs de test du projet.
 - `Fonctionnalité` Connexion par le navigateur pour les comptes Google et Microsoft (feuille de route courriel P9) : l'editeur de compte propose "Se connecter avec Google (navigateur)" pour le preset Gmail et "Se connecter avec Microsoft (navigateur)" pour les presets Outlook.com et Microsoft 365; la connexion ouvre la page du fournisseur dans un Custom Tab (n'importe quel navigateur en secours) avec une requete de code d'autorisation OAuth 2.0 portant PKCE (`S256`) et un `state` aleatoire, la redirection (`<applicationId>://oauth2/microsoft`, ou le schema de l'identifiant client Google inverse) atterrit sur `OAuthRedirectActivity`, qui la remet a l'ecran de connexion en attente; l'ecran refuse toute redirection dont le `state` ne correspond pas, echange le code au point de terminaison de jetons en HTTPS (`HttpsFormPoster`, le seul client HTTP du plugin) et preremplit l'adresse depuis le jeton d'identite

@@ -24,7 +24,11 @@ Scenarios (the disturbance happens from the PC through adb while the watch servi
                send #2: the plugin's broadcast has to start the host process cold
   kill-plugin  send #1; `run-as <plugin> kill -9`: the sticky service restarts and the watch reconnects; send #2
   reboot       the watch is configured with the boot switch on; `adb reboot`; after boot the boot receiver has to
-               start the service without any UI; send #1 and #2
+               start the service without any UI; send #1 and #2. A phone with a pattern / PIN lock keeps its
+               credential-encrypted storage locked after the reboot (no BOOT_COMPLETED, no data directory) until
+               the user unlocks it: the driver then stops at "waiting for the boot receiver"; once the maintainer
+               has unlocked the phone, `--scenario reboot --after-reboot` resumes: no install, no configuration,
+               no reboot, just the boot receiver's line, the service and the two mails
 
 Each run installs the host debug + androidTest APKs (built beforehand in D:/idea-projects/AutoJs6 with
 `:app:assembleAppDebug :app:assembleAppDebugAndroidTest`) and the plugin debug + androidTest APKs unless
@@ -267,6 +271,7 @@ def main():
     parser.add_argument("--wait-s", type=int, default=240, help="how long to wait for each arrival before giving up")
     parser.add_argument("--save-account", action="store_true", help="save the watched account under --alias first (run_settings_real_account.py)")
     parser.add_argument("--no-install", action="store_true", help="skip the APK installs")
+    parser.add_argument("--after-reboot", action="store_true", help="reboot only: the device was rebooted by an earlier run and unlocked since; resume with the boot receiver and the mails")
     parser.add_argument("--remove", action="store_true", help="remove the task, the watch, the boot switch and both test packages, then exit")
     args = parser.parse_args()
 
@@ -298,7 +303,17 @@ def main():
         log(f"removed: host task {'ok' if ok_host else 'FAILED'}, watch {'ok' if ok_plugin else 'FAILED'}, service running={service_running(args.serial)}")
         return 0 if ok_host and ok_plugin else 1
 
-    if not args.no_install:
+    resumed = None
+    if args.after_reboot:
+        assert args.scenario == "reboot", "--after-reboot goes with --scenario reboot"
+        earlier = os.path.join(OUT_DIR, f"trigger-reboot-{args.serial}.json")
+        with io.open(earlier, encoding="utf-8") as handle:
+            resumed = json.load(handle)
+        assert resumed.get("rebootedAt"), f"{earlier} does not come from a run that rebooted the device"
+        log(f"resuming the reboot scenario of {time.strftime('%H:%M:%S', time.localtime(resumed['rebootedAt']))} (subject filter {resumed['subjectToken']})")
+    if args.after_reboot:
+        pass
+    elif not args.no_install:
         install(args.serial, plugin_apk())
         install(args.serial, PLUGIN_TEST_APK)
         install(args.serial, host_apk(args.serial))
@@ -312,17 +327,29 @@ def main():
     grant_storage(args.serial)
     log(f"host versionCode={version_code(args.serial, HOST_PACKAGE)} plugin versionCode={version_code(args.serial, PLUGIN_PACKAGE)} sdk={sdk(args.serial)}")
 
-    if args.save_account:
+    if args.save_account and not args.after_reboot:
         code = subprocess.call([sys.executable, os.path.join(PLUGIN, ".python", "run_settings_real_account.py"), args.profile, args.serial, "--alias", args.alias, "--no-build"], cwd=PLUGIN)
         if code != 0:
             raise SystemExit(f"saving the account failed with exit code {code}")
         install(args.serial, PLUGIN_TEST_APK)  # the settings runner uninstalls the test package afterwards
 
     stamp = int(time.time())
-    subject_token = f"trigger-{stamp}"
+    subject_token = resumed["subjectToken"] if resumed else f"trigger-{stamp}"
     summary = {"scenario": args.scenario, "serial": args.serial, "sdk": sdk(args.serial), "watched": watched.rsplit("@", 1)[-1], "sender": sender.provider,
                "alias": args.alias, "watchId": args.watch_id, "mode": args.mode, "hostVersionCode": version_code(args.serial, HOST_PACKAGE),
-               "pluginVersionCode": version_code(args.serial, PLUGIN_PACKAGE), "sends": [], "startedAt": stamp}
+               "pluginVersionCode": version_code(args.serial, PLUGIN_PACKAGE), "sends": [], "startedAt": stamp, "subjectToken": subject_token}
+    if resumed:
+        summary["rebootedAt"] = resumed["rebootedAt"]
+        summary["stoppedBeforeReboot"] = resumed.get("stoppedBeforeReboot")
+        summary["resumedAfterUnlock"] = True
+
+    if resumed:
+        # the script, the task and the watch survived the reboot; the logcat holds the receiver's line since the unlock
+        boot_line = wait_for(lambda: [l for l in logcat_lines(args.serial) if "MailBootReceiver" in l], 180, "the boot receiver (unlock the device first)")
+        summary["bootReceiver"] = boot_line[-1].split("MailBootReceiver: ", 1)[-1]
+        summary["uptimeAtResumeS"] = float((shell(args.serial, "cat /proc/uptime").split() or ["0"])[0])
+        log(f"boot receiver: {summary['bootReceiver']} (device up for {summary['uptimeAtResumeS']:.0f} s)")
+        return finish_run(args, summary, sender, watched, subject_token, secrets, addresses, mask, resumed=True)
 
     # the script the host task launches
     adb(args.serial, "push", os.path.join(PLUGIN, "docs", "smoke", "trigger.js"), DEVICE_SCRIPT)
@@ -364,17 +391,35 @@ def main():
             time.sleep(12)  # the package manager writes the component state a few seconds after the change
             summary["stoppedBeforeReboot"] = "stopped=true" in shell(args.serial, f"dumpsys package {PLUGIN_PACKAGE} | grep -m1 ' stopped='")
             log(f"rebooting the device (plugin stopped state {summary['stoppedBeforeReboot']})")
+            summary["rebootedAt"] = int(time.time())
+            with io.open(os.path.join(OUT_DIR, f"trigger-reboot-{args.serial}.json"), "w", encoding="utf-8") as handle:
+                json.dump(summary, handle, ensure_ascii=False, indent=2)  # a locked phone needs `--after-reboot` later
             adb(args.serial, "reboot", check=False)
             time.sleep(15)
             wait_for_boot(args.serial)
             booted_at = time.time()
             log("device booted; waiting for the boot receiver and the service")
-            boot_line = wait_for(lambda: [l for l in logcat_lines(args.serial) if "MailBootReceiver" in l], 180, "the boot receiver")
+            try:
+                boot_line = wait_for(lambda: [l for l in logcat_lines(args.serial) if "MailBootReceiver" in l], 180, "the boot receiver")
+            except TimeoutError:
+                locked = "deviceLocked=1" in shell(args.serial, "dumpsys trust")
+                if locked:
+                    log("the boot receiver did not run: the device is locked (credential-encrypted storage); unlock it, then rerun with --after-reboot --no-install")
+                    return 2
+                raise
             summary["bootReceiver"] = boot_line[-1].split("MailBootReceiver: ", 1)[-1]
             log(summary["bootReceiver"])
         else:
             started = start_watch_service(args.serial)
             log(f"service start: {started or 'ok'}")
+        return finish_run(args, summary, sender, watched, subject_token, secrets, addresses, mask, resumed=False, restore=restore, booted_at=locals().get("booted_at"))
+    finally:
+        pass
+
+
+def finish_run(args, summary, sender, watched, subject_token, secrets, addresses, mask, resumed, restore=None, booted_at=None):
+    restore = restore if restore is not None else []
+    try:
         try:
             state, mode = wait_for(lambda: (lambda s: s if s[0] == "connected" else None)(watch_state(args.serial, args.watch_id)), 180, "the connected state")
         except TimeoutError as e:
@@ -383,7 +428,7 @@ def main():
             summary["connectError"] = str(e)
         summary["initialState"], summary["initialMode"] = state, mode
         summary["serviceForeground"] = service_running(args.serial)
-        if args.scenario == "reboot":
+        if args.scenario == "reboot" and booted_at is not None:
             summary["connectedAfterBootMs"] = int((time.time() - booted_at) * 1000)
         log(f"watch state {state} mode {mode}, service foreground={summary['serviceForeground']}")
 
@@ -417,7 +462,9 @@ def main():
 
         send_and_wait(1)
 
-        if args.scenario == "screen-off":
+        if resumed:
+            send_and_wait(2)
+        elif args.scenario == "screen-off":
             shell(args.serial, "input keyevent KEYCODE_SLEEP")
             time.sleep(3)
             forced = shell(args.serial, "dumpsys deviceidle force-idle").strip()

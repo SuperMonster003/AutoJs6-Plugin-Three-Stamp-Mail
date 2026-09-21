@@ -30,7 +30,8 @@ object TokenRevoker {
         val link = MailAccountOptions.parse(saved.accountJson, saved.secretKind).oauth ?: throw MailException.invalidArgument("'$alias' has no 'oauth' link")
         val tokens = store.withSecret(alias) { _, chars -> runCatching { OAuthTokens.parse(String(chars)) }.getOrNull() }
         // the local half first: the stored tokens become a revoked marker (an access token the providers never issued)
-        store.put(saved.alias, AccountSecrets.withLink(saved.accountJson, link.copy(needsReauth = true)), SecretKind.OAUTH2, REVOKED_TOKENS.toJson().toCharArray())
+        // and the account's `oauth` link says so too (`needsReauth`, no expiry left), which is what `mail.accounts.list()` reports
+        store.put(saved.alias, AccountSecrets.withLink(saved.accountJson, link.copy(expiresAt = 0, needsReauth = true)), SecretKind.OAUTH2, REVOKED_TOKENS.toJson().toCharArray())
         Log.i(TAG, "provider=${link.provider} sign-in revoked locally")
         val clients = OAuthClients.of(context)
         val refreshToken = tokens?.refreshToken ?: tokens?.accessToken ?: return

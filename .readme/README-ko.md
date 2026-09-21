@@ -229,7 +229,7 @@ minimum host build: 5282 (6.8.0)
 
 #### v1.2.0
 
-_2026/09/21_
+_2026/09/22_
 
 - `힌트` 브라우저 로그인은 해당 제공업체의 OAuth 2.0 클라이언트 id 를 담은 빌드에서만 제공됩니다 (관리자의 등록 정보는 빌드 시 Git 이 무시하는 `oauth-clients.properties` 에서 읽습니다). 이것이 없는 빌드는 토큰과 앱 비밀번호 경로를 유지하며 인증 방식 대화 상자에서 그렇게 말합니다. Google 클라이언트는 Google Cloud 프로젝트의 민감한 scope 검증을 통과해야 임의의 계정으로 로그인할 수 있으며, 그 전까지 Google 은 프로젝트의 테스트 사용자로 제한합니다.
 - `기능` Google 및 Microsoft 계정의 브라우저 로그인 (메일 로드맵 P9): 계정 편집기는 Gmail 프리셋에 "Google 계정으로 로그인 (브라우저)", Outlook.com 및 Microsoft 365 프리셋에 "Microsoft 계정으로 로그인 (브라우저)" 를 제공합니다. 로그인은 Custom Tab (대체는 아무 브라우저) 에서 제공업체 페이지를 열고 PKCE (`S256`) 와 무작위 `state` 를 담은 OAuth 2.0 인증 코드 요청을 보내며, 리디렉션 (`<applicationId>://oauth2/microsoft`, 또는 Google 의 역순 클라이언트 id 스킴) 은 `OAuthRedirectActivity` 에 도착하여 대기 중인 로그인 화면으로 전달됩니다. 화면은 `state` 가 일치하지 않는 리디렉션을 거부하고, HTTPS 로 토큰 엔드포인트에서 코드를 교환하며 (`HttpsFormPoster`, 플러그인의 유일한 HTTP 클라이언트), id 토큰에서 주소를 미리 채웁니다

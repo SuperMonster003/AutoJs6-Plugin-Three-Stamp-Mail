@@ -6,7 +6,7 @@
   "changelog_label_dependency": "Dependency",
   "$data": {
     "v1.2.0": {
-      "released_date": "2026/09/21",
+      "released_date": "2026/09/22",
       "hint": [
         "The browser sign-in is offered only by builds that carry an OAuth 2.0 client id for the provider (the maintainer's registrations, read at build time from the git-ignored `oauth-clients.properties`); a build without them keeps the token and app-password paths and says so in the authentication dialog. The Google client needs the sensitive-scope verification of the Google Cloud project before the sign-in works for arbitrary accounts; until then Google limits it to test users of the project."
       ],

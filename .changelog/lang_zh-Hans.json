@@ -6,7 +6,7 @@
   "changelog_label_dependency": "依赖",
   "$data": {
     "v1.2.0": {
-      "released_date": "2026/09/21",
+      "released_date": "2026/09/22",
       "hint": [
         "只有携带对应服务商 OAuth 2.0 客户端 id 的构建才提供浏览器登录 (维护者的注册信息在构建时从 Git 忽略的 `oauth-clients.properties` 读取); 没有它们的构建保留令牌与应用专用密码路径, 并在认证方式对话框中说明. Google 客户端需先通过 Google Cloud 项目的敏感 scope 审核, 之后任意账户才能登录; 在此之前 Google 只允许项目的测试用户."
       ],
