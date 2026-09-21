@@ -1,5 +1,6 @@
 package io.github.supermonster003.autojs6.plugin.angus.mail
 
+import io.github.supermonster003.autojs6.plugin.angus.mail.trigger.MailWatchService
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -23,13 +24,17 @@ class ManifestContractTest {
     }
 
     @Test
-    fun `manifest declares exactly the plugin and network permissions and queries the host package`() {
+    fun `manifest declares exactly the plugin, network, battery guide and background watch permissions and queries the host package`() {
         val permissions = manifest.children("uses-permission").map { it.androidAttribute("name") }
         assertEquals(
             listOf(
                 PLUGIN_PERMISSION,
                 "android.permission.INTERNET",
                 "android.permission.ACCESS_NETWORK_STATE",
+                "android.permission.FOREGROUND_SERVICE",
+                "android.permission.FOREGROUND_SERVICE_SPECIAL_USE",
+                "android.permission.POST_NOTIFICATIONS",
+                "android.permission.RECEIVE_BOOT_COMPLETED",
                 "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
             ),
             permissions,
@@ -58,7 +63,7 @@ class ManifestContractTest {
 
         val activities = application.children("activity").associateBy { it.androidAttribute("name") }
         assertEquals(
-            setOf(".settings.AccountsActivity", ".settings.AccountEditorActivity", ".AppSettingsActivity", ".AboutActivity", ".ReleaseHistoryActivity", ".MailSettingsActivity", ".WakeActivity"),
+            setOf(".settings.AccountsActivity", ".settings.AccountEditorActivity", ".AppSettingsActivity", ".AboutActivity", ".ReleaseHistoryActivity", ".trigger.WatchesActivity", ".trigger.WatchEditorActivity", ".MailSettingsActivity", ".WakeActivity"),
             activities.keys,
         )
         val wake = activities.getValue(".WakeActivity")
@@ -71,13 +76,21 @@ class ManifestContractTest {
         assertEquals(listOf("org.autojs.plugin.action.WAKE"), filter.children("action").map { it.androidAttribute("name") })
         assertEquals(listOf("android.intent.category.DEFAULT"), filter.children("category").map { it.androidAttribute("name") })
 
-        // AppCompat / Material contribute auto-start components; the manifest only removes them.
-        val removals = (application.children("receiver") + application.children("provider"))
+        // AppCompat / Material contribute auto-start components; the manifest only removes them. The
+        // boot receiver of the background watches (roadmap P8) is the one receiver of the plugin's own.
+        val components = application.children("receiver") + application.children("provider")
+        val removals = components.filter { it.hasAttributeNS(TOOLS_NAMESPACE, "node") }
         assertEquals(
             listOf("androidx.startup.InitializationProvider", "androidx.profileinstaller.ProfileInstallReceiver").sorted(),
             removals.map { it.androidAttribute("name") }.sorted(),
         )
         removals.forEach { component -> assertEquals("remove", component.getAttributeNS(TOOLS_NAMESPACE, "node")) }
+        val own = components - removals.toSet()
+        assertEquals(listOf(".trigger.BootReceiver"), own.map { it.androidAttribute("name") })
+        val boot = own.single()
+        assertEquals("the boot receiver stays off until the user enables the switch", "false", boot.androidAttribute("enabled"))
+        assertEquals("true", boot.androidAttribute("exported"))
+        assertEquals(listOf("android.intent.action.BOOT_COMPLETED"), boot.child("intent-filter").children("action").map { it.androidAttribute("name") })
     }
 
     @Test
@@ -98,6 +111,8 @@ class ManifestContractTest {
             ".AppSettingsActivity" to ".settings.AccountsActivity",
             ".AboutActivity" to ".AppSettingsActivity",
             ".ReleaseHistoryActivity" to ".AppSettingsActivity",
+            ".trigger.WatchesActivity" to ".AppSettingsActivity",
+            ".trigger.WatchEditorActivity" to ".trigger.WatchesActivity",
         )
         chain.forEach { (name, parent) ->
             val activity = activities.getValue(name)
@@ -108,6 +123,7 @@ class ManifestContractTest {
             assertTrue("$name declares no intent filter", activity.children("intent-filter").isEmpty())
         }
         assertEquals("adjustResize", activities.getValue(".settings.AccountEditorActivity").androidAttribute("windowSoftInputMode"))
+        assertEquals("adjustResize", activities.getValue(".trigger.WatchEditorActivity").androidAttribute("windowSoftInputMode"))
     }
 
     @Test
@@ -129,9 +145,22 @@ class ManifestContractTest {
     @Test
     fun `info service and mail service match the identity constants`() {
         val services = manifest.child("application").children("service").associateBy { it.androidAttribute("name") }
-        assertEquals(setOf(".AngusMailPluginInfoService", ".AngusMailPluginService"), services.keys)
+        assertEquals(setOf(".AngusMailPluginInfoService", ".AngusMailPluginService", ".trigger.MailWatchService"), services.keys)
         assertDiscoveryContract(services.getValue(".AngusMailPluginInfoService"), AngusMailPlugin.INFO_ACTION)
         assertDiscoveryContract(services.getValue(".AngusMailPluginService"), AngusMailPlugin.SERVICE_ACTION)
+    }
+
+    @Test
+    fun `the watch service is a private special-use foreground service`() {
+        val service = manifest.child("application").children("service").single { it.androidAttribute("name") == ".trigger.MailWatchService" }
+        assertEquals("false", service.androidAttribute("exported"))
+        assertEquals("true", service.androidAttribute("enabled"))
+        assertEquals("specialUse", service.androidAttribute("foregroundServiceType"))
+        assertNull("no permission: the service is internal", service.androidAttributeOrNull("permission"))
+        assertTrue(service.children("intent-filter").isEmpty())
+        val property = service.child("property")
+        assertEquals("android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE", property.androidAttribute("name"))
+        assertEquals(MailWatchService.SPECIAL_USE_SUBTYPE, property.androidAttribute("value"))
     }
 
     private fun assertDiscoveryContract(service: Element, action: String) {

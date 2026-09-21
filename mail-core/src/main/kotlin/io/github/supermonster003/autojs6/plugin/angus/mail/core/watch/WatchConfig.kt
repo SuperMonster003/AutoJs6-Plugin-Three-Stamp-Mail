@@ -13,4 +13,6 @@ data class WatchConfig(
     val clock: () -> Long = System::currentTimeMillis,
     /** A value in `0 until bound`, for the reconnect jitter. */
     val random: (Long) -> Long = { bound -> ThreadLocalRandom.current().nextLong(bound) },
+    /** Told on the watcher thread after every successful connection, with the mode the watch runs in (roadmap P8 status). */
+    val onConnected: ((WatchMode) -> Unit)? = null,
 )

@@ -8,7 +8,7 @@
   "p_introduction_what": "Angus Mail 为 AutoJs6 脚本提供全局对象 `mail`, 用于发送邮件, 列出和搜索邮箱, 读取正文, 下载附件, 管理标记与文件夹, 以及监听文件夹中的新邮件. 它基于 Jakarta Mail 的参考实现 [Eclipse Angus Mail]({{ angus_mail_url }}) {{ angus_mail_version }}, 通过 TLS 使用 IMAP, POP3 和 SMTP 协议.",
   "p_introduction_how": "全部邮件流量都在插件进程内完成. AutoJs6 通过 Binder 服务发现插件, 交出脚本提供的账户 (或插件设置页中保存的别名), 并接收 JSON 结果与附件流; 宿主本身不含任何邮件代码. 除非你选择在插件中保存账户, 凭据只在会话生命周期内驻留内存.",
   "h3_status": "当前状态",
-  "p_status": "版本 {{ version_name }} 是首个正式版本: 路线图 P0 至 P6 的全部条目 (邮件核心, Binder 契约, 脚本 API, 设置页与别名账户, 新邮件监听, 以及 TLS, 字符集, 服务商, 生命周期, 敌意输入, 秘密审计与性能矩阵) 均已完成并附有证据, 见 [ROADMAP.md]({{ roadmap_url }}). 需要 AutoJs6 {{ required_host_version_name }} (构建 {{ required_host_version_code }}) 或更高版本; 脚本 API 的完整参考见 [AutoJs6 文档]({{ docs_mail_url }}).",
+  "p_status": "版本 {{ version_name }} 新增后台守望 (路线图 P8): 守望页面, 前台服务与 AutoJs6 的 \"邮件到达时\" 任务; P0 至 P7 的全部条目已随 1.0.0 与 1.0.1 发布, 证据见 [ROADMAP.md]({{ roadmap_url }}). 需要 AutoJs6 {{ required_host_version_name }} (构建 {{ required_host_version_code }}) 或更高版本; \"邮件到达时\" 任务需要携带邮件契约版本 2 的宿主构建; 脚本 API 的完整参考见 [AutoJs6 文档]({{ docs_mail_url }}).",
   "h3_features": "功能",
   "p_features_intro": "插件提供以下能力",
   "features": [
@@ -16,6 +16,7 @@
     "收信: 按页列出文件夹, 在服务器端搜索 (服务商拒绝非 ASCII 搜索时回退到客户端过滤), 读取文本与 HTML 正文, 并把附件直接下载到脚本工作目录.",
     "整理: 标记已读或星标, 移动, 复制, 删除, 清除, 以及创建, 重命名或删除文件夹; POP3 账户获得只读子集.",
     "监听: 在脚本运行期间接收新邮件事件, 服务器真正推送时用 IMAP IDLE, 否则轮询 (默认 60 s, 可调): QQ 与 Sina 接受 IDLE 但不推送, 163 与 126 没有 IDLE, POP3 账户一律轮询; 断网与插件进程重启后监听自动恢复.",
+    "后台守望: 设置页的守望页面在没有脚本运行时以前台服务保持到已保存账户的 IMAP IDLE 或轮询连接, 记录每封新邮件, 并为所选守望唤醒 AutoJs6 的 \"邮件到达时\" 任务 (可按发件人与主题过滤), 邮件经 `engines.myEngine().execArgv.mail` 传入脚本.",
     "服务商: 内置 Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina 和 Aliyun 预设, 自动填充主机, 端口与加密方式; 任何字段都可为其他服务器覆盖.",
     "认证: 密码与服务商授权码, 或由脚本提供并附带刷新回调的 XOAUTH2 访问令牌."
   ],
@@ -24,7 +25,8 @@
     "在安装了 AutoJs6 构建 {{ required_host_version_code }} ({{ required_host_version_name }}) 或更高版本的设备上, 从 [Releases]({{ repo_url }}/releases) 安装插件 APK.",
     "打开 AutoJs6 插件中心, 确认 `Angus Mail` 已被识别并启用它.",
     "准备账户: 在邮件服务商的网页端开启 IMAP 或 POP3 与 SMTP, 并取得授权码 (QQ, 163, 126, Sina), 应用专用密码 (Gmail, iCloud, Yahoo) 或 OAuth 2.0 访问令牌 (Outlook.com); 登录密码本身通常不被接受.",
-    "在脚本中调用 `mail.connect(...)`, 或在插件设置页 (插件的启动器图标, 或 AutoJs6 开发者选项 > 邮件账户设置) 保存账户后以别名连接."
+    "在脚本中调用 `mail.connect(...)`, 或在插件设置页 (插件的启动器图标, 或 AutoJs6 开发者选项 > 邮件账户设置) 保存账户后以别名连接.",
+    "要在新邮件到达时运行脚本而无需常驻脚本: 在插件的守望页面 (设置 > 守望: 账户别名, 文件夹, 模式, 过滤) 添加守望, 按提示允许通知, 然后在 AutoJs6 中创建任务 (长按脚本 > 定时任务 > 广播触发 > 邮件到达时) 并选择守望; 该任务需要携带邮件契约版本 2 的 AutoJs6 构建."
   ],
   "h3_providers": "服务商准备",
   "p_providers_intro": "每家服务商都要先在网页端开启 IMAP (或 POP3) 与 SMTP, 并以授权码, 应用专用密码或访问令牌代替登录密码; 各预设 (`provider` 的取值) 的要点",
@@ -72,7 +74,8 @@
     "INTERNET 权限只用于脚本指定服务器的 IMAP, POP3 和 SMTP 连接; 插件不发起其他请求, 也不收集任何数据.",
     "密码与令牌从脚本到插件经 Binder 的专用字段传递, 不会出现在日志, JSON 文档, 错误消息或崩溃报告中, 且只在会话生命周期内驻留内存. 设置页保存的账户由 Android Keystore 密钥加密, 并排除在备份之外.",
     "连接默认使用 TLS (按服务商要求选择 SSL 或 STARTTLS); 明文连接与自签名证书必须为每个账户显式声明.",
-    "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS 权限只服务于设置页的引导按钮: 按钮显示系统是否可能在后台暂停插件, 并在用户要求时打开系统对话框; 插件从不自行请求, 也没有任何功能依赖该排除. P5 监听矩阵实测了该排除的用途: 屏幕关闭一段时间后 (Doze) Android 会冻结后台应用的网络, 监听断开, 重连超时, 新邮件要等设备唤醒几分钟后才报告 (Android 9 上约四分钟; Doze 结束时插件立即重连); 排除后监听保持连接."
+    "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS 权限只服务于设置页的引导按钮: 按钮显示系统是否可能在后台暂停插件, 并在用户要求时打开系统对话框; 插件从不自行请求, 也没有任何功能依赖该排除. P5 监听矩阵实测了该排除的用途: 屏幕关闭一段时间后 (Doze) Android 会冻结后台应用的网络, 监听断开, 重连超时, 新邮件要等设备唤醒几分钟后才报告 (Android 9 上约四分钟; Doze 结束时插件立即重连); 排除后监听保持连接.",
+    "四项权限只服务于 1.1.0 的后台守望. FOREGROUND_SERVICE 与 FOREGROUND_SERVICE_SPECIAL_USE 运行守望服务 (类型 `specialUse`, 子类型 `mail_background_watch`: 邮件守望是等待服务器推送的长连接, 而不是有界的数据同步), 只显示一条低优先级通知; POST_NOTIFICATIONS 仅在守望页面启用守望时申请, 以便 Android 13 及以上显示该通知; RECEIVE_BOOT_COMPLETED 支撑该页面的开机自启开关, 默认关闭, 打开时才启用接收器. 服务只从守望页面或宿主订阅启动, 只连接已保存账户, 秘密留在插件进程内; 发往 AutoJs6 的唤醒广播只携带邮件信封 (不含正文), 且只送达受 PLUGIN 签名权限保护的接收器."
   ],
   "p_security_permission": "请只从官方 [Releases]({{ repo_url }}/releases) 页面或 AutoJs6 插件中心获取插件. 来源不明的安装包即使版本号相同, 也可能无法通过宿主校验或带来风险.",
   "h3_plugin_interface": "插件接口",

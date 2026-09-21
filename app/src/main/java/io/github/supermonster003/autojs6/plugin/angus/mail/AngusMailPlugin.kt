@@ -60,10 +60,10 @@ object AngusMailPlugin {
     /**
      * Features the plugin implements today: `messages.append` (P2.2), the client-side filter
      * fallback of `messages.search` (P2.3 / P2.4), saved accounts behind `openSession(alias)` /
-     * `listSavedAccounts` (P4) and new-mail watches with IMAP IDLE (`idle`, P5). `backgroundWatch`
-     * returns with P8.
+     * `listSavedAccounts` (P4), new-mail watches with IMAP IDLE (`idle`, P5) and the background
+     * watches with `openTrigger` / `listTriggers` of contract version 2 (`backgroundWatch`, P8).
      */
-    val FEATURES = listOf(MailContract.FEATURE_APPEND, MailContract.FEATURE_CLIENT_SEARCH_FALLBACK, MailContract.FEATURE_SAVED_ACCOUNTS, MailContract.FEATURE_IDLE)
+    val FEATURES = listOf(MailContract.FEATURE_APPEND, MailContract.FEATURE_CLIENT_SEARCH_FALLBACK, MailContract.FEATURE_SAVED_ACCOUNTS, MailContract.FEATURE_IDLE, MailContract.FEATURE_BACKGROUND_WATCH)
     /** Version of the built-in provider catalog (`mail-core/src/main/resources/providers.json`). */
     val PROVIDERS_VERSION: Int get() = ProviderPresets.version
     const val MAIL_LIBRARY_VERSION = "2.0.5"

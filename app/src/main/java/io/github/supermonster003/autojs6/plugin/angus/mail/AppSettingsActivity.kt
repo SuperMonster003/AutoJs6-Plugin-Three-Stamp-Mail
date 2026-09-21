@@ -18,6 +18,9 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.ui.hairline
 import io.github.supermonster003.autojs6.plugin.angus.mail.ui.inputDialog
 import io.github.supermonster003.autojs6.plugin.angus.mail.ui.sectionHeader
 import io.github.supermonster003.autojs6.plugin.angus.mail.ui.settingRow
+import io.github.supermonster003.autojs6.plugin.angus.mail.trigger.TriggerStores
+import io.github.supermonster003.autojs6.plugin.angus.mail.trigger.WatchKeeper
+import io.github.supermonster003.autojs6.plugin.angus.mail.trigger.WatchesActivity
 import io.github.supermonster003.autojs6.plugin.angus.mail.ui.singleChoiceDialog
 import java.util.Locale
 
@@ -31,6 +34,7 @@ class AppSettingsActivity : ConfiguredActivity() {
     private lateinit var settings: ApplicationSettings
     private lateinit var hostResult: AutoJs6HostSettingsResult
     private var batteryRow: SettingRow? = null
+    private var watchesRow: SettingRow? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,9 +87,17 @@ class AppSettingsActivity : ConfiguredActivity() {
         )
     }
 
-    /** Sections between appearance and information: the battery-optimization guide (roadmap P4.6, D27). */
+    /** Sections between appearance and information: the background watches (roadmap P8) and the battery-optimization guide (roadmap P4.6, D27). */
     private fun buildExtraSections(content: LinearLayout) {
         content.addView(sectionHeader(R.string.settings_section_background))
+        val watches = settingRow(
+            title = getString(R.string.watches_title),
+            summary = watchesSummary(),
+            iconResource = R.drawable.ic_visibility_24,
+            onClick = { startActivity(Intent(this, WatchesActivity::class.java)) },
+        )
+        watchesRow = watches
+        content.addView(watches.view)
         val row = settingRow(
             title = getString(R.string.battery_title),
             summary = batterySummary(),
@@ -101,6 +113,12 @@ class AppSettingsActivity : ConfiguredActivity() {
         super.onResume()
         // The system dialog or list may have changed the state while this screen was paused.
         batteryRow?.summaryView?.text = batterySummary()
+        watchesRow?.summaryView?.text = watchesSummary()
+    }
+
+    private fun watchesSummary(): String {
+        val configured = runCatching { TriggerStores.of(this).list().size }.getOrDefault(0)
+        return getString(R.string.watches_summary_counts, configured, WatchKeeper.of(this).connected)
     }
 
     private fun batterySummary(): String = getString(

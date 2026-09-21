@@ -4,6 +4,15 @@
 
 ******
 
+# v1.1.0
+
+###### 2026/09/21
+
+* `提示` 1.1.0 新增背景守望 (郵件路線圖 P8): 設定頁的守望頁面在沒有指令碼執行時以前景服務保持已儲存帳戶的守望, 並喚醒 AutoJs6 的 "郵件到達時" 任務. 該任務及其守望選擇器需要攜帶郵件契約版本 2 的宿主組建 (AutoJs6 6.8.0 組建 5282 之後); 舊版宿主上頁面會提示無法喚醒 AutoJs6, 新郵件只進入守望的記錄清單. 此功能新增四項權限, 理由見 README 安全章節: FOREGROUND_SERVICE 與 FOREGROUND_SERVICE_SPECIAL_USE (守望服務), POST_NOTIFICATIONS (其常駐通知, 僅在啟用守望時申請) 與 RECEIVE_BOOT_COMPLETED (守望頁面的開機自啟開關, 預設關閉).
+* `新增` 背景守望 (郵件路線圖 P8): 設定頁新增守望頁面, 可為已儲存帳戶設定至多 16 個守望 (`MAX_TRIGGERS`), 每個含名稱, 帳戶別名, 資料夾, 模式 (自動, IDLE 或帶間隔的輪詢) 與可選的寄件者 / 主旨過濾, 存於 no-backup 目錄下的 `mail-triggers/triggers.json`; `specialUse` 前景服務 `MailWatchService` 在沒有指令碼執行時以 P5 的監聽器執行已啟用的守望 (伺服器推送時用 IDLE, 否則輪詢, 斷線按退避重連, 網路變化時立即重連) 並顯示一則低優先級通知; 每封新郵件進入守望的記錄清單 (最近 100 筆信封摘要, `MAX_TRIGGER_RECORDS`, 不含正文), 頁面顯示連線狀態, 最近錯誤, 記錄與重連操作; 開機自啟開關 (預設關閉) 啟用 `BOOT_COMPLETED` 接收器, 重新開機後重新拉起服務
+* `新增` 郵件契約版本 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, 能力特性 `backgroundWatch`): 宿主以 generation 與可選過濾訂閱已設定的守望, 立即收到目前狀態, 之後收到 `onStatus` (stopped, connecting, connected 或 failed, 附原因與最近錯誤) 與每封符合郵件的 `onMail(generation, seq, event)`, `mail` 事件攜帶守望 id, 別名, 地址, 資料夾, 郵件信封與 `receivedAt`; 每個守望至多 4 個訂閱者 (`MAX_TRIGGER_SUBSCRIBERS`), 已停用或不存在的守望與不可用的選項以 reason 為 `refused` 的 `stopped` 狀態拒絕, `update` 取代訂閱者的過濾, `stop` 只結束訂閱; 沒有活動訂閱者時每個事件以明確廣播 `org.autojs.autojs6.action.MAIL_TRIGGER` 發往 AutoJs6 (受其 `PLUGIN` 簽章權限保護), 即使沒有指令碼執行也能啟動宿主的 "郵件到達時" 任務 (`MailTriggerBinderTest` 於 API 37 AVD; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)
+* `新增` 郵件核心新增頁面, 服務與 Binder 共用的觸發文件與規則 (`TriggerConfig`, 寄件者與主旨子字串不區分大小寫的 `TriggerFilter`, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) 與上限 `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS`, `MIN_TRIGGER_INTERVAL_MS` (3 s, 宿主每任務的節流間隔), 監聽器新增 `onConnected` 回呼, 背景守望在資料夾開啟後即顯示 `connected`
+
 # v1.0.1
 
 ###### 2026/09/21

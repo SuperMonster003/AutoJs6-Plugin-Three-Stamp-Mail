@@ -8,7 +8,7 @@
   "p_introduction_what": "Angus Mail 為 AutoJs6 指令碼提供全域物件 `mail`, 用於傳送郵件, 列出和搜尋信箱, 讀取內文, 下載附件, 管理標記與資料夾, 以及監聽資料夾中的新郵件. 它基於 Jakarta Mail 的參考實作 [Eclipse Angus Mail]({{ angus_mail_url }}) {{ angus_mail_version }}, 透過 TLS 使用 IMAP, POP3 和 SMTP 協定.",
   "p_introduction_how": "全部郵件流量都在外掛程式的程序內完成. AutoJs6 透過 Binder 服務發現外掛程式, 交出指令碼提供的帳號 (或外掛程式設定頁中儲存的別名), 並接收 JSON 結果與附件串流; 宿主本身不含任何郵件程式碼. 除非你選擇在外掛程式中儲存帳號, 憑證只在工作階段生命週期內駐留記憶體.",
   "h3_status": "目前狀態",
-  "p_status": "版本 {{ version_name }} 是首個正式版本: 路線圖 P0 至 P6 的全部條目 (郵件核心, Binder 契約, 指令碼 API, 設定頁與別名帳號, 新郵件監聽, 以及 TLS, 字元集, 服務商, 生命週期, 敵意輸入, 秘密稽核與效能矩陣) 均已完成並附有證據, 見 [ROADMAP.md]({{ roadmap_url }}). 需要 AutoJs6 {{ required_host_version_name }} (組建 {{ required_host_version_code }}) 或更高版本; 指令碼 API 的完整參考見 [AutoJs6 文件]({{ docs_mail_url }}).",
+  "p_status": "版本 {{ version_name }} 新增背景守望 (路線圖 P8): 守望頁面, 前景服務與 AutoJs6 的 \"郵件到達時\" 任務; P0 至 P7 的全部條目已隨 1.0.0 與 1.0.1 發佈, 證據見 [ROADMAP.md]({{ roadmap_url }}). 需要 AutoJs6 {{ required_host_version_name }} (組建 {{ required_host_version_code }}) 或更高版本; \"郵件到達時\" 任務需要攜帶郵件契約版本 2 的宿主組建; 指令碼 API 的完整參考見 [AutoJs6 文件]({{ docs_mail_url }}).",
   "h3_features": "功能",
   "p_features_intro": "外掛程式提供以下能力",
   "features": [
@@ -16,6 +16,7 @@
     "收信: 按頁列出資料夾, 在伺服器端搜尋 (服務商拒絕非 ASCII 搜尋時回退到用戶端過濾), 讀取文字與 HTML 內文, 並把附件直接下載到指令碼工作目錄.",
     "整理: 標記已讀或星號, 移動, 複製, 刪除, 清除, 以及建立, 重新命名或刪除資料夾; POP3 帳號獲得唯讀子集.",
     "監聽: 在指令碼執行期間接收新郵件事件, 伺服器真正推送時用 IMAP IDLE, 否則輪詢 (預設 60 s, 可調): QQ 與 Sina 接受 IDLE 但不推送, 163 與 126 沒有 IDLE, POP3 帳號一律輪詢; 斷網與外掛程序重啟後監聽自動恢復.",
+    "背景守望: 設定頁的守望頁面在沒有指令碼執行時以前景服務保持到已儲存帳戶的 IMAP IDLE 或輪詢連線, 記錄每封新郵件, 並為所選守望喚醒 AutoJs6 的 \"郵件到達時\" 任務 (可依寄件者與主旨過濾), 郵件經 `engines.myEngine().execArgv.mail` 傳入指令碼.",
     "服務商: 內建 Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina 和 Aliyun 預設, 自動填入主機, 連接埠與加密方式; 任何欄位都可為其他伺服器覆寫.",
     "驗證: 密碼與服務商授權碼, 或由指令碼提供並附帶重新整理回呼的 XOAUTH2 存取權杖."
   ],
@@ -24,7 +25,8 @@
     "在安裝了 AutoJs6 組建 {{ required_host_version_code }} ({{ required_host_version_name }}) 或更高版本的裝置上, 從 [Releases]({{ repo_url }}/releases) 安裝外掛程式 APK.",
     "開啟 AutoJs6 外掛程式中心, 確認 `Angus Mail` 已被識別並啟用它.",
     "準備帳號: 在郵件服務商的網頁端開啟 IMAP 或 POP3 與 SMTP, 並取得授權碼 (QQ, 163, 126, Sina), 應用程式專用密碼 (Gmail, iCloud, Yahoo) 或 OAuth 2.0 存取權杖 (Outlook.com); 登入密碼本身通常不被接受.",
-    "在指令碼中呼叫 `mail.connect(...)`, 或在外掛程式設定頁 (外掛程式的啟動器圖示, 或 AutoJs6 開發者選項 > 郵件帳戶設定) 儲存帳號後以別名連線."
+    "在指令碼中呼叫 `mail.connect(...)`, 或在外掛程式設定頁 (外掛程式的啟動器圖示, 或 AutoJs6 開發者選項 > 郵件帳戶設定) 儲存帳號後以別名連線.",
+    "要在新郵件到達時執行指令碼而無需常駐指令碼: 在外掛的守望頁面 (設定 > 守望: 帳戶別名, 資料夾, 模式, 過濾) 新增守望, 依提示允許通知, 然後在 AutoJs6 中建立任務 (長按指令碼 > 定時任務 > 廣播觸發 > 郵件到達時) 並選擇守望; 該任務需要攜帶郵件契約版本 2 的 AutoJs6 組建."
   ],
   "h3_providers": "服務商準備",
   "p_providers_intro": "每家服務商都要先在網頁端開啟 IMAP (或 POP3) 與 SMTP, 並以授權碼, 應用程式專用密碼或存取權杖代替登入密碼; 各預設 (`provider` 的取值) 的要點",
@@ -72,7 +74,8 @@
     "INTERNET 權限只用於指令碼指定伺服器的 IMAP, POP3 和 SMTP 連線; 外掛程式不發起其他請求, 也不收集任何資料.",
     "密碼與權杖從指令碼到外掛程式經 Binder 的專用欄位傳遞, 不會出現在記錄檔, JSON 文件, 錯誤訊息或當機報告中, 且只在工作階段生命週期內駐留記憶體. 設定頁儲存的帳號由 Android Keystore 金鑰加密, 並排除在備份之外.",
     "連線預設使用 TLS (按服務商要求選擇 SSL 或 STARTTLS); 明文連線與自簽憑證必須為每個帳號明確宣告.",
-    "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS 權限只服務於設定頁的引導按鈕: 按鈕顯示系統是否可能在背景暫停外掛程式, 並在使用者要求時開啟系統對話方塊; 外掛程式從不自行請求, 也沒有任何功能依賴該排除. P5 監聽矩陣實測了該排除的用途: 螢幕關閉一段時間後 (Doze) Android 會凍結背景應用程式的網路, 監聽斷開, 重連逾時, 新郵件要等裝置喚醒幾分鐘後才回報 (Android 9 上約四分鐘; Doze 結束時外掛程式立即重連); 排除後監聽保持連線."
+    "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS 權限只服務於設定頁的引導按鈕: 按鈕顯示系統是否可能在背景暫停外掛程式, 並在使用者要求時開啟系統對話方塊; 外掛程式從不自行請求, 也沒有任何功能依賴該排除. P5 監聽矩陣實測了該排除的用途: 螢幕關閉一段時間後 (Doze) Android 會凍結背景應用程式的網路, 監聽斷開, 重連逾時, 新郵件要等裝置喚醒幾分鐘後才回報 (Android 9 上約四分鐘; Doze 結束時外掛程式立即重連); 排除後監聽保持連線.",
+    "四項權限只服務於 1.1.0 的背景守望. FOREGROUND_SERVICE 與 FOREGROUND_SERVICE_SPECIAL_USE 執行守望服務 (類型 `specialUse`, 子類型 `mail_background_watch`: 郵件守望是等待伺服器推送的長連線, 而不是有界的資料同步), 只顯示一則低優先級通知; POST_NOTIFICATIONS 僅在守望頁面啟用守望時申請, 以便 Android 13 及以上顯示該通知; RECEIVE_BOOT_COMPLETED 支撐該頁面的開機自啟開關, 預設關閉, 開啟時才啟用接收器. 服務只從守望頁面或宿主訂閱啟動, 只連線已儲存帳戶, 秘密留在外掛程序內; 發往 AutoJs6 的喚醒廣播只攜帶郵件信封 (不含正文), 且只送達受 PLUGIN 簽章權限保護的接收器."
   ],
   "p_security_permission": "請只從官方 [Releases]({{ repo_url }}/releases) 頁面或 AutoJs6 外掛中心取得外掛. 來源不明的安裝套件即使版本號相同, 也可能無法通過主程式驗證或帶來風險.",
   "h3_plugin_interface": "外掛介面",

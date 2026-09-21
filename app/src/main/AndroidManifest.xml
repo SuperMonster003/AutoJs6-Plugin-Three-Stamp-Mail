@@ -6,11 +6,24 @@
 
     <!--
         Outbound IMAP / POP3 / SMTP connections to the mail servers a script names (roadmap D13 / D24).
-        The plugin opens no other connections, hosts no listener, and asks for no storage, notification
-        or foreground-service permission.
+        The plugin opens no other connections, hosts no listener, and asks for no storage permission.
     -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!--
+        Background watches (roadmap P8, D40): MailWatchService keeps the IDLE / polling connections of
+        the watches configured in the settings page while no script runs. It is a foreground service of
+        type specialUse (the dataSync type is capped at six hours a day and cannot start from
+        BOOT_COMPLETED on Android 15); its persistent notification needs POST_NOTIFICATIONS on
+        Android 13 and later (asked when the first watch is enabled; the service runs without it);
+        RECEIVE_BOOT_COMPLETED backs the opt-in "start after boot" switch, whose receiver stays
+        disabled until the user turns it on. None of these run unless a watch is configured.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!--
         Backs the battery-optimization guide row of the settings page only (roadmap P4.6, D27): the row
@@ -96,6 +109,22 @@
             android:parentActivityName=".AppSettingsActivity"
             android:theme="@style/Theme.AngusMail" />
 
+        <!-- Background watches (roadmap P8): the list and the editor, reached from the application settings. -->
+        <activity
+            android:name=".trigger.WatchesActivity"
+            android:exported="false"
+            android:label="@string/watches_title"
+            android:parentActivityName=".AppSettingsActivity"
+            android:theme="@style/Theme.AngusMail" />
+
+        <activity
+            android:name=".trigger.WatchEditorActivity"
+            android:exported="false"
+            android:label="@string/watch_editor_title_add"
+            android:parentActivityName=".trigger.WatchesActivity"
+            android:theme="@style/Theme.AngusMail"
+            android:windowSoftInputMode="adjustResize" />
+
         <!--
             Parameterless settings entry for the host (roadmap P4.3): forwards to AccountsActivity and
             finishes. It carries the plugin permission so only AutoJs6 can start it, which is why the
@@ -155,8 +184,37 @@
         </service>
 
         <!--
-            AppCompat / Material pull in auto-start components; this plugin exposes no provider and no
-            receiver (ManifestContractTest and the installed-package contract test enforce it).
+            The foreground service of the background watches (roadmap P8, D40). Not exported: the
+            settings page, the boot receiver and the plugin's own Binder start it. The special-use
+            subtype names the reason for Android 14 and later.
+        -->
+        <service
+            android:name=".trigger.MailWatchService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="mail_background_watch" />
+        </service>
+
+        <!--
+            Restarts the enabled watches after a boot; disabled here and switched on only by the
+            "start after boot" switch of the watches page (through the package manager).
+        -->
+        <receiver
+            android:name=".trigger.BootReceiver"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+            AppCompat / Material pull in auto-start components; this plugin exposes no provider and, apart
+            from the boot receiver above, no receiver (ManifestContractTest and the installed-package
+            contract test enforce it).
         -->
         <provider
             android:name="androidx.startup.InitializationProvider"

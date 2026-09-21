@@ -5,6 +5,17 @@
   "changelog_label_improvement": "优化",
   "changelog_label_dependency": "依赖",
   "$data": {
+    "v1.1.0": {
+      "released_date": "2026/09/21",
+      "hint": [
+        "1.1.0 新增后台守望 (邮件路线图 P8): 设置页的守望页面在没有脚本运行时以前台服务保持已保存账户的守望, 并唤醒 AutoJs6 的 \"邮件到达时\" 任务. 该任务及其守望选择器需要携带邮件契约版本 2 的宿主构建 (AutoJs6 6.8.0 构建 5282 之后); 旧版宿主上页面会提示无法唤醒 AutoJs6, 新邮件只进入守望的记录列表. 此功能新增四项权限, 理由见 README 安全章节: FOREGROUND_SERVICE 与 FOREGROUND_SERVICE_SPECIAL_USE (守望服务), POST_NOTIFICATIONS (其常驻通知, 仅在启用守望时申请) 与 RECEIVE_BOOT_COMPLETED (守望页面的开机自启开关, 默认关闭)."
+      ],
+      "feature": [
+        "后台守望 (邮件路线图 P8): 设置页新增守望页面, 可为已保存账户配置至多 16 个守望 (`MAX_TRIGGERS`), 每个含名称, 账户别名, 文件夹, 模式 (自动, IDLE 或带间隔的轮询) 与可选的发件人 / 主题过滤, 存于 no-backup 目录下的 `mail-triggers/triggers.json`; `specialUse` 前台服务 `MailWatchService` 在没有脚本运行时以 P5 的监听器运行已启用的守望 (服务器推送时用 IDLE, 否则轮询, 断线按退避重连, 网络变化时立即重连) 并显示一条低优先级通知; 每封新邮件进入守望的记录列表 (最近 100 条信封摘要, `MAX_TRIGGER_RECORDS`, 不含正文), 页面显示连接状态, 最近错误, 记录与重连操作; 开机自启开关 (默认关闭) 启用 `BOOT_COMPLETED` 接收器, 重启后重新拉起服务",
+        "邮件契约版本 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, 能力特性 `backgroundWatch`): 宿主以 generation 与可选过滤订阅已配置的守望, 立即收到当前状态, 之后收到 `onStatus` (stopped, connecting, connected 或 failed, 附原因与最近错误) 与每封匹配邮件的 `onMail(generation, seq, event)`, `mail` 事件携带守望 id, 别名, 地址, 文件夹, 邮件信封与 `receivedAt`; 每个守望至多 4 个订阅者 (`MAX_TRIGGER_SUBSCRIBERS`), 已禁用或不存在的守望与不可用的选项以 reason 为 `refused` 的 `stopped` 状态拒绝, `update` 替换订阅者的过滤, `stop` 只结束订阅; 没有活动订阅者时每个事件以显式广播 `org.autojs.autojs6.action.MAIL_TRIGGER` 发往 AutoJs6 (受其 `PLUGIN` 签名权限保护), 即使没有脚本运行也能启动宿主的 \"邮件到达时\" 任务 (`MailTriggerBinderTest` 于 API 37 AVD; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)",
+        "邮件核心新增页面, 服务与 Binder 共用的触发文档与规则 (`TriggerConfig`, 发件人与主题子串不区分大小写的 `TriggerFilter`, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) 与上限 `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS`, `MIN_TRIGGER_INTERVAL_MS` (3 s, 宿主每任务的节流间隔), 监听器新增 `onConnected` 回调, 后台守望在文件夹打开后即显示 `connected`"
+      ]
+    },
     "v1.0.1": {
       "released_date": "2026/09/21",
       "fix": [

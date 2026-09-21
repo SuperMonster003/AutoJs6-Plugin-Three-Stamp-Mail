@@ -164,6 +164,7 @@ abstract class AbstractWatcher(
                     val resync = connect()
                     connectCount++
                     backoff.reset()
+                    config.onConnected?.let { hook -> runCatching { hook(mode) } }
                     resync?.let { emit(WatchEvent.Resync(folder, it)) }
                     run()
                 } catch (e: Throwable) {

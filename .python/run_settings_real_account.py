@@ -14,6 +14,7 @@ the account it saved stay on the device for `.python/run_host_script_smoke.py --
 Nothing secret is printed: the instrumentation output and a logcat excerpt are written to
 build/p4/ with the secret masked and scanned, reported as "leak check: clean" or "LEAK".
 """
+import glob
 import io
 import os
 import re
@@ -25,7 +26,7 @@ PACKAGE = "io.github.supermonster003.autojs6.plugin.angus.mail"
 TEST_PACKAGE = PACKAGE + ".test"
 TEST_CLASS = PACKAGE + ".RealAccountSettingsDeviceTest"
 RUNNER = "androidx.test.runner.AndroidJUnitRunner"
-PLUGIN_APK = os.path.join(PLUGIN, "app", "build", "outputs", "apk", "debug", "autojs6-plugin-angus-mail-v1.0.0.apk")
+PLUGIN_APK = (glob.glob(os.path.join(PLUGIN, "app", "build", "outputs", "apk", "debug", "autojs6-plugin-angus-mail-v*.apk")) or [os.path.join(PLUGIN, "app", "build", "outputs", "apk", "debug", "autojs6-plugin-angus-mail.apk")])[0]
 TEST_APK = os.path.join(PLUGIN, "app", "build", "outputs", "apk", "androidTest", "debug", "app-debug-androidTest.apk")
 PROVIDERS = {"qq.com": "qq", "foxmail.com": "qq", "163.com": "163", "126.com": "126", "yeah.net": "163", "sina.com": "sina", "sina.cn": "sina"}
 SAFE = re.compile(r"^[A-Za-z0-9._\-/+=]+$")

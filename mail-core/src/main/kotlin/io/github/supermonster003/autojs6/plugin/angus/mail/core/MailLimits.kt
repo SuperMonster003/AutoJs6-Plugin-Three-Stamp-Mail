@@ -47,6 +47,20 @@ object MailLimits {
     /** Longest redacted trace line (roadmap D28: command name, response code, first 200 characters). */
     const val MAX_TRACE_LINE_LENGTH = 200
 
+    // Background watches and triggers (contract version 2, roadmap P8).
+
+    /** Background watches the plugin keeps at once. */
+    const val MAX_TRIGGERS = 16
+
+    /** Live `openTrigger` subscriptions per background watch. */
+    const val MAX_TRIGGER_SUBSCRIBERS = 4
+
+    /** Trigger records (envelope summaries, no bodies) the plugin keeps per watch, newest first. */
+    const val MAX_TRIGGER_RECORDS = 100
+
+    /** Shortest spacing between two script launches of one mail-arrival task on the host. */
+    const val MIN_TRIGGER_INTERVAL_MS = 3_000L
+
     // Watches (roadmap D17 / P5); not contract constants, the plugin owns them.
 
     /** First reconnect delay of a watch after a connection loss; doubles per attempt with jitter. */

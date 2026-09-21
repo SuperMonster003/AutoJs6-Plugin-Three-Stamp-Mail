@@ -1,7 +1,7 @@
-# AutoJs6 6.8.0 / 5282 host API, release builds of plugin-api/common-plugin-api and plugin-api/mail-api at host commit 34d2c8fcd.
-# common-plugin-api.aar is byte-identical to the c0d5fecdb build (the module did not change); mail-api.aar depends on it (PluginInfo).
+# AutoJs6 6.8.0 / 5282 host API, release builds of plugin-api/common-plugin-api and plugin-api/mail-api at host commit be036195a (mail contract version 2, roadmap P8).
+# common-plugin-api.aar is byte-identical to the 34d2c8fcd build (the module did not change); mail-api.aar depends on it (PluginInfo).
 format=1
 common-plugin-api.file=common-plugin-api.aar
 common-plugin-api.sha256=ee7eb7879a53506c4cca5e2d19d3058e28df2168fb33351a52302a3b9e532e15
 mail-api.file=mail-api.aar
-mail-api.sha256=7b7f537a78d520231f90abf4b20f5012c919fef0f8fad03c46327cfdfe9d8821
+mail-api.sha256=5738f65dbc47685d4c0bddeaa6b6a2e1ccd3741ec9fa530adea6a8445498a1f1

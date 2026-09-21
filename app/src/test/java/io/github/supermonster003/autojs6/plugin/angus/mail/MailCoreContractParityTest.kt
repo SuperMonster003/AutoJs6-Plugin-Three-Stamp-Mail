@@ -6,6 +6,8 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProt
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.ProviderPresets
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.TlsMode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorCode
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.TriggerEventDocument
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.TriggerStatusDocument
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.WatchEventDocument
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.WatchMode
 import org.autojs.plugin.mail.api.MailActions
@@ -39,7 +41,7 @@ class MailCoreContractParityTest {
         val mirrored = MailLimits::class.java.declaredFields
             .filter { java.lang.reflect.Modifier.isStatic(it.modifiers) && java.lang.reflect.Modifier.isPublic(it.modifiers) && it.name in contract }
             .associate { it.name to it.get(null) }
-        assertTrue("MailLimits must mirror at least the timeouts and ceilings", mirrored.size >= 17)
+        assertTrue("MailLimits must mirror at least the timeouts and ceilings", mirrored.size >= 21)
         mirrored.forEach { (name, value) -> assertEquals(name, contract.getValue(name), value) }
     }
 
@@ -52,6 +54,12 @@ class MailCoreContractParityTest {
         assertEquals(MailContract.EVENT_TYPES, WatchEventDocument.TYPES)
         assertEquals(MailContract.WATCH_MODE_IDLE, WatchMode.IDLE.id)
         assertEquals(MailContract.WATCH_MODE_POLL, WatchMode.POLL.id)
+        assertEquals(MailContract.TRIGGER_STATES, TriggerStatusDocument.STATES)
+        assertEquals(MailContract.TRIGGER_EVENT_MAIL, TriggerEventDocument.TYPE_MAIL)
+        assertEquals(MailContract.TRIGGER_STATE_STOPPED, TriggerStatusDocument.STATE_STOPPED)
+        assertEquals(MailContract.TRIGGER_STATE_CONNECTING, TriggerStatusDocument.STATE_CONNECTING)
+        assertEquals(MailContract.TRIGGER_STATE_CONNECTED, TriggerStatusDocument.STATE_CONNECTED)
+        assertEquals(MailContract.TRIGGER_STATE_FAILED, TriggerStatusDocument.STATE_FAILED)
     }
 
     @Test

@@ -1,6 +1,6 @@
 Angus Mail gives AutoJs6 scripts a global `mail` object for sending messages, listing and searching mailboxes, reading bodies, downloading attachments, managing flags and folders, and watching a folder for new mail. It is built on [Eclipse Angus Mail](https://eclipse-ee4j.github.io/angus-mail/) 2.0.5, the reference implementation of Jakarta Mail, and speaks IMAP, POP3, and SMTP over TLS.
 
-Version 1.0.1 is the first release: every item of roadmap phases P0 to P6 (the mail core, the Binder contract, the script API, the settings page with saved accounts, new-mail watching, and the TLS, charset, provider, lifecycle, hostile-input, secret-audit and performance matrices) is complete with evidence in [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Requires AutoJs6 6.8.0 (build 5282) or later; the full script API reference is in the [AutoJs6 documentation](https://docs.autojs6.com/#/mail).
+Version 1.1.0 adds background watches (roadmap P8): the Watches page, the foreground service and the "On mail arrived" task of AutoJs6; every item of phases P0 to P7 shipped with 1.0.0 and 1.0.1, with evidence in [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Requires AutoJs6 6.8.0 (build 5282) or later; the "On mail arrived" task needs the host build with mail contract version 2; the full script API reference is in the [AutoJs6 documentation](https://docs.autojs6.com/#/mail).
 
 ### Usage
 
@@ -8,5 +8,6 @@ Version 1.0.1 is the first release: every item of roadmap phases P0 to P6 (the m
 2. Open the AutoJs6 plugin center, confirm that `Angus Mail` is recognized, and enable it.
 3. Prepare the account: turn on IMAP or POP3 and SMTP in the provider's web settings and obtain an authorization code (QQ, 163, 126, Sina), an app password (Gmail, iCloud, Yahoo) or an OAuth 2.0 access token (Outlook.com); the login password itself is usually not accepted.
 4. Call `mail.connect(...)` in a script, or save the account on the plugin's settings page (its launcher icon, or AutoJs6 developer options > Mail account settings) and connect by alias.
+5. To run a script on new mail without keeping one running: add a watch on the plugin's Watches page (settings > Watches: account alias, folder, mode, filters), allow the notification when asked, then create a task in AutoJs6 (long-press the script > timed task > run on broadcast > On mail arrived) and pick the watch; the task needs an AutoJs6 build with mail contract version 2.
 
 See the [project README](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail) and [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) for the connection guide and the current progress.

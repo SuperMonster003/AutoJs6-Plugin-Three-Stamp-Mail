@@ -5,6 +5,17 @@
   "changelog_label_improvement": "개선",
   "changelog_label_dependency": "의존성",
   "$data": {
+    "v1.1.0": {
+      "released_date": "2026/09/21",
+      "hint": [
+        "1.1.0 에 백그라운드 감시가 추가되었습니다 (메일 로드맵 P8): 설정의 감시 페이지는 스크립트가 실행되지 않는 동안에도 포그라운드 서비스로 저장된 계정의 감시를 유지하고 AutoJs6 의 \"메일 도착 시\" 작업을 깨웁니다. 이 작업과 감시 선택기는 메일 계약 버전 2 를 포함한 호스트 빌드 (AutoJs6 6.8.0 빌드 5282 이후) 가 필요합니다. 이전 호스트에서는 페이지에 AutoJs6 를 깨울 수 없다고 표시되며 새 메일은 감시의 기록 목록에만 남습니다. 이 기능은 네 가지 권한을 추가하며 각 이유는 README 보안 절에 있습니다: FOREGROUND_SERVICE 와 FOREGROUND_SERVICE_SPECIAL_USE (감시 서비스), POST_NOTIFICATIONS (상주 알림, 감시를 켤 때만 요청), RECEIVE_BOOT_COMPLETED (감시 페이지의 부팅 시 시작 스위치, 기본 꺼짐)."
+      ],
+      "feature": [
+        "백그라운드 감시 (메일 로드맵 P8): 설정에 감시 페이지가 추가되어 저장된 계정에 최대 16 개의 감시 (`MAX_TRIGGERS`) 를 설정할 수 있습니다. 각 감시는 이름, 계정 별칭, 폴더, 모드 (자동, IDLE 또는 간격이 있는 폴링), 선택적 보낸 사람 / 제목 필터를 가지며 no-backup 디렉터리의 `mail-triggers/triggers.json` 에 저장됩니다. `specialUse` 포그라운드 서비스 `MailWatchService` 는 스크립트가 실행되지 않는 동안 P5 워처로 활성 감시를 실행하고 (서버가 푸시하면 IDLE, 아니면 폴링, 백오프 재연결, 네트워크 변경 시 즉시 재연결) 낮은 우선순위 알림 하나를 표시합니다. 새 메일은 감시의 기록 목록 (최근 100 개의 봉투 요약, `MAX_TRIGGER_RECORDS`, 본문 없음) 에 추가되고 페이지는 연결 상태, 마지막 오류, 기록, 재연결 동작을 보여 줍니다. 부팅 시 시작 스위치 (기본 꺼짐) 는 재부팅 후 서비스를 다시 시작하는 `BOOT_COMPLETED` 리시버를 활성화합니다",
+        "메일 계약 버전 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, 기능 플래그 `backgroundWatch`): 호스트는 generation 과 선택적 필터로 설정된 감시를 구독하고 즉시 현재 상태를 받은 뒤 `onStatus` (stopped, connecting, connected 또는 failed 와 이유 및 마지막 오류) 와 일치하는 메일마다 `onMail(generation, seq, event)` 를 받습니다. `mail` 이벤트는 감시 id, 별칭, 주소, 폴더, 메일 봉투, `receivedAt` 를 담습니다. 감시당 구독자는 최대 4 (`MAX_TRIGGER_SUBSCRIBERS`), 비활성 또는 존재하지 않는 감시와 사용할 수 없는 옵션은 이유가 `refused` 인 `stopped` 상태로 거부되고, `update` 는 구독자의 필터를 교체하며 `stop` 은 구독만 끝냅니다. 살아 있는 구독자가 없으면 각 이벤트는 `PLUGIN` 서명 권한 뒤의 AutoJs6 로 명시적 브로드캐스트 `org.autojs.autojs6.action.MAIL_TRIGGER` 로 전달되어 스크립트가 실행 중이 아니어도 호스트의 \"메일 도착 시\" 작업을 시작합니다 (API 37 AVD 의 `MailTriggerBinderTest`; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)",
+        "메일 코어에 페이지, 서비스, Binder 가 공유하는 트리거 문서와 규칙 (`TriggerConfig`, 보낸 사람과 제목 부분 문자열을 대소문자 구분 없이 비교하는 `TriggerFilter`, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) 과 상한 `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS`, `MIN_TRIGGER_INTERVAL_MS` (3 초, 호스트의 작업별 스로틀) 가 추가되었고, 워처는 `onConnected` 를 보고하여 백그라운드 감시가 폴더를 연 즉시 `connected` 를 표시합니다"
+      ]
+    },
     "v1.0.1": {
       "released_date": "2026/09/21",
       "fix": [

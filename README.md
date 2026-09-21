@@ -52,7 +52,7 @@ Angus Mail 为 AutoJs6 脚本提供全局对象 `mail`, 用于发送邮件, 列�
 
 ******
 
-版本 1.0.1 是首个正式版本: 路线图 P0 至 P6 的全部条目 (邮件核心, Binder 契约, 脚本 API, 设置页与别名账户, 新邮件监听, 以及 TLS, 字符集, 服务商, 生命周期, 敌意输入, 秘密审计与性能矩阵) 均已完成并附有证据, 见 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). 需要 AutoJs6 6.8.0 (构建 5282) 或更高版本; 脚本 API 的完整参考见 [AutoJs6 文档](https://docs.autojs6.com/#/mail).
+版本 1.1.0 新增后台守望 (路线图 P8): 守望页面, 前台服务与 AutoJs6 的 "邮件到达时" 任务; P0 至 P7 的全部条目已随 1.0.0 与 1.0.1 发布, 证据见 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). 需要 AutoJs6 6.8.0 (构建 5282) 或更高版本; "邮件到达时" 任务需要携带邮件契约版本 2 的宿主构建; 脚本 API 的完整参考见 [AutoJs6 文档](https://docs.autojs6.com/#/mail).
 
 ******
 
@@ -66,6 +66,7 @@ Angus Mail 为 AutoJs6 脚本提供全局对象 `mail`, 用于发送邮件, 列�
 - 收信: 按页列出文件夹, 在服务器端搜索 (服务商拒绝非 ASCII 搜索时回退到客户端过滤), 读取文本与 HTML 正文, 并把附件直接下载到脚本工作目录.
 - 整理: 标记已读或星标, 移动, 复制, 删除, 清除, 以及创建, 重命名或删除文件夹; POP3 账户获得只读子集.
 - 监听: 在脚本运行期间接收新邮件事件, 服务器真正推送时用 IMAP IDLE, 否则轮询 (默认 60 s, 可调): QQ 与 Sina 接受 IDLE 但不推送, 163 与 126 没有 IDLE, POP3 账户一律轮询; 断网与插件进程重启后监听自动恢复.
+- 后台守望: 设置页的守望页面在没有脚本运行时以前台服务保持到已保存账户的 IMAP IDLE 或轮询连接, 记录每封新邮件, 并为所选守望唤醒 AutoJs6 的 "邮件到达时" 任务 (可按发件人与主题过滤), 邮件经 `engines.myEngine().execArgv.mail` 传入脚本.
 - 服务商: 内置 Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina 和 Aliyun 预设, 自动填充主机, 端口与加密方式; 任何字段都可为其他服务器覆盖.
 - 认证: 密码与服务商授权码, 或由脚本提供并附带刷新回调的 XOAUTH2 访问令牌.
 
@@ -79,6 +80,7 @@ Angus Mail 为 AutoJs6 脚本提供全局对象 `mail`, 用于发送邮件, 列�
 2. 打开 AutoJs6 插件中心, 确认 `Angus Mail` 已被识别并启用它.
 3. 准备账户: 在邮件服务商的网页端开启 IMAP 或 POP3 与 SMTP, 并取得授权码 (QQ, 163, 126, Sina), 应用专用密码 (Gmail, iCloud, Yahoo) 或 OAuth 2.0 访问令牌 (Outlook.com); 登录密码本身通常不被接受.
 4. 在脚本中调用 `mail.connect(...)`, 或在插件设置页 (插件的启动器图标, 或 AutoJs6 开发者选项 > 邮件账户设置) 保存账户后以别名连接.
+5. 要在新邮件到达时运行脚本而无需常驻脚本: 在插件的守望页面 (设置 > 守望: 账户别名, 文件夹, 模式, 过滤) 添加守望, 按提示允许通知, 然后在 AutoJs6 中创建任务 (长按脚本 > 定时任务 > 广播触发 > 邮件到达时) 并选择守望; 该任务需要携带邮件契约版本 2 的 AutoJs6 构建.
 
 ******
 
@@ -182,6 +184,7 @@ mail.searchAsync({ subject: 'invoice', since: '2026-09-01' }).then(list => conso
 - 密码与令牌从脚本到插件经 Binder 的专用字段传递, 不会出现在日志, JSON 文档, 错误消息或崩溃报告中, 且只在会话生命周期内驻留内存. 设置页保存的账户由 Android Keystore 密钥加密, 并排除在备份之外.
 - 连接默认使用 TLS (按服务商要求选择 SSL 或 STARTTLS); 明文连接与自签名证书必须为每个账户显式声明.
 - REQUEST_IGNORE_BATTERY_OPTIMIZATIONS 权限只服务于设置页的引导按钮: 按钮显示系统是否可能在后台暂停插件, 并在用户要求时打开系统对话框; 插件从不自行请求, 也没有任何功能依赖该排除. P5 监听矩阵实测了该排除的用途: 屏幕关闭一段时间后 (Doze) Android 会冻结后台应用的网络, 监听断开, 重连超时, 新邮件要等设备唤醒几分钟后才报告 (Android 9 上约四分钟; Doze 结束时插件立即重连); 排除后监听保持连接.
+- 四项权限只服务于 1.1.0 的后台守望. FOREGROUND_SERVICE 与 FOREGROUND_SERVICE_SPECIAL_USE 运行守望服务 (类型 `specialUse`, 子类型 `mail_background_watch`: 邮件守望是等待服务器推送的长连接, 而不是有界的数据同步), 只显示一条低优先级通知; POST_NOTIFICATIONS 仅在守望页面启用守望时申请, 以便 Android 13 及以上显示该通知; RECEIVE_BOOT_COMPLETED 支撑该页面的开机自启开关, 默认关闭, 打开时才启用接收器. 服务只从守望页面或宿主订阅启动, 只连接已保存账户, 秘密留在插件进程内; 发往 AutoJs6 的唤醒广播只携带邮件信封 (不含正文), 且只送达受 PLUGIN 签名权限保护的接收器.
 
 请只从官方 [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) 页面或 AutoJs6 插件中心获取插件. 来源不明的安装包即使版本号相同, 也可能无法通过宿主校验或带来风险.
 
@@ -222,6 +225,15 @@ minimum host build: 5282 (6.8.0)
 ### 发行历史
 
 ******
+
+#### v1.1.0
+
+_2026/09/21_
+
+- `提示` 1.1.0 新增后台守望 (邮件路线图 P8): 设置页的守望页面在没有脚本运行时以前台服务保持已保存账户的守望, 并唤醒 AutoJs6 的 "邮件到达时" 任务. 该任务及其守望选择器需要携带邮件契约版本 2 的宿主构建 (AutoJs6 6.8.0 构建 5282 之后); 旧版宿主上页面会提示无法唤醒 AutoJs6, 新邮件只进入守望的记录列表. 此功能新增四项权限, 理由见 README 安全章节: FOREGROUND_SERVICE 与 FOREGROUND_SERVICE_SPECIAL_USE (守望服务), POST_NOTIFICATIONS (其常驻通知, 仅在启用守望时申请) 与 RECEIVE_BOOT_COMPLETED (守望页面的开机自启开关, 默认关闭).
+- `新增` 后台守望 (邮件路线图 P8): 设置页新增守望页面, 可为已保存账户配置至多 16 个守望 (`MAX_TRIGGERS`), 每个含名称, 账户别名, 文件夹, 模式 (自动, IDLE 或带间隔的轮询) 与可选的发件人 / 主题过滤, 存于 no-backup 目录下的 `mail-triggers/triggers.json`; `specialUse` 前台服务 `MailWatchService` 在没有脚本运行时以 P5 的监听器运行已启用的守望 (服务器推送时用 IDLE, 否则轮询, 断线按退避重连, 网络变化时立即重连) 并显示一条低优先级通知; 每封新邮件进入守望的记录列表 (最近 100 条信封摘要, `MAX_TRIGGER_RECORDS`, 不含正文), 页面显示连接状态, 最近错误, 记录与重连操作; 开机自启开关 (默认关闭) 启用 `BOOT_COMPLETED` 接收器, 重启后重新拉起服务
+- `新增` 邮件契约版本 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, 能力特性 `backgroundWatch`): 宿主以 generation 与可选过滤订阅已配置的守望, 立即收到当前状态, 之后收到 `onStatus` (stopped, connecting, connected 或 failed, 附原因与最近错误) 与每封匹配邮件的 `onMail(generation, seq, event)`, `mail` 事件携带守望 id, 别名, 地址, 文件夹, 邮件信封与 `receivedAt`; 每个守望至多 4 个订阅者 (`MAX_TRIGGER_SUBSCRIBERS`), 已禁用或不存在的守望与不可用的选项以 reason 为 `refused` 的 `stopped` 状态拒绝, `update` 替换订阅者的过滤, `stop` 只结束订阅; 没有活动订阅者时每个事件以显式广播 `org.autojs.autojs6.action.MAIL_TRIGGER` 发往 AutoJs6 (受其 `PLUGIN` 签名权限保护), 即使没有脚本运行也能启动宿主的 "邮件到达时" 任务 (`MailTriggerBinderTest` 于 API 37 AVD; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)
+- `新增` 邮件核心新增页面, 服务与 Binder 共用的触发文档与规则 (`TriggerConfig`, 发件人与主题子串不区分大小写的 `TriggerFilter`, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) 与上限 `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS`, `MIN_TRIGGER_INTERVAL_MS` (3 s, 宿主每任务的节流间隔), 监听器新增 `onConnected` 回调, 后台守望在文件夹打开后即显示 `connected`
 
 #### v1.0.1
 

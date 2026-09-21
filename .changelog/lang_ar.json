@@ -5,6 +5,17 @@
   "changelog_label_improvement": "تحسين",
   "changelog_label_dependency": "تبعية",
   "$data": {
+    "v1.1.0": {
+      "released_date": "2026/09/21",
+      "hint": [
+        "المراقبة في الخلفية جديدة في 1.1.0 (خارطة طريق البريد P8): تبقي صفحة المراقبات في الإعدادات الحسابات المحفوظة تحت المراقبة في خدمة مقدمة بينما لا يعمل أي سكربت, وتوقظ مهمة AutoJs6 \"عند وصول بريد\". تحتاج هذه المهمة ومنتقي المراقبة إلى بنية المضيف التي تحمل إصدار عقد البريد 2 (AutoJs6 6.8.0 بعد البنية 5282); على مضيف أقدم تعرض الصفحة أنه لا يمكن إيقاظ AutoJs6 وتصل الرسائل الجديدة إلى قائمة سجلات المراقبة فقط. تضيف الميزة أربعة أذونات, يشرح كل منها قسم الأمان في README: FOREGROUND_SERVICE و FOREGROUND_SERVICE_SPECIAL_USE (خدمة المراقبة), POST_NOTIFICATIONS (إشعارها الدائم, يطلب فقط عند تفعيل مراقبة) و RECEIVE_BOOT_COMPLETED (مفتاح التشغيل عند الإقلاع في صفحة المراقبات, معطل افتراضيا)."
+      ],
+      "feature": [
+        "المراقبة في الخلفية (خارطة طريق البريد P8): اكتسبت الإعدادات صفحة مراقبات تضبط حتى 16 مراقبة (`MAX_TRIGGERS`) على الحسابات المحفوظة, لكل منها اسم واسم مستعار للحساب ومجلد ووضع (تلقائي أو IDLE أو استطلاع بفاصله) ومرشحات اختيارية للمرسل والموضوع, وتخزن في `mail-triggers/triggers.json` ضمن دليل بلا نسخ احتياطي; تشغل خدمة المقدمة `MailWatchService` من نوع `specialUse` المراقبات المفعلة على مراقبي P5 (IDLE حيث يدفع الخادم, واستطلاع في غير ذلك, وإعادة اتصال بتراجع, وإعادة اتصال فورية عند تغير الشبكة) بينما لا يعمل أي سكربت وتعرض إشعارا واحدا منخفض الأولوية; تضاف كل رسالة جديدة إلى قائمة سجلات المراقبة (آخر 100 ملخص ظرف, `MAX_TRIGGER_RECORDS`, دون متن أبدا) وتعرض الصفحة حالة الاتصال وآخر خطأ والسجلات وإجراء إعادة الاتصال; يفعل مفتاح التشغيل عند الإقلاع (معطل افتراضيا) مستقبل `BOOT_COMPLETED` الذي يعيد تشغيل الخدمة بعد إعادة التشغيل",
+        "إصدار عقد البريد 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, ميزة القدرة `backgroundWatch`): يشترك المضيف في مراقبة مضبوطة بجيل ومرشح اختياري, ويتلقى الحالة الحالية فورا ثم `onStatus` (stopped أو connecting أو connected أو failed مع السبب وآخر خطأ) و `onMail(generation, seq, event)` لكل رسالة مطابقة; يحمل حدث `mail` معرف المراقبة والاسم المستعار والعنوان والمجلد وظرف الرسالة و `receivedAt`; تقبل المراقبة 4 مشتركين على الأكثر (`MAX_TRIGGER_SUBSCRIBERS`), وترفض المراقبة المعطلة أو المجهولة والخيارات غير الصالحة بحالة `stopped` سببها `refused`, ويستبدل `update` مرشح المشترك وينهي `stop` الاشتراك فقط; بدون مشترك حي يذهب كل حدث إلى AutoJs6 كبث صريح `org.autojs.autojs6.action.MAIL_TRIGGER` خلف إذن توقيعه `PLUGIN`, فيبدأ مهمة المضيف \"عند وصول بريد\" حتى عندما لا يعمل أي سكربت (`MailTriggerBinderTest` على AVD بواجهة API 37; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)",
+        "اكتسب نواة البريد وثائق وقواعد التشغيل المشتركة بين الصفحة والخدمة و Binder (`TriggerConfig`, و `TriggerFilter` بسلاسل جزئية للمرسل والموضوع دون تمييز حالة الأحرف, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) والحدود `MAX_TRIGGERS` و `MAX_TRIGGER_SUBSCRIBERS` و `MAX_TRIGGER_RECORDS` و `MIN_TRIGGER_INTERVAL_MS` (3 ثوان, خنق المضيف لكل مهمة), ويبلغ المراقبون `onConnected` لتعرض المراقبة في الخلفية `connected` بمجرد فتح مجلدها"
+      ]
+    },
     "v1.0.1": {
       "released_date": "2026/09/21",
       "fix": [
