@@ -21,7 +21,8 @@ One-time registration (Microsoft Entra admin center, https://entra.microsoft.com
   3. Copy the "Application (client) ID" from the Overview page. That id is not a secret.
 
 The script asks the browser for the delegated Exchange scopes `IMAP.AccessAsUser.All`, `POP.AccessAsUser.All`
-and `SMTP.Send` plus `offline_access`, catches the redirect on a loopback port, exchanges the code with PKCE,
+and `SMTP.Send` plus `offline_access` (and the OpenID `openid email` claims, so the address the account picker
+chose is reported at once), catches the redirect on a loopback port, exchanges the code with PKCE,
 and writes the tokens to the (git-ignored) output file under the profile's keys, for example
 `HOTMAIL_ACCESS_TOKEN_B`, `HOTMAIL_REFRESH_TOKEN_B`, `HOTMAIL_TOKEN_EXPIRES_AT_B` (Unix seconds),
 `HOTMAIL_CLIENT_ID_B` and `HOTMAIL_TENANT_B`. The provider matrix probe and the device runners overlay that
@@ -56,6 +57,10 @@ SCOPES = [
     "https://outlook.office.com/SMTP.Send",
     "offline_access",
 ]
+# The browser sign-in also asks for the OpenID identity claims, so the address the account picker chose is
+# known from the id_token at once; the refresh grant keeps to the mail scopes (tokens stored before this
+# addition have no consent for the identity claims and would be refused).
+LOGIN_SCOPES = SCOPES + ["openid", "email"]
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIELDS = ("ACCESS_TOKEN", "REFRESH_TOKEN", "TOKEN_EXPIRES_AT", "CLIENT_ID", "TENANT")
 
@@ -143,17 +148,49 @@ def store(args, tenant, client_id, answer, props):
     print("granted scopes:", " ".join(granted) or "(none reported)")
     if missing:
         print("WARNING: not granted:", " ".join(missing))
-    verify_identity(kind, letter, answer["access_token"])
+    verify_identity(kind, letter, answer["access_token"], signed_in_address(answer.get("id_token")))
 
 
-def verify_identity(kind, letter, access_token):
-    """One IMAP XOAUTH2 login with the profile's address: the only way to learn whose mailbox an opaque MSA token opens."""
+def signed_in_address(id_token):
+    """The address the browser signed in, from the id_token's claims (None when the answer carries no id_token)."""
+    if not id_token:
+        return None
+    try:
+        payload = id_token.split(".")[1]
+        claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+    except (IndexError, ValueError):
+        return None
+    address = claims.get("email") or claims.get("preferred_username") or ""
+    return address.strip().lower() or None
+
+
+def profile_named(address):
+    """`HOTMAIL_B` when the address is the HOTMAIL_USER_NAME_B of mail-test-accounts.properties, else None."""
+    accounts = read_properties(os.path.join(REPO, "mail-test-accounts.properties"))
+    for name, value in accounts.items():
+        match = re.fullmatch(r"([A-Z][A-Z0-9]*)_USER_NAME_([A-Z])", name)
+        if match and value.strip().lower() == address:
+            return f"{match.group(1)}_{match.group(2)}"
+    return None
+
+
+def verify_identity(kind, letter, access_token, signed_in=None):
+    """One IMAP XOAUTH2 login with the profile's address: the only way to learn whose mailbox an opaque MSA token opens.
+    `signed_in` is the address from the sign-in's id_token when the browser flow produced one."""
     accounts = read_properties(os.path.join(REPO, "mail-test-accounts.properties"))
     address = accounts.get(key(kind, "USER_NAME", letter))
     if not address:
         print(f"identity check skipped: no {key(kind, 'USER_NAME', letter)} in mail-test-accounts.properties")
         return
     domain = address.rsplit("@", 1)[-1]
+    own_account = signed_in is not None and signed_in == address.strip().lower()
+    if signed_in is not None and not own_account:
+        other = profile_named(signed_in)
+        print(f"WARNING: the browser signed in ***@{signed_in.rsplit('@', 1)[-1]}, which is "
+              f"{other + ' of mail-test-accounts.properties' if other else 'none of the profiles of mail-test-accounts.properties'}, "
+              f"not {kind}_{letter} (***@{domain}); the token is stored under {kind}_{letter} anyway.")
+    elif own_account:
+        print(f"signed in as the address of {kind}_{letter} (***@{domain})")
     try:
         imap = imaplib.IMAP4_SSL("outlook.office365.com", 993, timeout=30)
         try:
@@ -167,8 +204,13 @@ def verify_identity(kind, letter, access_token):
     except imaplib.IMAP4.error as error:
         text = str(error).replace(access_token, "<token>").replace(address, "***@" + domain)
         print(f"WARNING: identity check failed for {kind}_{letter} (***@{domain}): {text}")
-        print("         the browser's account picker probably signed in another account; run the login again with the")
-        print("         --suffix of the account you signed in with, or sign in with this one (prompt=select_account).")
+        if own_account:
+            print("         the sign-in was this very account, so the mailbox itself refuses IMAP for it (an account-side")
+            print("         setting or a mailbox not yet opened, not the token); check the account's IMAP / third-party")
+            print("         app access in Outlook on the web and run the login again.")
+        else:
+            print("         the browser's account picker probably signed in another account; run the login again with the")
+            print("         --suffix of the account you signed in with, or sign in with this one (prompt=select_account).")
     except OSError as error:
         print(f"identity check skipped: IMAP connection failed ({type(error).__name__})")
 
@@ -203,7 +245,7 @@ def login(args):
         "response_type": "code",
         "redirect_uri": redirect_uri,
         "response_mode": "query",
-        "scope": " ".join(SCOPES),
+        "scope": " ".join(LOGIN_SCOPES),
         "state": state,
         "code_challenge": challenge,
         "code_challenge_method": "S256",
@@ -228,7 +270,7 @@ def login(args):
         "code": result["code"],
         "redirect_uri": redirect_uri,
         "code_verifier": verifier,
-        "scope": " ".join(SCOPES),
+        "scope": " ".join(LOGIN_SCOPES),
     })
     store(args, args.tenant, args.client_id, answer, migrate(read_properties(args.out)))
 
