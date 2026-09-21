@@ -4,6 +4,7 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.MailLimits
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailErrorCode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.message.MimeLeniency
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.oauth.OAuthProviderId
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.MailJson
 import jakarta.mail.internet.AddressException
 import jakarta.mail.internet.InternetAddress
@@ -16,7 +17,14 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.longOrNull
 
 /** Which secret key accompanied the account JSON on the Binder (the secret itself never enters this module's JSON). */
-enum class SecretKind { NONE, PASSWORD, ACCESS_TOKEN }
+enum class SecretKind {
+    NONE,
+    PASSWORD,
+    ACCESS_TOKEN,
+
+    /** The tokens of a browser sign-in (roadmap P9): a JSON document of `OAuthTokens`, kept by the plugin's store only. */
+    OAUTH2,
+}
 
 /**
  * Parses and normalizes the account JSON of `mail.connect(options)` (roadmap appendix A.2) into a
@@ -45,6 +53,7 @@ object MailAccountOptions {
         const val TLS = "tls"
         const val DEBUG = "debug"
         const val CLIENT_ID = "clientId"
+        const val OAUTH = "oauth"
 
         const val HOST = "host"
         const val PORT = "port"
@@ -56,7 +65,7 @@ object MailAccountOptions {
 
         const val TRUST_ALL = "trustAll"
 
-        val KNOWN: Set<String> = setOf(PROVIDER, ADDRESS, USER, NAME, AUTH, RECEIVE, IMAP, POP3, SMTP, TIMEOUT, TLS, DEBUG, CLIENT_ID)
+        val KNOWN: Set<String> = setOf(PROVIDER, ADDRESS, USER, NAME, AUTH, RECEIVE, IMAP, POP3, SMTP, TIMEOUT, TLS, DEBUG, CLIENT_ID, OAUTH)
 
         /** Keys that would carry a credential; they travel on dedicated Bundle keys, never in JSON. */
         val FORBIDDEN: Set<String> = setOf("password", "accessToken", "tokenProvider", "token", "secret")
@@ -118,6 +127,7 @@ object MailAccountOptions {
         } ?: false
         val debug = root.bool(Fields.DEBUG) ?: false
         val clientId = clientId(root, provider, defaults)
+        val oauth = oauthLink(root, secret)
 
         return MailAccount(
             address = address,
@@ -133,7 +143,36 @@ object MailAccountOptions {
             clientId = clientId,
             debug = debug,
             provider = provider,
+            oauth = oauth,
         )
+    }
+
+    /**
+     * The `oauth` object of an account that signed in through the browser (roadmap P9): present
+     * exactly when the secret is [SecretKind.OAUTH2]; a script cannot pass it with a password or a
+     * token, and a sign-in record without it is refused.
+     */
+    private fun oauthLink(root: JsonObject, secret: SecretKind): OAuthLink? {
+        val oauth = root.obj(Fields.OAUTH)
+        if (oauth == null) {
+            if (secret == SecretKind.OAUTH2) throw MailException.invalidArgument("'${Fields.OAUTH}' is required for an account that signed in through the browser")
+            return null
+        }
+        if (secret != SecretKind.OAUTH2) throw MailException.invalidArgument("'${Fields.OAUTH}' belongs to accounts saved by the plugin's browser sign-in only")
+        oauth.rejectUnknown(Fields.OAUTH, OAuthLink.FIELDS)
+        val provider = oauth.string("${Fields.OAUTH}.${OAuthLink.FIELD_PROVIDER}")
+            ?: throw MailException.invalidArgument("'${Fields.OAUTH}.${OAuthLink.FIELD_PROVIDER}' is required")
+        if (OAuthProviderId.fromId(provider) == null) {
+            throw MailException.invalidArgument("'${Fields.OAUTH}.${OAuthLink.FIELD_PROVIDER}' must be one of ${OAuthProviderId.entries.joinToString(", ") { it.id }}: '$provider'")
+        }
+        return wrapArgument {
+            OAuthLink(
+                provider = provider,
+                authorizedAt = oauth.long("${Fields.OAUTH}.${OAuthLink.FIELD_AUTHORIZED_AT}") ?: 0,
+                expiresAt = oauth.long("${Fields.OAUTH}.${OAuthLink.FIELD_EXPIRES_AT}") ?: 0,
+                needsReauth = oauth.bool("${Fields.OAUTH}.${OAuthLink.FIELD_NEEDS_REAUTH}") ?: false,
+            )
+        }
     }
 
     private fun validateAddress(address: String) {
@@ -159,6 +198,10 @@ object MailAccountOptions {
             }
             SecretKind.ACCESS_TOKEN -> {
                 if (requested == AuthMethod.PASSWORD) throw MailException.invalidArgument("'${Fields.AUTH}' is password but a password was not supplied (an access token was)")
+                AuthMethod.XOAUTH2
+            }
+            SecretKind.OAUTH2 -> {
+                if (requested == AuthMethod.PASSWORD) throw MailException.invalidArgument("'${Fields.AUTH}' is password but the account signed in through the browser (XOAUTH2)")
                 AuthMethod.XOAUTH2
             }
         }

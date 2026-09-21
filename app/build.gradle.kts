@@ -15,6 +15,27 @@ plugins {
 }
 
 val globalApplicationId = "io.github.supermonster003.autojs6.plugin.angus.mail"
+
+// ---------------------------------------------------------------------------
+// OAuth 2.0 client registrations (roadmap P9): public clients with PKCE, so only client ids and
+// the Microsoft tenant live here, read from the git-ignored oauth-clients.properties next to this
+// file's project root (keys googleClientId, microsoftClientId, microsoftTenant). A missing file or
+// key leaves the provider "not configured": the settings page then offers no browser sign-in for
+// it and the redirect filter keeps a placeholder scheme.
+// ---------------------------------------------------------------------------
+
+val oauthClients = Properties().apply {
+    val file = rootProject.file("oauth-clients.properties")
+    if (file.isFile) file.inputStream().use { load(it) }
+}
+val oauthGoogleClientId = oauthClients.getProperty("googleClientId")?.trim().orEmpty()
+val oauthMicrosoftClientId = oauthClients.getProperty("microsoftClientId")?.trim().orEmpty()
+val oauthMicrosoftTenant = oauthClients.getProperty("microsoftTenant")?.trim().orEmpty()
+val oauthGoogleScheme = if (oauthGoogleClientId.isEmpty()) {
+    "com.googleusercontent.apps.unconfigured"
+} else {
+    "com.googleusercontent.apps." + oauthGoogleClientId.removeSuffix(".apps.googleusercontent.com")
+}
 val buildTypeDebug = "debug"
 val buildTypeRelease = "release"
 
@@ -123,6 +144,12 @@ android {
         resValue("string", "plugin_id", "angus-mail")
         resValue("string", "plugin_variant", "default")
         resValue("string", "plugin_version_date", utils.getDateString("MMM d, yyyy", "GMT+08:00"))
+
+        // OAuth 2.0 client ids (roadmap P9); empty when oauth-clients.properties does not name them.
+        resValue("string", "oauth_google_client_id", oauthGoogleClientId)
+        resValue("string", "oauth_microsoft_client_id", oauthMicrosoftClientId)
+        resValue("string", "oauth_microsoft_tenant", oauthMicrosoftTenant)
+        manifestPlaceholders["oauthGoogleScheme"] = oauthGoogleScheme
     }
 
     lint {
@@ -229,6 +256,8 @@ dependencies {
     // The settings screens (roadmap P4.2): AppCompat activities and Material components, built in code.
     implementation(libs.appcompat)
     implementation(libs.material)
+    // The browser sign-in of roadmap P9 opens the provider's authorization page in a Custom Tab.
+    implementation(libs.browser)
 
     testImplementation(libs.junit)
 

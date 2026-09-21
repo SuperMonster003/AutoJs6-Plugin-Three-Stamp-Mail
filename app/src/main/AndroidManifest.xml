@@ -42,7 +42,9 @@
     <!--
         android:usesCleartextTraffic keeps its default (false). Mail sessions use TLS unless a script
         explicitly asks for tls: 'none'; that choice is made at the socket layer by the mail core and
-        is not governed by the network security policy, which only covers platform HTTP stacks.
+        is not governed by the network security policy, which only covers platform HTTP stacks. The
+        plugin's only HTTP client is oauth.HttpsFormPoster (roadmap P9): HTTPS POSTs to the OAuth 2.0
+        token endpoints of Google and Microsoft during a browser sign-in and a token refresh, nothing else.
     -->
     <application
         android:allowBackup="false"
@@ -124,6 +126,46 @@
             android:parentActivityName=".trigger.WatchesActivity"
             android:theme="@style/Theme.AngusMail"
             android:windowSoftInputMode="adjustResize" />
+
+        <!--
+            The browser sign-in (roadmap P9): the waiting screen below the Custom Tab, reached from the
+            account editor, and the landing point the browser delivers the redirect URI to. The landing
+            activity must be exported without a permission (the browser starts it); it only forwards the
+            URI to the waiting screen, which checks the request's state before anything else happens.
+            The redirect schemes are the application id (Microsoft) and Google's reversed client id
+            (the oauthGoogleScheme placeholder of the build; a placeholder value when no Google client
+            is configured).
+        -->
+        <activity
+            android:name=".oauth.OAuthSignInActivity"
+            android:exported="false"
+            android:label="@string/oauth_title"
+            android:launchMode="singleTop"
+            android:parentActivityName=".settings.AccountEditorActivity"
+            android:theme="@style/Theme.AngusMail" />
+
+        <activity
+            android:name=".oauth.OAuthRedirectActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="oauth2"
+                    android:path="/microsoft"
+                    android:scheme="${applicationId}" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- scheme only: the reversed-client-id redirect has no authority, and Android matches a path only with a host -->
+                <data android:scheme="${oauthGoogleScheme}" />
+            </intent-filter>
+        </activity>
 
         <!--
             Parameterless settings entry for the host (roadmap P4.3): forwards to AccountsActivity and

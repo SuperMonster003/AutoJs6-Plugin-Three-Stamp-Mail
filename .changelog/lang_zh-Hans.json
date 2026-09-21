@@ -5,6 +5,17 @@
   "changelog_label_improvement": "优化",
   "changelog_label_dependency": "依赖",
   "$data": {
+    "v1.2.0": {
+      "released_date": "2026/09/21",
+      "hint": [
+        "只有携带对应服务商 OAuth 2.0 客户端 id 的构建才提供浏览器登录 (维护者的注册信息在构建时从 Git 忽略的 `oauth-clients.properties` 读取); 没有它们的构建保留令牌与应用专用密码路径, 并在认证方式对话框中说明. Google 客户端需先通过 Google Cloud 项目的敏感 scope 审核, 之后任意账户才能登录; 在此之前 Google 只允许项目的测试用户."
+      ],
+      "feature": [
+        "Google 与 Microsoft 账号的浏览器登录 (邮件路线图 P9): 账户编辑器为 Gmail 预设提供 \"使用 Google 账号登录 (浏览器)\", 为 Outlook.com 与 Microsoft 365 预设提供 \"使用 Microsoft 账号登录 (浏览器)\"; 登录在 Custom Tab (回退为任意浏览器) 中打开服务商页面, 携带 PKCE (`S256`) 与随机 `state` 的 OAuth 2.0 授权码请求, 重定向 (`<applicationId>://oauth2/microsoft`, 或 Google 反转客户端 id 的 scheme) 落在 `OAuthRedirectActivity`, 由它交给等待中的登录页面; 页面拒绝任何 `state` 不匹配的重定向, 经 HTTPS 在令牌端点交换授权码 (`HttpsFormPoster`, 插件唯一的 HTTP 客户端), 并从 id 令牌预填地址",
+        "令牌存储与续期: 浏览器登录的令牌是账户存储中新种类 `OAUTH2` 的一条加密记录 (从不作为 Binder 字段, 从不出现在 `mail.accounts.list()`), 账户文档带有 `oauth` 对象 (`provider`, `authorizedAt`, `expiresAt`, `needsReauth`), `mail.accounts.list()` 会报告它; 该别名的每个会话 (脚本, 连接测试, 后台守望) 都从 `AccountSecrets` 取访问令牌, 剩余不足五分钟时经刷新令牌续期, 按账户串行; 续期被拒 (`invalid_grant`) 时记录标记 `needsReauth`, 会话以 `AUTH_FAILED` (\"sign in again\") 失败, 账户页在该账户旁显示 \"需要重新登录\"",
+        "账户页操作 \"重新登录\" (新的浏览器登录存入同一记录) 与 \"撤销登录\" (记录的令牌立即换成已撤销标记, 请求 Google 撤销刷新令牌, 账户在重新登录前停止工作); `gmail`, `outlook` 与 `office365` 预设的 `authHint` 首先提及浏览器登录 (`providers.json` 版本 4); 11 语言各 35 条新字符串; JVM 测试覆盖 PKCE, 授权请求与重定向解析, 基于脚本化传输的令牌客户端, 令牌文档, 服务商表, 构建的客户端与重定向 URI, `AccountSecrets` (续期, 拒绝标记, 已撤销记录, 擦除) 以及账户选项, 表单与账户文档中的 `oauth` 对象"
+      ]
+    },
     "v1.1.0": {
       "released_date": "2026/09/21",
       "hint": [

@@ -20,7 +20,7 @@ class ProviderPresetsTest {
 
     @Test
     fun catalogMatchesAppendixC() {
-        assertEquals(3, ProviderPresets.version)
+        assertEquals(4, ProviderPresets.version)
         assertEquals(listOf("gmail", "outlook", "office365", "qq", "163", "126", "icloud", "yahoo", "sina", "aliyun"), ProviderPresets.ids)
     }
 
@@ -54,7 +54,7 @@ class ProviderPresetsTest {
         assertFalse(json.contains("@"))
         assertFalse(json.contains("password\":\""))
         val document = Json.parseToJsonElement(json).jsonObject
-        assertEquals(3, document["version"]!!.jsonPrimitive.content.toInt())
+        assertEquals(4, document["version"]!!.jsonPrimitive.content.toInt())
         assertEquals(ProviderPresets.all.size, document["providers"]!!.jsonArray.size)
         assertEquals(ProviderPresets.catalog, ProviderPresets.parse(json))
     }

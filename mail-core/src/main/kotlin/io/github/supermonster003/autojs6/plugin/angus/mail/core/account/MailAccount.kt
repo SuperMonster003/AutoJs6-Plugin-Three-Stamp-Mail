@@ -109,6 +109,8 @@ data class MailAccount(
     val debug: Boolean = false,
     /** The preset the endpoints were merged from, if any; carries the sent-folder convention. */
     val provider: ProviderPreset? = null,
+    /** The browser sign-in behind an [AuthMethod.XOAUTH2] account saved by the plugin (roadmap P9), else null. */
+    val oauth: OAuthLink? = null,
 ) {
     init {
         require(address.isNotBlank()) { "address must not be blank" }

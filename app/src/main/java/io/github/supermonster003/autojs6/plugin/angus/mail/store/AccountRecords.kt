@@ -146,6 +146,7 @@ object AccountRecordCodec {
     private const val ALGORITHM_AES_GCM = 1
     private const val SECRET_KIND_PASSWORD = 1
     private const val SECRET_KIND_ACCESS_TOKEN = 2
+    private const val SECRET_KIND_OAUTH2 = 3
 
     private const val HEADER_BYTES = 4 + 1 + 1 + 1 + 1 + 8
     private const val LENGTH_FIELD_BYTES = 2 + 4 + 2 + 4
@@ -169,12 +170,14 @@ object AccountRecordCodec {
     fun secretKindId(kind: SecretKind): Int = when (kind) {
         SecretKind.PASSWORD -> SECRET_KIND_PASSWORD
         SecretKind.ACCESS_TOKEN -> SECRET_KIND_ACCESS_TOKEN
+        SecretKind.OAUTH2 -> SECRET_KIND_OAUTH2
         SecretKind.NONE -> throw IllegalArgumentException("saved account record has no secret kind")
     }
 
     private fun secretKindOf(id: Int): SecretKind = when (id) {
         SECRET_KIND_PASSWORD -> SecretKind.PASSWORD
         SECRET_KIND_ACCESS_TOKEN -> SecretKind.ACCESS_TOKEN
+        SECRET_KIND_OAUTH2 -> SecretKind.OAUTH2
         else -> throw IllegalArgumentException("saved account record secret kind is invalid")
     }
 

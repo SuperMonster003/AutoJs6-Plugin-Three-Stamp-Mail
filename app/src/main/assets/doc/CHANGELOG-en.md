@@ -4,6 +4,15 @@
 
 ******
 
+# v1.2.0
+
+###### 2026/09/21
+
+* `Hint` The browser sign-in is offered only by builds that carry an OAuth 2.0 client id for the provider (the maintainer's registrations, read at build time from the git-ignored `oauth-clients.properties`); a build without them keeps the token and app-password paths and says so in the authentication dialog. The Google client needs the sensitive-scope verification of the Google Cloud project before the sign-in works for arbitrary accounts; until then Google limits it to test users of the project.
+* `Feature` Browser sign-in for Google and Microsoft accounts (mail roadmap P9): the account editor offers "Sign in with Google (browser)" for the Gmail preset and "Sign in with Microsoft (browser)" for the Outlook.com and Microsoft 365 presets; the sign-in opens the provider's page in a Custom Tab (any browser as the fallback) with an OAuth 2.0 authorization-code request carrying PKCE (`S256`) and a random `state`, the redirect (`<applicationId>://oauth2/microsoft`, or the reversed Google client id scheme) lands on `OAuthRedirectActivity`, which hands it to the waiting sign-in screen; the screen refuses any redirect whose `state` does not match, exchanges the code at the token endpoint over HTTPS (`HttpsFormPoster`, the only HTTP client of the plugin) and prefills the address from the id token
+* `Feature` Token storage and renewal: the tokens of a browser sign-in are one encrypted record of the new kind `OAUTH2` in the account store (never a Binder field, never in `mail.accounts.list()`), the account document carries an `oauth` object (`provider`, `authorizedAt`, `expiresAt`, `needsReauth`) that `mail.accounts.list()` reports; every session of such an alias (scripts, the connection test, background watches) takes its access token from `AccountSecrets`, which renews it through the refresh token when less than five minutes remain, serialized per account; a refused refresh (`invalid_grant`) marks the record `needsReauth`, fails the session with `AUTH_FAILED` ("sign in again") and the accounts page shows "sign in again" next to the account
+* `Feature` Accounts page actions "Sign in again" (a new browser sign-in stored on the same record) and "Revoke sign-in" (the record's tokens are replaced at once by a revoked marker, Google is asked to revoke the refresh token, and the account stops working until a new sign-in); the `gmail`, `outlook` and `office365` presets' `authHint` names the browser sign-in first (`providers.json` version 4); 35 new strings in 11 languages; JVM tests for PKCE, the authorization request and redirect parsing, the token client against a scripted transport, the token document, the provider table, the build's clients and redirect URIs, `AccountSecrets` (refresh, refusal marking, revoked records, wiping) and the `oauth` object in the account options, the form and the accounts document
+
 # v1.1.0
 
 ###### 2026/09/21

@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "providers": [
     {
       "id": "gmail",
@@ -27,7 +27,7 @@
         "password",
         "xoauth2"
       ],
-      "authHint": "App Password of a Google account with 2-Step Verification, or an OAuth 2.0 access token",
+      "authHint": "Sign in with the Google account in the plugin settings (browser); otherwise an App Password of an account with 2-Step Verification, or an OAuth 2.0 access token",
       "autoSavesSent": true,
       "sentFolder": "[Gmail]/Sent Mail",
       "requiresClientId": false,
@@ -61,7 +61,7 @@
       "auth": [
         "xoauth2"
       ],
-      "authHint": "OAuth 2.0 access token; Outlook.com no longer accepts passwords for IMAP, POP3 and SMTP",
+      "authHint": "Sign in with the Microsoft account in the plugin settings (browser) or an OAuth 2.0 access token; Outlook.com no longer accepts passwords for IMAP, POP3 and SMTP",
       "autoSavesSent": true,
       "sentFolder": "Sent",
       "requiresClientId": false,
@@ -92,7 +92,7 @@
         "xoauth2",
         "password"
       ],
-      "authHint": "OAuth 2.0 access token; a tenant may still allow a password for SMTP submission only",
+      "authHint": "Sign in with the Microsoft account in the plugin settings (browser) or an OAuth 2.0 access token; a tenant may still allow a password for SMTP submission only",
       "autoSavesSent": true,
       "sentFolder": "Sent Items",
       "requiresClientId": false,

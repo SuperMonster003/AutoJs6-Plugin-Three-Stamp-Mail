@@ -11,6 +11,7 @@ greenmail = "2.1.13"
 slf4j = "2.0.19"
 
 appcompat = "1.7.1"
+browser = "1.10.0"
 commons-compress = "1.28.0"
 desugar = "2.1.5"
 foojay-resolver-convention = "1.0.0"
@@ -27,6 +28,7 @@ xz = "1.10"
 angus-activation = { module = "org.eclipse.angus:angus-activation", version.ref = "angus-activation" }
 angus-jakarta-mail = { module = "org.eclipse.angus:jakarta.mail", version.ref = "angus-mail" }
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+browser = { module = "androidx.browser:browser", version.ref = "browser" }
 apache-commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commons-compress" }
 desugar = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar" }
 greenmail = { module = "com.icegreen:greenmail", version.ref = "greenmail" }

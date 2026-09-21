@@ -77,5 +77,22 @@ class SavedAccountsDocumentTest {
         assertEquals("[]", SavedAccountsDocument.render(emptyList()))
     }
 
+    @Test
+    fun rendersTheBrowserSignInWithoutItsTokens() {
+        val json = """{"address":"alice@gmail.com","provider":"gmail","auth":"xoauth2","oauth":{"provider":"google","authorizedAt":1700000000000,"expiresAt":1700003600000,"needsReauth":true}}"""
+        val rendered = SavedAccountsDocument.render(listOf(SavedAccount("g", json, SecretKind.OAUTH2, 7L, false)))
+        val entry = Json.parseToJsonElement(rendered).jsonArray.single().jsonObject
+        assertEquals("xoauth2", entry.string("auth"))
+        val oauth = entry.getValue("oauth").jsonObject
+        assertEquals(setOf("provider", "authorizedAt", "expiresAt", "needsReauth"), oauth.keys)
+        assertEquals("google", oauth.string("provider"))
+        assertEquals("1700000000000", oauth.getValue("authorizedAt").jsonPrimitive.content)
+        assertEquals("1700003600000", oauth.getValue("expiresAt").jsonPrimitive.content)
+        assertEquals("true", oauth.getValue("needsReauth").jsonPrimitive.content)
+        assertFalse(rendered, rendered.contains("token", ignoreCase = true))
+        val password = Json.parseToJsonElement(SavedAccountsDocument.render(listOf(SavedAccount("q", """{"address":"a@qq.com","provider":"qq"}""", SecretKind.PASSWORD, 1L, false)))).jsonArray.single().jsonObject
+        assertNull(password["oauth"])
+    }
+
     private fun JsonObject.string(key: String): String = getValue(key).jsonPrimitive.content
 }

@@ -5,6 +5,17 @@
   "changelog_label_improvement": "優化",
   "changelog_label_dependency": "相依性",
   "$data": {
+    "v1.2.0": {
+      "released_date": "2026/09/21",
+      "hint": [
+        "只有攜帶對應服務商 OAuth 2.0 用戶端 id 的建置才提供瀏覽器登入 (維護者的註冊資訊在建置時從 Git 忽略的 `oauth-clients.properties` 讀取); 沒有它們的建置保留權杖與應用程式專用密碼路徑, 並在驗證方式對話框中說明. Google 用戶端需先通過 Google Cloud 專案的敏感 scope 審核, 之後任意帳戶才能登入; 在此之前 Google 只允許專案的測試使用者."
+      ],
+      "feature": [
+        "Google 與 Microsoft 帳號的瀏覽器登入 (郵件路線圖 P9): 帳戶編輯器為 Gmail 預設提供 \"使用 Google 帳號登入 (瀏覽器)\", 為 Outlook.com 與 Microsoft 365 預設提供 \"使用 Microsoft 帳號登入 (瀏覽器)\"; 登入在 Custom Tab (回退為任意瀏覽器) 中開啟服務商頁面, 攜帶 PKCE (`S256`) 與隨機 `state` 的 OAuth 2.0 授權碼請求, 重新導向 (`<applicationId>://oauth2/microsoft`, 或 Google 反轉用戶端 id 的 scheme) 落在 `OAuthRedirectActivity`, 由它交給等待中的登入頁面; 頁面拒絕任何 `state` 不匹配的重新導向, 經 HTTPS 在權杖端點交換授權碼 (`HttpsFormPoster`, 外掛唯一的 HTTP 用戶端), 並從 id 權杖預填地址",
+        "權杖儲存與續期: 瀏覽器登入的權杖是帳戶儲存中新種類 `OAUTH2` 的一條加密記錄 (從不作為 Binder 欄位, 從不出現在 `mail.accounts.list()`), 帳戶文件帶有 `oauth` 物件 (`provider`, `authorizedAt`, `expiresAt`, `needsReauth`), `mail.accounts.list()` 會報告它; 該別名的每個工作階段 (指令碼, 連線測試, 背景守望) 都從 `AccountSecrets` 取存取權杖, 剩餘不足五分鐘時經重新整理權杖續期, 按帳戶串行; 續期被拒 (`invalid_grant`) 時記錄標記 `needsReauth`, 工作階段以 `AUTH_FAILED` (\"sign in again\") 失敗, 帳戶頁在該帳戶旁顯示 \"需要重新登入\"",
+        "帳戶頁操作 \"重新登入\" (新的瀏覽器登入存入同一記錄) 與 \"撤銷登入\" (記錄的權杖立即換成已撤銷標記, 請求 Google 撤銷重新整理權杖, 帳戶在重新登入前停止運作); `gmail`, `outlook` 與 `office365` 預設的 `authHint` 首先提及瀏覽器登入 (`providers.json` 版本 4); 11 語言各 35 條新字串; JVM 測試覆蓋 PKCE, 授權請求與重新導向解析, 基於指令碼化傳輸的權杖用戶端, 權杖文件, 服務商表, 建置的用戶端與重新導向 URI, `AccountSecrets` (續期, 拒絕標記, 已撤銷記錄, 擦除) 以及帳戶選項, 表單與帳戶文件中的 `oauth` 物件"
+      ]
+    },
     "v1.1.0": {
       "released_date": "2026/09/21",
       "hint": [

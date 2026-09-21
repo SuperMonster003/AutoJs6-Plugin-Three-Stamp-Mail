@@ -27,6 +27,7 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.WatchListe
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.WatchMode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.Watcher
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.watch.Watchers
+import io.github.supermonster003.autojs6.plugin.angus.mail.oauth.AccountSecrets
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStore
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStores
 import org.autojs.plugin.mail.api.MailContract
@@ -67,6 +68,7 @@ internal class WatchKeeper(
     context: Context,
     private val store: TriggerStore,
     private val accounts: AccountStore,
+    private val secrets: AccountSecrets,
     private val network: WatchNetworkMonitor?,
     private val sender: HostTriggerSender,
     private val defaults: () -> MailAccountOptions.Defaults,
@@ -253,7 +255,7 @@ internal class WatchKeeper(
 
         fun start() {
             val opened = try {
-                val (parsed, secret) = accounts.withSecret(config.alias) { saved, chars ->
+                val (parsed, secret) = secrets.withUsableSecret(config.alias) { saved, chars ->
                     MailAccountOptions.parse(saved.accountJson, saved.secretKind, defaults()) to MailSecret(chars)
                 }
                 account = parsed
@@ -400,6 +402,7 @@ internal class WatchKeeper(
                 context = context.applicationContext,
                 store = TriggerStores.of(context),
                 accounts = AccountStores.of(context),
+                secrets = AccountSecrets.of(context),
                 network = WatchNetworkMonitor.of(context),
                 sender = HostTriggerSender(context),
                 defaults = { context.applicationContext.angusMailAccountDefaults() },

@@ -3,16 +3,19 @@ package io.github.supermonster003.autojs6.plugin.angus.mail.settings
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.AuthMethod
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccountOptions
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.OAuthLink
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.ProviderPresets
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.SecretKind
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.TlsMode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.MailJson
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.oauth.OAuthProviderId
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -139,5 +142,42 @@ class AccountFormTest {
         assertEquals(EndpointFields.DISABLED, reopened.smtp)
         assertEquals(MailProtocol.IMAP, reopened.receive)
         assertEquals(AccountFormPolicy.blank(), AccountFormPolicy.fromAccountJson("not json"))
+    }
+
+    @Test
+    fun `a browser sign-in is an XOAUTH2 form whose document carries the oauth link and whose secret is the token record`() {
+        val gmail = ProviderPresets.require("gmail")
+        val form = AccountFormPolicy.applyPreset(AccountFormPolicy.blank(), gmail).copy(alias = "g", address = "alice@gmail.com", auth = AuthMethod.XOAUTH2, oauthProvider = OAuthProviderId.GOOGLE)
+        assertEquals(SecretKind.OAUTH2, form.secretKind)
+        assertEquals(OAuthProviderId.GOOGLE, form.offeredOAuthProvider)
+        assertNull(AccountFormPolicy.applyPreset(AccountFormPolicy.blank(), ProviderPresets.require("qq")).offeredOAuthProvider)
+        assertTrue(AccountFormPolicy.validate(form).isEmpty())
+
+        assertThrows("the link is mandatory for a browser sign-in", IllegalArgumentException::class.java) { AccountFormPolicy.toAccountJson(form) }
+        assertThrows("and forbidden otherwise", IllegalArgumentException::class.java) { AccountFormPolicy.toAccountJson(form.copy(oauthProvider = null), OAuthLink("google")) }
+
+        val link = OAuthLink("google", authorizedAt = 5L, expiresAt = 9L, needsReauth = false)
+        val document = AccountFormPolicy.toAccountJson(form, link)
+        val json = MailJson.format.parseToJsonElement(document).jsonObject
+        assertEquals(setOf("provider", "address", "auth", "oauth", "receive"), json.keys)
+        assertEquals("xoauth2", json.getValue("auth").jsonPrimitive.content)
+        assertEquals("google", json.getValue("oauth").jsonObject.getValue("provider").jsonPrimitive.content)
+        assertEquals("5", json.getValue("oauth").jsonObject.getValue("authorizedAt").jsonPrimitive.content)
+
+        val parsed = MailAccountOptions.parse(document, SecretKind.OAUTH2)
+        assertEquals(AuthMethod.XOAUTH2, parsed.auth)
+        assertEquals(link, parsed.oauth)
+
+        val reopened = AccountFormPolicy.fromAccountJson(document, SecretKind.OAUTH2)
+        assertEquals(OAuthProviderId.GOOGLE, reopened.oauthProvider)
+        assertEquals(AuthMethod.XOAUTH2, reopened.auth)
+        assertEquals(SecretKind.OAUTH2, reopened.secretKind)
+        assertNull("a pasted-token record never claims a browser sign-in", AccountFormPolicy.fromAccountJson("""{"address":"a@gmail.com","provider":"gmail","auth":"xoauth2"}""", SecretKind.ACCESS_TOKEN).oauthProvider)
+
+        val moved = AccountFormPolicy.applyPreset(reopened, ProviderPresets.require("outlook"))
+        assertNull("a preset of another provider drops the sign-in", moved.oauthProvider)
+        assertEquals(AuthMethod.XOAUTH2, moved.auth)
+        assertNull(AccountFormPolicy.applyPreset(reopened, null).oauthProvider)
+        assertEquals(OAuthProviderId.GOOGLE, AccountFormPolicy.applyPreset(reopened, gmail).oauthProvider)
     }
 }

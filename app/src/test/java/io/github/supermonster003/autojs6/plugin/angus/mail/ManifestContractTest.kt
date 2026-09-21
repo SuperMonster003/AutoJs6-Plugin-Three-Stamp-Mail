@@ -63,7 +63,7 @@ class ManifestContractTest {
 
         val activities = application.children("activity").associateBy { it.androidAttribute("name") }
         assertEquals(
-            setOf(".settings.AccountsActivity", ".settings.AccountEditorActivity", ".AppSettingsActivity", ".AboutActivity", ".ReleaseHistoryActivity", ".trigger.WatchesActivity", ".trigger.WatchEditorActivity", ".MailSettingsActivity", ".WakeActivity"),
+            setOf(".settings.AccountsActivity", ".settings.AccountEditorActivity", ".AppSettingsActivity", ".AboutActivity", ".ReleaseHistoryActivity", ".trigger.WatchesActivity", ".trigger.WatchEditorActivity", ".oauth.OAuthSignInActivity", ".oauth.OAuthRedirectActivity", ".MailSettingsActivity", ".WakeActivity"),
             activities.keys,
         )
         val wake = activities.getValue(".WakeActivity")
@@ -113,6 +113,7 @@ class ManifestContractTest {
             ".ReleaseHistoryActivity" to ".AppSettingsActivity",
             ".trigger.WatchesActivity" to ".AppSettingsActivity",
             ".trigger.WatchEditorActivity" to ".trigger.WatchesActivity",
+            ".oauth.OAuthSignInActivity" to ".settings.AccountEditorActivity",
         )
         chain.forEach { (name, parent) ->
             val activity = activities.getValue(name)
@@ -124,6 +125,30 @@ class ManifestContractTest {
         }
         assertEquals("adjustResize", activities.getValue(".settings.AccountEditorActivity").androidAttribute("windowSoftInputMode"))
         assertEquals("adjustResize", activities.getValue(".trigger.WatchEditorActivity").androidAttribute("windowSoftInputMode"))
+    }
+
+    @Test
+    fun `the OAuth redirect activity is the browser's landing point and answers the two redirect schemes only`() {
+        val activities = manifest.child("application").children("activity").associateBy { it.androidAttribute("name") }
+        val redirect = activities.getValue(".oauth.OAuthRedirectActivity")
+        assertEquals("true", redirect.androidAttribute("exported"))
+        assertNull("the browser must be able to start it", redirect.androidAttributeOrNull("permission"))
+        assertEquals("@android:style/Theme.NoDisplay", redirect.androidAttribute("theme"))
+        assertEquals("true", redirect.androidAttribute("excludeFromRecents"))
+        val filters = redirect.children("intent-filter")
+        assertEquals(2, filters.size)
+        filters.forEach { filter ->
+            assertEquals(listOf("android.intent.action.VIEW"), filter.children("action").map { it.androidAttribute("name") })
+            assertEquals(listOf("android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"), filter.children("category").map { it.androidAttribute("name") })
+        }
+        val data = filters.map { it.child("data") }
+        assertEquals("\${applicationId}", data[0].androidAttribute("scheme"))
+        assertEquals("oauth2", data[0].androidAttribute("host"))
+        assertEquals("/microsoft", data[0].androidAttribute("path"))
+        assertEquals("\${oauthGoogleScheme}", data[1].androidAttribute("scheme"))
+        assertNull("Google's reversed-client-id redirect has no host", data[1].androidAttributeOrNull("host"))
+        assertNull("and no path (a path is matched only with a host)", data[1].androidAttributeOrNull("path"))
+        assertEquals("singleTop", activities.getValue(".oauth.OAuthSignInActivity").androidAttribute("launchMode"))
     }
 
     @Test

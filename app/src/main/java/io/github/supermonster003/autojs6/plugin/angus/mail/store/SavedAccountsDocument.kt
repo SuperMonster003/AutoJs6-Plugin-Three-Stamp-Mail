@@ -2,6 +2,7 @@ package io.github.supermonster003.autojs6.plugin.angus.mail.store
 
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccountOptions
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.OAuthLink
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.MailJson
 import kotlinx.serialization.json.JsonArray
@@ -15,11 +16,15 @@ import kotlinx.serialization.json.put
  * a JSON array with one object per saved account and no secret in it.
  *
  * ```
- * {alias, address, user, name?, provider?, auth, receive, imap?, pop3?, smtp?, default, updatedAt}
+ * {alias, address, user, name?, provider?, auth, oauth?, receive, imap?, pop3?, smtp?, default, updatedAt}
  * ```
  *
  * `auth` is `password` or `xoauth2`, `receive` is `imap` or `pop3`, and each endpoint object is
- * `{host, port, tls}`. A record whose document no longer normalizes (a preset that vanished from
+ * `{host, port, tls}`. An account signed in through the browser (roadmap P9) is `xoauth2` with an
+ * `oauth` object `{provider, authorizedAt, expiresAt, needsReauth}`: the provider (`google` or
+ * `microsoft`), when the sign-in happened, when the current access token expires (it renews itself)
+ * and whether the sign-in has to be repeated in the plugin settings; the tokens themselves never
+ * appear here. A record whose document no longer normalizes (a preset that vanished from
  * the catalog) is listed with `alias`, `default`, `updatedAt` and an `error` object instead.
  */
 object SavedAccountsDocument {
@@ -31,6 +36,7 @@ object SavedAccountsDocument {
         const val NAME = MailAccountOptions.Fields.NAME
         const val PROVIDER = MailAccountOptions.Fields.PROVIDER
         const val AUTH = MailAccountOptions.Fields.AUTH
+        const val OAUTH = MailAccountOptions.Fields.OAUTH
         const val RECEIVE = MailAccountOptions.Fields.RECEIVE
         const val DEFAULT = "default"
         const val UPDATED_AT = "updatedAt"
@@ -51,6 +57,17 @@ object SavedAccountsDocument {
             normalized.displayName?.let { put(Fields.NAME, it) }
             normalized.provider?.let { put(Fields.PROVIDER, it.id) }
             put(Fields.AUTH, normalized.auth.id)
+            normalized.oauth?.let { link ->
+                put(
+                    Fields.OAUTH,
+                    buildJsonObject {
+                        put(OAuthLink.FIELD_PROVIDER, link.provider)
+                        put(OAuthLink.FIELD_AUTHORIZED_AT, link.authorizedAt)
+                        put(OAuthLink.FIELD_EXPIRES_AT, link.expiresAt)
+                        put(OAuthLink.FIELD_NEEDS_REAUTH, link.needsReauth)
+                    },
+                )
+            }
             put(Fields.RECEIVE, normalized.receive.id)
             MailProtocol.entries.forEach { protocol ->
                 normalized.endpointOrNull(protocol)?.let { endpoint ->

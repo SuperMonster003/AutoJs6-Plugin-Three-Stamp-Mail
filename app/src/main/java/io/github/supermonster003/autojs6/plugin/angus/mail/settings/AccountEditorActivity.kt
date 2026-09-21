@@ -13,6 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -24,10 +25,18 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.AuthMeth
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccount
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccountOptions
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailProtocol
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.OAuthLink
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.ProviderPresets
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.SecretKind
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.TlsMode
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.oauth.OAuthProviderId
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.oauth.OAuthTokens
+import io.github.supermonster003.autojs6.plugin.angus.mail.oauth.AccountSecrets
+import io.github.supermonster003.autojs6.plugin.angus.mail.oauth.OAuthClients
+import io.github.supermonster003.autojs6.plugin.angus.mail.oauth.OAuthSignInActivity
+import io.github.supermonster003.autojs6.plugin.angus.mail.oauth.PendingGrant
+import io.github.supermonster003.autojs6.plugin.angus.mail.oauth.PendingGrants
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountAlias
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStore
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStores
@@ -48,6 +57,8 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.ui.singleChoiceDialog
 import io.github.supermonster003.autojs6.plugin.angus.mail.ui.switchRow
 import io.github.supermonster003.autojs6.plugin.angus.mail.ui.textButton
 import io.github.supermonster003.autojs6.plugin.angus.mail.ui.tonalButton
+import java.text.DateFormat
+import java.util.Date
 import java.util.EnumMap
 
 /**
@@ -61,6 +72,25 @@ class AccountEditorActivity : ConfiguredActivity() {
     private lateinit var store: AccountStore
     private var editingAlias: String? = null
     private var savedSecretKind: SecretKind? = null
+    private var savedOAuthLink: OAuthLink? = null
+    /** A browser sign-in completed in this editor and not yet saved (roadmap P9). */
+    private var grant: PendingGrant? = null
+    private var grantId: String? = null
+    private lateinit var oauthClients: OAuthClients
+    private val signIn = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val id = result.data?.getStringExtra(OAuthSignInActivity.EXTRA_GRANT_ID)
+        if (result.resultCode == RESULT_OK && id != null) {
+            val taken = PendingGrants.take(id)
+            if (taken == null) {
+                showSnackbar(scaffold.root, getString(R.string.editor_oauth_grant_expired))
+            } else {
+                grant = taken
+                grantId = null
+                if (addressField.second.text.isNullOrBlank() && !taken.email.isNullOrBlank()) addressField.second.setText(taken.email)
+                renderChoices()
+            }
+        }
+    }
     private var form = AccountFormPolicy.blank()
     private var serversVisible = false
     private val tester = ConnectionTester()
@@ -73,6 +103,8 @@ class AccountEditorActivity : ConfiguredActivity() {
     private lateinit var secretField: Pair<TextInputLayout, TextInputEditText>
     private lateinit var providerRow: SettingRow
     private lateinit var authRow: SettingRow
+    private lateinit var oauthRow: SettingRow
+    private lateinit var secretColumn: LinearLayout
     private lateinit var receiveRow: SettingRow
     private lateinit var helpRow: SettingRow
     private lateinit var serversToggle: MaterialButton
@@ -94,7 +126,10 @@ class AccountEditorActivity : ConfiguredActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         store = AccountStores.of(applicationContext)
+        oauthClients = OAuthClients.of(this)
         editingAlias = intent.getStringExtra(EXTRA_ALIAS)?.takeIf { it.isNotBlank() }
+        grantId = savedInstanceState?.getString(STATE_GRANT_ID)
+        grant = PendingGrants.take(grantId)?.also { grantId = null }
         val restored = savedInstanceState?.let(::formFromBundle)
         if (!loadInitialForm(restored)) return
         serversVisible = savedInstanceState?.getBoolean(STATE_SERVERS_VISIBLE) ?: (form.providerId == null)
@@ -129,6 +164,7 @@ class AccountEditorActivity : ConfiguredActivity() {
                 return false
             }
             savedSecretKind = saved.secretKind
+            savedOAuthLink = if (saved.secretKind == SecretKind.OAUTH2) runCatching { MailAccountOptions.parse(saved.accountJson, saved.secretKind).oauth }.getOrNull() else null
             form = restored ?: AccountFormPolicy.fromAccountJson(saved.accountJson, saved.secretKind).copy(alias = saved.alias)
         } else {
             form = restored ?: AccountFormPolicy.blank()
@@ -142,6 +178,8 @@ class AccountEditorActivity : ConfiguredActivity() {
         collect()
         formToBundle(form, outState)
         outState.putBoolean(STATE_SERVERS_VISIBLE, serversVisible)
+        // the grant goes back into the in-process holder, never into the Bundle
+        grant?.let { outState.putString(STATE_GRANT_ID, PendingGrants.put(it)) }
     }
 
     override fun onDestroy() {
@@ -189,7 +227,15 @@ class AccountEditorActivity : ConfiguredActivity() {
         )
         content.addView(authRow.view)
 
-        val secretColumn = fieldColumn()
+        oauthRow = settingRow(
+            title = getString(R.string.editor_oauth_row_title),
+            summary = "",
+            iconResource = R.drawable.ic_cloud_24,
+            onClick = ::startSignIn,
+        )
+        content.addView(oauthRow.view)
+
+        secretColumn = fieldColumn()
         secretField = formTextField(null, "", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD)
         secretField.second.isSaveEnabled = false
         // Password fields default to a monospace face; keep the form's type consistent.
@@ -312,6 +358,10 @@ class AccountEditorActivity : ConfiguredActivity() {
         providerRow.showSummary(preset?.name ?: getString(R.string.accounts_provider_custom))
         authRow.showSummary(getString(authLabel(form.auth)))
         receiveRow.showSummary(form.receive.id.uppercase())
+        val oauthProvider = form.oauthProvider
+        oauthRow.view.visibility = if (oauthProvider != null) View.VISIBLE else View.GONE
+        secretColumn.visibility = if (oauthProvider != null) View.GONE else View.VISIBLE
+        if (oauthProvider != null) oauthRow.showSummary(oauthSummary(oauthProvider))
         secretField.first.hint = getString(
             if (form.auth == AuthMethod.XOAUTH2) R.string.editor_field_token else R.string.editor_field_password,
         )
@@ -408,14 +458,45 @@ class AccountEditorActivity : ConfiguredActivity() {
     private fun showAuthDialog() {
         val methods = AuthMethod.entries
         val preset = form.provider
+        val offered = form.offeredOAuthProvider
+        val labels = ArrayList<CharSequence>(methods.map { getString(authLabel(it)) })
+        if (offered != null) labels += getString(oauthChoiceLabel(offered))
+        val checked = if (form.oauthProvider != null && offered != null) methods.size else methods.indexOf(form.auth)
         singleChoiceDialog(
             getString(R.string.editor_field_auth),
-            methods.map { getString(authLabel(it)) },
-            methods.indexOf(form.auth),
-            enabledAt = { index -> preset?.accepts(methods[index]) ?: true },
+            labels,
+            checked,
+            enabledAt = { index -> if (index < methods.size) preset?.accepts(methods[index]) ?: true else oauthClients.isConfigured(offered!!) },
         ) { index ->
-            form = form.copy(auth = methods[index])
+            form = if (index < methods.size) {
+                form.copy(auth = methods[index], oauthProvider = null)
+            } else {
+                form.copy(auth = AuthMethod.XOAUTH2, oauthProvider = offered)
+            }
             renderChoices()
+        }
+    }
+
+    private fun startSignIn() {
+        val provider = form.oauthProvider ?: return
+        if (!oauthClients.isConfigured(provider)) {
+            showSnackbar(scaffold.root, getString(R.string.editor_oauth_unavailable, getString(oauthProviderLabel(provider))))
+            return
+        }
+        collect()
+        signIn.launch(OAuthSignInActivity.intent(this, provider, alias = null, loginHint = form.address.trim().takeIf { it.isNotEmpty() }))
+    }
+
+    private fun oauthSummary(provider: OAuthProviderId): String {
+        val name = getString(oauthProviderLabel(provider))
+        val pending = grant
+        val saved = savedOAuthLink
+        return when {
+            !oauthClients.isConfigured(provider) -> getString(R.string.editor_oauth_unavailable, name)
+            pending != null -> pending.email?.let { getString(R.string.editor_oauth_signed_in, it) } ?: getString(R.string.editor_oauth_signed_in_unknown)
+            saved != null && savedSecretKind == SecretKind.OAUTH2 && saved.providerId == provider ->
+                if (saved.needsReauth) getString(R.string.editor_oauth_needs_reauth) else getString(R.string.editor_oauth_saved_summary, DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(saved.authorizedAt)))
+            else -> getString(R.string.editor_oauth_not_signed_in, name)
         }
     }
 
@@ -482,12 +563,21 @@ class AccountEditorActivity : ConfiguredActivity() {
             showFieldErrors(errors)
             return null
         }
-        val json = AccountFormPolicy.toAccountJson(form)
+        val json = AccountFormPolicy.toAccountJson(form, oauthLinkForDocument())
         val account = try {
             MailAccountOptions.parse(json, form.secretKind, angusMailAccountDefaults())
         } catch (e: MailException) {
             messageDialog(getString(R.string.editor_error_invalid_title), getString(R.string.editor_error_invalid, e.message))
             return null
+        }
+        if (form.secretKind == SecretKind.OAUTH2) {
+            val pending = grant
+            val keepsSaved = editingAlias != null && savedSecretKind == SecretKind.OAUTH2 && savedOAuthLink?.providerId == form.oauthProvider
+            if (pending == null && !keepsSaved) {
+                showSnackbar(scaffold.root, getString(R.string.editor_oauth_required, getString(oauthProviderLabel(form.oauthProvider!!))))
+                return null
+            }
+            return Prepared(account, json, pending?.tokens?.accessToken?.toCharArray())
         }
         val secret = readSecret()
         if (secret == null && !(editingAlias != null && savedSecretKind == form.secretKind)) {
@@ -514,7 +604,11 @@ class AccountEditorActivity : ConfiguredActivity() {
     }
 
     private fun copySavedSecret(alias: String): CharArray? = try {
-        store.withSecret(alias) { _, chars -> chars.copyOf() }
+        if (savedSecretKind == SecretKind.OAUTH2) {
+            AccountSecrets.of(this).withUsableSecret(alias) { _, chars -> chars.copyOf() }
+        } else {
+            store.withSecret(alias) { _, chars -> chars.copyOf() }
+        }
     } catch (e: MailException) {
         messageDialog(getString(R.string.editor_error_invalid_title), e.message)
         null
@@ -545,9 +639,15 @@ class AccountEditorActivity : ConfiguredActivity() {
     private fun save() {
         val prepared = prepare(forSave = true) ?: return
         val alias = AccountAlias.normalize(form.alias)
-        val secret = prepared.secret ?: editingAlias?.let(::copySavedSecret) ?: return
+        val pending = grant
+        val secret = when {
+            form.secretKind == SecretKind.OAUTH2 && pending != null -> pending.tokens.toJson().toCharArray()
+            form.secretKind == SecretKind.OAUTH2 -> editingAlias?.let { alias -> runCatching { store.withSecret(alias) { _, chars -> chars.copyOf() } }.getOrNull() } ?: return
+            else -> prepared.secret ?: editingAlias?.let(::copySavedSecret) ?: return
+        }
         try {
             store.put(alias, prepared.json, form.secretKind, secret)
+            grant = null
             val previous = editingAlias
             if (previous != null && previous != alias) {
                 val wasDefault = store.defaultAlias() == previous
@@ -612,6 +712,28 @@ class AccountEditorActivity : ConfiguredActivity() {
     }
 
     @StringRes
+    private fun oauthChoiceLabel(provider: OAuthProviderId): Int = when (provider) {
+        OAuthProviderId.GOOGLE -> R.string.editor_auth_oauth_google
+        OAuthProviderId.MICROSOFT -> R.string.editor_auth_oauth_microsoft
+    }
+
+    @StringRes
+    private fun oauthProviderLabel(provider: OAuthProviderId): Int = when (provider) {
+        OAuthProviderId.GOOGLE -> R.string.editor_oauth_provider_google
+        OAuthProviderId.MICROSOFT -> R.string.editor_oauth_provider_microsoft
+    }
+
+    /** The `oauth` object of the document about to be tested or saved: the pending grant's, else the saved record's. */
+    private fun oauthLinkForDocument(): OAuthLink? {
+        val provider = form.oauthProvider ?: return null
+        val pending = grant
+        if (pending != null) return OAuthLink(pending.provider.id, authorizedAt = pending.issuedAt, expiresAt = pending.tokens.expiresAt, needsReauth = false)
+        val saved = savedOAuthLink
+        if (saved != null && saved.providerId == provider) return saved
+        return OAuthLink(provider.id)
+    }
+
+    @StringRes
     private fun tlsLabel(mode: TlsMode): Int = when (mode) {
         TlsMode.SSL -> R.string.editor_tls_ssl
         TlsMode.STARTTLS -> R.string.editor_tls_starttls
@@ -637,6 +759,7 @@ class AccountEditorActivity : ConfiguredActivity() {
         bundle.putString(STATE_USER, form.user)
         bundle.putString(STATE_NAME, form.name)
         bundle.putString(STATE_AUTH, form.auth.name)
+        bundle.putString(STATE_OAUTH_PROVIDER, form.oauthProvider?.id)
         bundle.putString(STATE_RECEIVE, form.receive.name)
         MailProtocol.entries.forEach { protocol ->
             val fields = form.endpoint(protocol)
@@ -656,6 +779,7 @@ class AccountEditorActivity : ConfiguredActivity() {
             user = bundle.getString(STATE_USER).orEmpty(),
             name = bundle.getString(STATE_NAME).orEmpty(),
             auth = bundle.getString(STATE_AUTH)?.let { runCatching { AuthMethod.valueOf(it) }.getOrNull() } ?: AuthMethod.PASSWORD,
+            oauthProvider = OAuthProviderId.fromId(bundle.getString(STATE_OAUTH_PROVIDER)),
             receive = bundle.getString(STATE_RECEIVE)?.let { runCatching { MailProtocol.valueOf(it) }.getOrNull() } ?: MailProtocol.IMAP,
         )
         MailProtocol.entries.forEach { protocol ->
@@ -682,6 +806,8 @@ class AccountEditorActivity : ConfiguredActivity() {
         private const val STATE_USER = "form.user"
         private const val STATE_NAME = "form.name"
         private const val STATE_AUTH = "form.auth"
+        private const val STATE_OAUTH_PROVIDER = "form.oauthProvider"
+        private const val STATE_GRANT_ID = "form.grantId"
         private const val STATE_RECEIVE = "form.receive"
         private const val STATE_ENABLED = ".enabled"
         private const val STATE_HOST = ".host"

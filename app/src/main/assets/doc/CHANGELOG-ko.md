@@ -4,6 +4,15 @@
 
 ******
 
+# v1.2.0
+
+###### 2026/09/21
+
+* `힌트` 브라우저 로그인은 해당 제공업체의 OAuth 2.0 클라이언트 id 를 담은 빌드에서만 제공됩니다 (관리자의 등록 정보는 빌드 시 Git 이 무시하는 `oauth-clients.properties` 에서 읽습니다). 이것이 없는 빌드는 토큰과 앱 비밀번호 경로를 유지하며 인증 방식 대화 상자에서 그렇게 말합니다. Google 클라이언트는 Google Cloud 프로젝트의 민감한 scope 검증을 통과해야 임의의 계정으로 로그인할 수 있으며, 그 전까지 Google 은 프로젝트의 테스트 사용자로 제한합니다.
+* `기능` Google 및 Microsoft 계정의 브라우저 로그인 (메일 로드맵 P9): 계정 편집기는 Gmail 프리셋에 "Google 계정으로 로그인 (브라우저)", Outlook.com 및 Microsoft 365 프리셋에 "Microsoft 계정으로 로그인 (브라우저)" 를 제공합니다. 로그인은 Custom Tab (대체는 아무 브라우저) 에서 제공업체 페이지를 열고 PKCE (`S256`) 와 무작위 `state` 를 담은 OAuth 2.0 인증 코드 요청을 보내며, 리디렉션 (`<applicationId>://oauth2/microsoft`, 또는 Google 의 역순 클라이언트 id 스킴) 은 `OAuthRedirectActivity` 에 도착하여 대기 중인 로그인 화면으로 전달됩니다. 화면은 `state` 가 일치하지 않는 리디렉션을 거부하고, HTTPS 로 토큰 엔드포인트에서 코드를 교환하며 (`HttpsFormPoster`, 플러그인의 유일한 HTTP 클라이언트), id 토큰에서 주소를 미리 채웁니다
+* `기능` 토큰 저장과 갱신: 브라우저 로그인의 토큰은 계정 저장소의 새 종류 `OAUTH2` 인 암호화 레코드 하나입니다 (Binder 필드에도 `mail.accounts.list()` 에도 절대 나타나지 않음). 계정 문서는 `oauth` 객체 (`provider`, `authorizedAt`, `expiresAt`, `needsReauth`) 를 가지며 `mail.accounts.list()` 가 이를 보고합니다. 그 별칭의 모든 세션 (스크립트, 연결 테스트, 백그라운드 감시) 은 `AccountSecrets` 에서 액세스 토큰을 받으며, 5 분 미만 남으면 새로 고침 토큰으로 갱신합니다 (계정별 직렬화). 갱신이 거부되면 (`invalid_grant`) 레코드에 `needsReauth` 가 표시되고 세션은 `AUTH_FAILED` ("sign in again") 로 실패하며 계정 페이지는 해당 계정 옆에 "다시 로그인 필요" 를 표시합니다
+* `기능` 계정 페이지 작업 "다시 로그인" (새 브라우저 로그인을 같은 레코드에 저장) 과 "로그인 취소" (레코드의 토큰을 즉시 취소 표시로 바꾸고 Google 에 새로 고침 토큰 취소를 요청하며 다시 로그인할 때까지 계정이 작동하지 않음). `gmail`, `outlook`, `office365` 프리셋의 `authHint` 는 브라우저 로그인을 먼저 언급합니다 (`providers.json` 버전 4). 11 개 언어에 35 개의 새 문자열. JVM 테스트: PKCE, 인증 요청과 리디렉션 파싱, 스크립트화된 전송에 대한 토큰 클라이언트, 토큰 문서, 제공업체 표, 빌드의 클라이언트와 리디렉션 URI, `AccountSecrets` (갱신, 거부 표시, 취소된 레코드, 지우기), 계정 옵션 / 폼 / 계정 문서의 `oauth` 객체
+
 # v1.1.0
 
 ###### 2026/09/21

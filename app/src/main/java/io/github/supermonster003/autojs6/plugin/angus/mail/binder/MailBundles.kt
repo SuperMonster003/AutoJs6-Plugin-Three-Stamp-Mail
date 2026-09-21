@@ -167,7 +167,8 @@ internal object MailBundles {
     fun secret(account: Bundle, kind: SecretKind): String? = when (kind) {
         SecretKind.PASSWORD -> account.getString(MailContract.KEY_SECRET_PASSWORD)
         SecretKind.ACCESS_TOKEN -> account.getString(MailContract.KEY_SECRET_ACCESS_TOKEN)
-        SecretKind.NONE -> null
+        // A browser sign-in never travels over the Binder: its tokens live in the plugin's store only.
+        SecretKind.OAUTH2, SecretKind.NONE -> null
     }
 
     fun notifyClosed(callback: IMailSessionCallback, lastError: JSONObject?, reason: String = "refused") {

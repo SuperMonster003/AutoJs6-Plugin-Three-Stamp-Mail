@@ -17,6 +17,7 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.TriggerStat
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.json.toDocument
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.session.MailSession
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.trigger.TriggerOptions
+import io.github.supermonster003.autojs6.plugin.angus.mail.oauth.AccountSecrets
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStore
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStores
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.SavedAccountsDocument
@@ -48,6 +49,7 @@ internal class MailPluginBinder(
     private val context: Context,
     private val guard: CallerGuard,
     private val accounts: AccountStore = AccountStores.of(context),
+    private val secrets: AccountSecrets = AccountSecrets.of(context),
     private val keeper: () -> WatchKeeper = { WatchKeeper.of(context) },
 ) : IMailPlugin.Stub() {
 
@@ -83,8 +85,12 @@ internal class MailPluginBinder(
         return MailSession(parsed, MailSecret(secretText ?: ""))
     }
 
-    /** The alias form (roadmap P4.3): the record's document is normalized like an inline one, the secret is decrypted here and copied into the session only. */
-    private fun openSavedAccount(alias: String): MailSession = accounts.withSecret(alias) { saved, secret ->
+    /**
+     * The alias form (roadmap P4.3): the record's document is normalized like an inline one, the
+     * secret is decrypted here and copied into the session only; a browser sign-in (roadmap P9)
+     * yields its access token, refreshed first when it is about to expire.
+     */
+    private fun openSavedAccount(alias: String): MailSession = secrets.withUsableSecret(alias) { saved, secret ->
         val parsed = MailAccountOptions.parse(saved.accountJson, saved.secretKind, defaults())
         MailSession(parsed, MailSecret(secret))
     }

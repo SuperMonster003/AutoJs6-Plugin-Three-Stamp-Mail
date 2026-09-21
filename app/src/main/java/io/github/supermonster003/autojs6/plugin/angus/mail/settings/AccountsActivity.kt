@@ -19,7 +19,12 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.angusMailAccountDefau
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.AuthMethod
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccount
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccountOptions
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.SecretKind
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.error.MailException
+import io.github.supermonster003.autojs6.plugin.angus.mail.core.oauth.OAuthProviderId
+import io.github.supermonster003.autojs6.plugin.angus.mail.oauth.AccountSecrets
+import io.github.supermonster003.autojs6.plugin.angus.mail.oauth.OAuthSignInActivity
+import io.github.supermonster003.autojs6.plugin.angus.mail.oauth.TokenRevoker
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStore
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStores
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.SavedAccount
@@ -207,12 +212,18 @@ class AccountsActivity : ConfiguredActivity() {
             2,
             if (account.isDefault) R.string.accounts_action_clear_default else R.string.accounts_action_set_default,
         )
-        popup.menu.add(Menu.NONE, ACTION_REMOVE, 3, R.string.accounts_action_remove)
+        if (account.secretKind == SecretKind.OAUTH2) {
+            popup.menu.add(Menu.NONE, ACTION_REAUTHORIZE, 3, R.string.accounts_action_reauthorize)
+            popup.menu.add(Menu.NONE, ACTION_REVOKE, 4, R.string.accounts_action_revoke)
+        }
+        popup.menu.add(Menu.NONE, ACTION_REMOVE, 5, R.string.accounts_action_remove)
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 ACTION_EDIT -> openEditor(account.alias)
                 ACTION_TEST -> testSavedAccount(account.alias)
                 ACTION_DEFAULT -> toggleDefault(account)
+                ACTION_REAUTHORIZE -> reauthorize(account)
+                ACTION_REVOKE -> confirmRevoke(account)
                 ACTION_REMOVE -> confirmRemove(account)
             }
             true
@@ -222,6 +233,35 @@ class AccountsActivity : ConfiguredActivity() {
 
     private fun openEditor(alias: String?) {
         startActivity(AccountEditorActivity.intent(this, alias))
+    }
+
+    /** A new browser sign-in for a saved account (roadmap P9): the sign-in screen stores the grant on the record itself. */
+    private fun reauthorize(account: SavedAccount) {
+        val link = runStoreQuery { MailAccountOptions.parse(account.accountJson, account.secretKind).oauth } ?: return
+        val address = runCatching { MailAccountOptions.parse(account.accountJson, account.secretKind).address }.getOrNull()
+        startActivity(OAuthSignInActivity.intent(this, link.providerId, alias = account.alias, loginHint = address))
+    }
+
+    private fun confirmRevoke(account: SavedAccount) {
+        confirmDialog(
+            getString(R.string.accounts_revoke_title),
+            getString(R.string.accounts_revoke_message, account.alias),
+            R.string.accounts_action_revoke,
+            destructive = true,
+        ) {
+            runStoreAction {
+                TokenRevoker.revoke(this, account.alias)
+                showSnackbar(scaffold.root, getString(R.string.accounts_revoked))
+                renderAccounts()
+            }
+        }
+    }
+
+    private inline fun <T> runStoreQuery(query: () -> T): T? = try {
+        query()
+    } catch (e: MailException) {
+        showSnackbar(scaffold.root, e.message)
+        null
     }
 
     private fun toggleDefault(account: SavedAccount) {
@@ -256,7 +296,7 @@ class AccountsActivity : ConfiguredActivity() {
     private fun testSavedAccount(alias: String) {
         if (tester.isRunning) return
         val prepared: Pair<MailAccount, CharArray> = try {
-            store.withSecret(alias) { saved, secret ->
+            AccountSecrets.of(this).withUsableSecret(alias) { saved, secret ->
                 MailAccountOptions.parse(saved.accountJson, saved.secretKind, angusMailAccountDefaults()) to secret.copyOf()
             }
         } catch (e: MailException) {
@@ -294,6 +334,8 @@ class AccountsActivity : ConfiguredActivity() {
         const val ACTION_TEST = 11
         const val ACTION_DEFAULT = 12
         const val ACTION_REMOVE = 13
+        const val ACTION_REAUTHORIZE = 14
+        const val ACTION_REVOKE = 15
     }
 }
 
@@ -304,9 +346,17 @@ internal class AccountSummary(val address: String, val detail: String, val damag
             return try {
                 val normalized = MailAccountOptions.parse(account.accountJson, account.secretKind)
                 val provider = normalized.provider?.name ?: activity.getString(R.string.accounts_provider_custom)
-                val auth = activity.getString(
-                    if (normalized.auth == AuthMethod.XOAUTH2) R.string.accounts_summary_auth_token else R.string.accounts_summary_auth_password,
-                )
+                val link = normalized.oauth
+                val auth = when {
+                    link != null -> activity.getString(
+                        when (link.providerId) {
+                            OAuthProviderId.GOOGLE -> R.string.accounts_summary_auth_oauth_google
+                            OAuthProviderId.MICROSOFT -> R.string.accounts_summary_auth_oauth_microsoft
+                        },
+                    ) + if (link.needsReauth) " (" + activity.getString(R.string.accounts_summary_needs_reauth) + ")" else ""
+                    normalized.auth == AuthMethod.XOAUTH2 -> activity.getString(R.string.accounts_summary_auth_token)
+                    else -> activity.getString(R.string.accounts_summary_auth_password)
+                }
                 val receive = normalized.receiveEndpoint?.let { normalized.receive.id.uppercase() }
                     ?: activity.getString(R.string.accounts_summary_send_only)
                 AccountSummary(normalized.address, listOf(provider, receive, auth).joinToString(" - "), damaged = false)

@@ -58,3 +58,6 @@ build-logic/*/build/
 
 *.keystore
 *.pre-platform-versions.bak
+
+# OAuth 2.0 client registrations of a build (roadmap P9); never committed
+oauth-clients.properties

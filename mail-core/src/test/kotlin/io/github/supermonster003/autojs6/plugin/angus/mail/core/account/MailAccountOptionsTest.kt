@@ -150,6 +150,36 @@ class MailAccountOptionsTest {
         assertEquals(MailTimeouts(), account.timeouts)
     }
 
+    @Test
+    fun browserSignInRecordsCarryTheOAuthLinkAndAuthenticateWithXoauth2() {
+        val account = parse(
+            """{"provider":"gmail","address":"me@gmail.com","auth":"xoauth2","oauth":{"provider":"google","authorizedAt":1700000000000,"expiresAt":1700003600000,"needsReauth":false}}""",
+            SecretKind.OAUTH2,
+        )
+        assertEquals(AuthMethod.XOAUTH2, account.auth)
+        val link = account.oauth!!
+        assertEquals("google", link.provider)
+        assertEquals(1700000000000L, link.authorizedAt)
+        assertEquals(1700003600000L, link.expiresAt)
+        assertFalse(link.needsReauth)
+        assertNull("no oauth object on a password account", parse("""{"provider":"qq","address":"a@qq.com"}""").oauth)
+        val minimal = parse("""{"provider":"outlook","address":"b@outlook.com","oauth":{"provider":"microsoft"}}""", SecretKind.OAUTH2)
+        assertEquals(AuthMethod.XOAUTH2, minimal.auth)
+        assertEquals(0L, minimal.oauth!!.authorizedAt)
+        assertFalse(minimal.oauth!!.needsReauth)
+    }
+
+    @Test
+    fun theOAuthLinkGoesWithTheBrowserSignInOnly() {
+        assertInvalid("""{"provider":"gmail","address":"me@gmail.com"}""", SecretKind.OAUTH2, "'oauth' is required")
+        assertInvalid("""{"provider":"gmail","address":"me@gmail.com","oauth":{"provider":"google"}}""", SecretKind.PASSWORD, "browser sign-in only")
+        assertInvalid("""{"provider":"gmail","address":"me@gmail.com","oauth":{"provider":"google"}}""", SecretKind.ACCESS_TOKEN, "browser sign-in only")
+        assertInvalid("""{"provider":"gmail","address":"me@gmail.com","oauth":{}}""", SecretKind.OAUTH2, "'oauth.provider' is required")
+        assertInvalid("""{"provider":"gmail","address":"me@gmail.com","oauth":{"provider":"yahoo"}}""", SecretKind.OAUTH2, "must be one of google, microsoft")
+        assertInvalid("""{"provider":"gmail","address":"me@gmail.com","oauth":{"provider":"google","accessToken":"x"}}""", SecretKind.OAUTH2, "accessToken")
+        assertInvalid("""{"provider":"gmail","address":"me@gmail.com","auth":"password","oauth":{"provider":"google"}}""", SecretKind.OAUTH2, "signed in through the browser")
+    }
+
     private fun parse(json: String, secret: SecretKind = SecretKind.PASSWORD, defaults: MailAccountOptions.Defaults = MailAccountOptions.Defaults()): MailAccount =
         MailAccountOptions.parse(json, secret, defaults)
 

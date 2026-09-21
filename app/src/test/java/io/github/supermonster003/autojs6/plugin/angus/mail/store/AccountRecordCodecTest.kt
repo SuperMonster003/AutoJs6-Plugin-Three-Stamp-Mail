@@ -48,7 +48,7 @@ class AccountRecordCodecTest {
         assertRejected("magic") { it.also { bytes -> bytes[0] = 0 } }
         assertRejected("version") { it.also { bytes -> bytes[4] = 2 } }
         assertRejected("algorithm") { it.also { bytes -> bytes[5] = 2 } }
-        assertRejected("secret kind") { it.also { bytes -> bytes[6] = 3 } }
+        assertRejected("secret kind") { it.also { bytes -> bytes[6] = 4 } }
         assertRejected("flags") { it.also { bytes -> bytes[7] = 1 } }
         assertRejected("truncated") { it.copyOf(it.size - 1) }
         assertRejected("trailing") { it + byteArrayOf(0) }
