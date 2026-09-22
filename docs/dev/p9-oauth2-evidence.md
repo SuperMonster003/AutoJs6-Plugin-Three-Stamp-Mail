@@ -23,8 +23,8 @@ base64 instrumentation arguments of an `am instrument` run, the host sees the al
 every log and report is scanned for the tokens and the address afterwards. No Google refresh
 token exists on the PC (an Android client accepts no loopback redirect), so the real Google
 records are the ones the maintainer signed in with on a device (`--signed-in-alias gmail-oauth`:
-the Sony at 12:55 with `--skip-host`, the API 24 emulator at 13:55 with the host steps) and the
-API 37 emulator's Google rows are the plugin-side steps (`--plugin-only`).
+the Sony at 12:55 with `--skip-host`, the API 24 emulator at 13:55 with the host steps, the
+API 37 emulator at 14:34 with the host steps and the renew and revoke-wait cases of build 70).
 
 ## Method
 
@@ -223,7 +223,7 @@ The plugin's `MailOAuth` state lines of the run (ids, states, counts and duratio
 
 #### emulator-5556: AVD_API_37.1_16K (x86_64), Android 16 QPR (API 37)
 
-Plugin versionCode 67, host versionCode 5282, the build's Google client id (the maintainer's Android client), preset `gmail` (provider `google`), plugin-side steps only (`--plugin-only`: no real account).
+Plugin versionCode 70, host versionCode 5282, the build's Google client id (the maintainer's Android client), preset `gmail` (provider `google`), the plugin-side steps, the record the maintainer signed in with on the device under the alias `gmail-oauth` and the host steps (`--signed-in-alias`: the full run less the seed and the new grant).
 
 | Step | Result | Detail |
 | --- | --- | --- |
@@ -231,6 +231,16 @@ Plugin versionCode 67, host versionCode 5282, the build's Google client id (the 
 | foreign `state` refused, matching `state` exchanged at the token endpoint, late redirect refused | ok | foreign state refused: The browser's answer was not accepted: the redirect carries no matching state; matching state exchanged, provider answered (google): The sign-in failed: the authorization code was refused; sign in again - invalid_grant: Malformed auth code.; late redirect refused: The browser's answer was not accepted: no sign-in is waiting |
 | OAUTH2 record round trip (Keystore), renewal, refusal marked `needsReauth` | ok | - |
 | revoked Google record: local marker, the token posted to Google's revocation endpoint, sessions refused, re-authorization restores it | ok | - |
+| the record the maintainer signed in with on the device | ok | alias gmail-oauth: the record the maintainer signed in with on the device (no seed) |
+| the signed-in record's access token made stale, renewed at the provider with the real refresh token | ok | renewed alias=gmail-oauth provider=google replaced=true expiresIn=3598 s in 1186 ms |
+| a session inside the plugin over the record (the binder over the plugin's store): `session.test` with XOAUTH2 at every endpoint, `messages.list` of the inbox | ok | session over alias=gmail-oauth provider=google: imap/smtp ok in 5176 ms, listed 1 message(s) in 1747 ms |
+| host `mail.accounts.list()`: `oauth` object, live | ok | `ok` True, `auth` xoauth2, `oauth` = provider google, needsReauth False, expires in 3578 s, keys authorizedAt, expiresAt, needsReauth, provider; 12.9 s |
+| host `mail.connect(alias)` -> `test` -> `fetch`, live | ok | `ok` true, test {'ok': True, 'imap': True, 'smtp': True}, fetched 3, closed True; accounts.list 88 ms, accounts.has 7 ms, connect 92 ms, test 4901 ms, fetch 2018 ms, close 6 ms; 19.6 s |
+| "Revoke sign-in": sessions fail with `AUTH_FAILED`, accounts page says "sign in again" | ok | revoked alias=gmail-oauth provider=google in 1454 ms; sessions now fail with AUTH_FAILED; provider-side revocation accepted in 1811 ms |
+| host `mail.accounts.list()`: `needsReauth` after the revocation | ok | `ok` True, `auth` xoauth2, `oauth` = provider google, needsReauth True, expiresAt 0 (no expiry left), keys authorizedAt, expiresAt, needsReauth, provider; 13.2 s |
+| host `mail.connect(alias)` refused after the revocation | ok | `ok` false, `AUTH_FAILED`: MailError [AUTH_FAILED]: the account has no refresh token; sign in again; 12.3 s |
+| "Sign in again": a new grant on the same record | skipped | a new grant needs the browser: the accounts page's "Sign in again" by the maintainer |
+| record removed | ok | - |
 
 Leak check: secret in logcat no, in the Gradle logs no; address in logcat no, in the Gradle logs no.
 
@@ -243,6 +253,10 @@ The plugin's `MailOAuth` state lines of the run (ids, states, counts and duratio
     provider=google refresh failed: AUTH_FAILED (reauthorize)
     provider=google sign-in stored, expires in 7199 s
     provider=google provider-side revocation not done
+    provider=google refresh ok, expires in 3598 s
+    provider=google sign-in revoked locally
+    provider=google refresh failed: AUTH_FAILED (reauthorize)
+    provider=google provider-side revocation accepted
 
 #### emulator-5554: AVD_API_24 (x86), Android 7.0 (API 24)
 
@@ -258,7 +272,7 @@ Plugin versionCode 69, host versionCode 5282, the build's Google client id (the 
 | a session inside the plugin over the record (the binder over the plugin's store): `session.test` with XOAUTH2 at every endpoint, `messages.list` of the inbox | ok | session over alias=gmail-oauth provider=google: imap/smtp ok in 3481 ms, listed 1 message(s) in 1953 ms |
 | host `mail.accounts.list()`: `oauth` object, live | ok | `ok` True, `auth` xoauth2, `oauth` = provider google, needsReauth False, expires in 3221 s, keys authorizedAt, expiresAt, needsReauth, provider; 22.7 s |
 | host `mail.connect(alias)` -> `test` -> `fetch`, live | ok | `ok` true, test {'ok': True, 'imap': True, 'smtp': True}, fetched 3, closed True; accounts.list 44 ms, accounts.has 11 ms, connect 48 ms, test 3159 ms, fetch 1631 ms, close 4 ms; 27.0 s |
-| "Revoke sign-in": sessions fail with `AUTH_FAILED`, accounts page says "sign in again" | ok | revoked alias=gmail-oauth provider=google in 508 ms; sessions now fail with AUTH_FAILED (the local half (the marker, `AUTH_FAILED`, the host's `needsReauth`) is what this row shows; the real token's provider-side outcome line is missing from the state lines because the instrumentation process ended before the background request to `oauth2.googleapis.com/revoke` finished (the Sony's 12:55 run caught `accepted`); since build 70 the case waits for that request and requires the acceptance) |
+| "Revoke sign-in": sessions fail with `AUTH_FAILED`, accounts page says "sign in again" | ok | revoked alias=gmail-oauth provider=google in 508 ms; sessions now fail with AUTH_FAILED (the local half (the marker, `AUTH_FAILED`, the host's `needsReauth`) is what this row shows; the real token's provider-side outcome line is missing from the state lines because the instrumentation process ended before the background request to `oauth2.googleapis.com/revoke` finished (the Sony's 12:55 run caught `accepted`); since build 70 the case waits for that request and requires the acceptance (the API 37 emulator's run of 14:34)) |
 | host `mail.accounts.list()`: `needsReauth` after the revocation | ok | `ok` True, `auth` xoauth2, `oauth` = provider google, needsReauth True, expiresAt 0 (no expiry left), keys authorizedAt, expiresAt, needsReauth, provider; 21.4 s |
 | host `mail.connect(alias)` refused after the revocation | ok | `ok` false, `AUTH_FAILED`: MailError [AUTH_FAILED]: the account has no refresh token; sign in again; 21.2 s |
 | "Sign in again": a new grant on the same record | skipped | a new grant needs the browser: the accounts page's "Sign in again" by the maintainer |
@@ -342,7 +356,8 @@ The plugin's `MailOAuth` state lines of the run (ids, states, counts and duratio
   lines; a real token gets "accepted"), and the local half stood regardless. The device cases
   wait for that request since build 70: in the API 24 emulator's Google run of 13:55 the real
   token's outcome line is missing because the instrumentation process ended first (the row
-  carries the note), while the Sony's 12:55 run caught "accepted".
+  carries the note), while the Sony's 12:55 run caught "accepted" and the API 37 emulator's
+  run of 14:34 (build 70) waited for it: revoked alias=gmail-oauth provider=google in 1454 ms; sessions now fail with AUTH_FAILED; provider-side revocation accepted in 1811 ms.
 - **The Google record.** The maintainer signed in on the Sony with the Gmail preset (the Google
   consent of a test user of the project, which is in Testing) under the alias `gmail-oauth` and
   ran the driver with `--signed-in-alias` at 12:55: "Revoke sign-in" posted the real refresh token
@@ -359,8 +374,14 @@ The plugin's `MailOAuth` state lines of the run (ids, states, counts and duratio
   `mail.connect(alias)` -> `test` -> `fetch` live over Gmail, the revocation, after which the
   host reported `needsReauth` and `mail.connect(alias)` failed with `AUTH_FAILED` ("the account
   has no refresh token; sign in again"), and the removal. The access token of that sign-in was
-  minutes old, so the run renewed nothing at Google's token endpoint: the refresh path with a
-  real Google refresh token is the renew step of build 70 (5a) on the next sign-in.
+  minutes old, so the run renewed nothing at Google's token endpoint. A third sign-in, on the
+  API 37 emulator, followed by the same command at 14:34 (build 70) closed that: the renew step
+  made the stored access token stale and `AccountSecrets.usableTokens` renewed it at
+  `oauth2.googleapis.com/token` with the real refresh token (renewed alias=gmail-oauth provider=google replaced=true expiresIn=3598 s in 1186 ms;
+  "provider=google refresh ok, expires in 3598 s" in the state lines), the in-plugin session and the host steps
+  ran over the renewed token (session over alias=gmail-oauth provider=google: imap/smtp ok in 5176 ms, listed 1 message(s) in 1747 ms), and the revocation waited for Google's
+  answer (revoked alias=gmail-oauth provider=google in 1454 ms; sessions now fail with AUTH_FAILED; provider-side revocation accepted in 1811 ms). With that, the Google authorization, refresh and revocation
+  paths have all run with a real record on a device.
 - **What the host sees.** `mail.accounts.list()` carries `auth: "xoauth2"` and the `oauth`
   object with exactly `provider`, `authorizedAt`, `expiresAt` and `needsReauth`; no key of the
   entry matches token / secret / password, and the token never left the plugin process.
@@ -405,14 +426,10 @@ The plugin's `MailOAuth` state lines of the run (ids, states, counts and duratio
 
 ## Not done
 
-- **The refresh path with a real Google refresh token** (a stale access token renewed at
-  `oauth2.googleapis.com/token`): the API 24 emulator's run used the access token of a sign-in
-  minutes old, so nothing was renewed; step 5a of build 70 (`--signed-in-alias`) makes the
-  stored access token stale first, so the next sign-in on a device followed by
-  `py -X utf8 .python/run_oauth_device.py GMAIL_A <serial> --signed-in-alias <alias>` covers it
-  (`--skip-host` on the Sony). "Sign in again" over a Google record needs the browser and stays
-  the maintainer's action. In Testing the refresh token expires after 7 days, which the plugin
-  reports as "sign in again".
+- **"Sign in again" over a Google record** (a new grant on a revoked or expired record): it
+  needs the browser and stays the maintainer's action; the code path is the first sign-in's,
+  and the record side of it is the re-authorization row of the Microsoft tables. In Testing the
+  refresh token expires after 7 days, which the plugin reports as "sign in again".
 - **A real browser sign-in end to end on a device** (typing the maintainer's password into the
   Custom Tab): not automated on purpose; the code path after the redirect is the one exercised
   by step 2 with a made-up code, and the grant storage is the one exercised by the seed.

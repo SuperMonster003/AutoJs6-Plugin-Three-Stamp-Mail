@@ -177,10 +177,12 @@ emulator (AVD_API_24) under the same alias, and
 (13:55) ran the full signed-in mode there: a session inside the plugin over the record (IMAP and
 SMTP with XOAUTH2, the newest message listed), the host's `mail.accounts.list()` and
 `mail.connect(alias)` -> `test` -> `fetch` live, the revocation, the host's refusal after it and
-the removal (`docs/dev/p9-oauth2-evidence.md`). Still open: a renewal at
-`oauth2.googleapis.com/token` with the real refresh token (that run's access token was minutes
-old; the driver's step 5a of build 70 makes it stale first, so the next sign-in covers it). In
-Testing the refresh token expires after 7 days, which the plugin shows as "sign in again".
+the removal (`docs/dev/p9-oauth2-evidence.md`). A third sign-in on the API 37 emulator
+(AVD_API_37.1_16K) and the same command there (14:34, build 70) added the renewal at
+`oauth2.googleapis.com/token` with the real refresh token (the stored access token made stale
+first) and the provider's acceptance of the revocation, waited for by the test; every Google
+path of the roadmap has now run with a real record on a device. In Testing the refresh token
+expires after 7 days, which the plugin shows as "sign in again".
 
 ## References
 
