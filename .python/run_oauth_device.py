@@ -13,7 +13,7 @@ stores its grant; the host sees the alias alone.
 GMAIL_A (the Google provider, `googleClientId`): no PC refresh token exists for an Android client, so either
 `--plugin-only` runs steps 1-4 alone (the Google sign-in page, the redirect path against Google's token endpoint,
 the records; no real account) or `--signed-in-alias <alias>` takes the record the maintainer signed in with on
-the device (the plugin's accounts page, Gmail preset, "Sign in with Google"): steps 1-4, 6, 7 and 9 run over that
+the device (the plugin's accounts page, Gmail preset, "Sign in with Google"): steps 1-4, 5b, 6, 7 and 9 run over that
 alias, step 5 (the seed) does not exist and step 8 (a new grant) needs the browser again, so it is skipped and the
 account is removed at the end unless --keep. The Google methods of OAuthDeviceTest are
 opensTheGooglePageInTheBrowser, refusesAForeignStateAndExchangesTheMatchingOneAtGoogle and
@@ -32,6 +32,9 @@ Steps (each recorded in build/p9/oauth-<profile>-<serial>.json):
      (Keystore round trip, renewal, refusal marking, revocation, re-authorization; scripted or local only)
   5. RealAccountOAuthDeviceTest#seedsASignedInAccount: the PC-obtained tokens become the alias's OAUTH2 record;
      the stale access token is renewed at the provider (the same refresh every session performs)
+  5b. RealAccountOAuthDeviceTest#opensASessionOverTheSavedAlias: what mail.connect(alias) does on the host, inside
+     the plugin process (the binder over the plugin's store, session.test with XOAUTH2 at every endpoint,
+     messages.list of the inbox); the live half of the evidence on a phone whose host must stay (--skip-host)
   6. host: docs/smoke/oauth-status.js (what `mail.accounts.list()` shows) and docs/smoke/saved-account.js
      (`mail.connect(alias)` -> `test` -> `fetch`) through .python/run_host_script_smoke.py --alias
   7. RealAccountOAuthDeviceTest#revokesTheSignIn, then the host scripts again: `mail.connect(alias)` must fail
@@ -76,9 +79,12 @@ def log(text):
     print(time.strftime("%H:%M:%S"), text, flush=True)
 
 
-def instrument(serial, test_class, method, arguments, marker):
+def instrument(serial, test_class, method, arguments, marker, attempt=1):
     """One test method through `am instrument -w -r`: (passed, output). The test's own log line also counts on
-    Android 9, where the runner sometimes reports "Process crashed" at the force-stop after a finished test."""
+    Android 9, where the runner sometimes reports "Process crashed" at the force-stop after a finished test; and
+    when the app process dies before the runner even started (Android 9 now and then: a null-pointer crash in its
+    "ADB-JDWP Connection" thread at process start, no TestRunner line, no stack), the method is launched again, up
+    to four times in all (the crash comes in bursts)."""
     command = ["shell", "am", "instrument", "-w", "-r", "-e", "class", f"{test_class}#{method}"]
     for key, value in arguments.items():
         if value is None or value == "":
@@ -99,6 +105,12 @@ def instrument(serial, test_class, method, arguments, marker):
         time.sleep(1.5)
         if marker_count(serial, tag, text) > before:
             passed = True
+    if not passed and not failed and not skipped and attempt < 4 and "shortMsg=Process crashed" in output and "INSTRUMENTATION_STATUS: stack=" not in output:
+        # the crash comes in bursts on the Sony (four of eight launches in one run, twice in a row): up to three more launches
+        log(f"  {method}: the process crashed before the runner started (no test output); launch {attempt + 1} of 4")
+        shell(serial, f"am force-stop {PLUGIN_PACKAGE}")
+        time.sleep(3)
+        return instrument(serial, test_class, method, arguments, marker, attempt=attempt + 1)
     if skipped:
         log(f"  {method}: SKIPPED (assumption failed): {output.strip().splitlines()[-1][:160] if output.strip() else ''}")
     elif not passed:
@@ -293,6 +305,11 @@ def main():
         with io.open(os.path.join(OUT_DIR, f"oauth-{args.profile.lower()}-{args.serial}.json"), "w", encoding="utf-8") as handle:
             json.dump(summary, handle, ensure_ascii=False, indent=2)
         raise SystemExit("seeding the account failed (the summary so far is in build/p9)")
+
+    # 5b. a session inside the plugin over the record: what mail.connect(alias) does on the host, without the host
+    passed, _ = instrument(args.serial, REAL_TEST_CLASS, "opensASessionOverTheSavedAlias", {"mailAlias": args.alias}, ("RealAccountOAuth", "session over alias="))
+    summary["steps"]["session"] = {"passed": passed, "log": marker_lines(args.serial, "RealAccountOAuth")[-1:]}
+    log(f"session: {'ok' if passed else 'FAILED'}; " + " | ".join(summary["steps"]["session"]["log"]))
 
     # 6. the host with the live record
     if not args.skip_host:

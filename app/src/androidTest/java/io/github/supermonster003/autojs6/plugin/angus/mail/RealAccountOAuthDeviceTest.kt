@@ -2,6 +2,7 @@ package io.github.supermonster003.autojs6.plugin.angus.mail
 
 import android.app.Activity
 import android.content.Context
+import android.os.Bundle
 import android.util.Base64
 import android.util.Log
 import android.view.View
@@ -10,6 +11,8 @@ import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import io.github.supermonster003.autojs6.plugin.angus.mail.binder.CallerGuard
+import io.github.supermonster003.autojs6.plugin.angus.mail.binder.MailPluginBinder
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.AuthMethod
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.MailAccountOptions
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.account.OAuthLink
@@ -28,6 +31,12 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.settings.AccountFormP
 import io.github.supermonster003.autojs6.plugin.angus.mail.settings.AccountsActivity
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStore
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStores
+import org.autojs.plugin.mail.api.IMailCallCallback
+import org.autojs.plugin.mail.api.IMailSession
+import org.autojs.plugin.mail.api.IMailSessionCallback
+import org.autojs.plugin.mail.api.MailContract
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -37,6 +46,8 @@ import org.junit.Assert.fail
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 
 /**
  * A real browser sign-in's record on a device without typing a password on the device (roadmap
@@ -47,9 +58,14 @@ import org.junit.runner.RunWith
  * exactly as [io.github.supermonster003.autojs6.plugin.angus.mail.oauth.OAuthSignInActivity]
  * stores a grant; the record then goes through what every alias session does: the access token is
  * renewed at the provider when it is stale, a revoked record fails with `AUTH_FAILED` and the
- * accounts page says "sign in again", and a new grant on the same record restores it. Runs
- * through `am instrument` so the record survives for the host's `mail.connect(alias)`;
- * [removesTheAccount] cleans up. Logs carry the alias, the provider and durations only.
+ * accounts page says "sign in again", and a new grant on the same record restores it; a record the
+ * maintainer signed in with on the device (no seed) goes through the same steps under its alias.
+ * [opensASessionOverTheSavedAlias] is what `mail.connect(alias)` does on the host, inside the
+ * plugin process: the binder over the plugin's store, `session.test` with XOAUTH2 at every
+ * endpoint and `messages.list` of the inbox (the live half of the evidence on a phone whose host
+ * state must stay, `.python/run_oauth_device.py --skip-host`). Runs through `am instrument` so the
+ * record survives for the host's `mail.connect(alias)`; [removesTheAccount] cleans up. Logs carry
+ * the alias, the provider, counts and durations only.
  */
 @RunWith(AndroidJUnit4::class)
 class RealAccountOAuthDeviceTest {
@@ -88,6 +104,43 @@ class RealAccountOAuthDeviceTest {
         assertFalse(after.needsReauth)
         assertSummary(alias, needsReauth = false, provider = seed.provider)
         Log.i(TAG, "seeded alias=$alias provider=${seed.provider.id} staleAtSeed=$stale renewed=${usable.accessToken != seed.tokens.accessToken} expiresIn=${(usable.expiresAt - System.currentTimeMillis()) / 1000} s in ${System.currentTimeMillis() - started} ms")
+    }
+
+    @Test
+    fun opensASessionOverTheSavedAlias() {
+        val alias = requireAlias()
+        val saved = requireNotNull(store.get(alias)) { "the account '$alias' must be seeded or signed in first" }
+        val provider = MailAccountOptions.parse(saved.accountJson, saved.secretKind).oauth!!.providerId
+        val started = System.currentTimeMillis()
+        val statuses = LinkedBlockingQueue<JSONObject>()
+        val statusCallback = object : IMailSessionCallback.Stub() {
+            override fun onStatus(status: Bundle?) {
+                statuses.add(JSONObject(status?.getString(MailContract.KEY_STATUS_JSON).orEmpty()))
+            }
+        }
+        // the plugin's own store (AccountSecrets.of(context, store) is then the process-wide helper: one renewal lock)
+        val plugin = MailPluginBinder(context, CallerGuard.trusting(), store)
+        val session = requireNotNull(plugin.openSession(aliasBundle(alias), statusCallback)) { "the saved alias must open: ${statuses.poll(5, TimeUnit.SECONDS)}" }
+        try {
+            val test = call(session, "t1", MailContract.OP_SESSION_TEST)
+            assertTrue(test.toString().take(400), test.getBoolean(MailContract.FIELD_OK))
+            val probes = test.getJSONObject(MailContract.FIELD_RESULT)
+            if (probes.has("ok")) assertTrue(probes.toString().take(400), probes.getBoolean("ok"))
+            val endpoints = listOf("imap", "pop3", "smtp").filter { probes.has(it) }
+            assertTrue("at least one endpoint probed: $probes", endpoints.isNotEmpty())
+            endpoints.forEach { assertTrue("$it probe failed: ${probes.getJSONObject(it).toString().take(300)}", probes.getJSONObject(it).getBoolean("ok")) }
+            val testMs = System.currentTimeMillis() - started
+            val listStarted = System.currentTimeMillis()
+            val listed = call(session, "l1", MailContract.OP_MESSAGES_LIST, """{"limit":1}""")
+            assertTrue(listed.toString().take(400), listed.getBoolean(MailContract.FIELD_OK))
+            val count = messageCount(listed.get(MailContract.FIELD_RESULT))
+            val listMs = System.currentTimeMillis() - listStarted
+            Log.i(TAG, "session over alias=$alias provider=${provider.id}: ${endpoints.joinToString("/")} ok in $testMs ms, listed $count message(s) in $listMs ms")
+        } finally {
+            session.close()
+            val closed = statuses.poll(10, TimeUnit.SECONDS)
+            assertEquals("the session reports closed: $closed", MailContract.STATE_CLOSED, closed?.optString(MailContract.FIELD_STATE))
+        }
     }
 
     @Test
@@ -157,6 +210,37 @@ class RealAccountOAuthDeviceTest {
     }
 
     private fun decode(base64: String): String = String(Base64.decode(base64, Base64.DEFAULT), Charsets.UTF_8)
+
+    /** The alias form of the host's account bundle (contract B.1): the alias alone, no secret. */
+    private fun aliasBundle(alias: String): Bundle = Bundle().apply {
+        putInt(MailContract.KEY_CONTRACT_VERSION, MailContract.CONTRACT_VERSION)
+        putLong(MailContract.KEY_HOST_VERSION_CODE, AngusMailPlugin.REQUIRED_HOST_VERSION)
+        putString(MailContract.KEY_ACCOUNT_ALIAS, alias)
+    }
+
+    /** One request through the session binder, answered within a minute (a real provider over the phone's network). */
+    private fun call(session: IMailSession, id: String, op: String, args: String = "{}"): JSONObject {
+        val results = LinkedBlockingQueue<JSONObject>()
+        val request = Bundle().apply {
+            putInt(MailContract.KEY_CONTRACT_VERSION, MailContract.CONTRACT_VERSION)
+            putString(MailContract.KEY_REQUEST_JSON, """{"id":"$id","op":"$op","args":$args}""")
+        }
+        val callback = object : IMailCallCallback.Stub() {
+            override fun onProgress(progress: Bundle?) = Unit
+            override fun onResult(response: Bundle?) {
+                results.add(JSONObject(response?.getString(MailContract.KEY_RESPONSE_JSON).orEmpty()))
+            }
+        }
+        assertEquals(id, session.call(request, null, callback))
+        return requireNotNull(results.poll(60, TimeUnit.SECONDS)) { "no answer to $op within 60 s" }
+    }
+
+    /** How many messages a `messages.list` result carries (an array, or an object with a `messages` array). */
+    private fun messageCount(result: Any): Int = when (result) {
+        is JSONArray -> result.length()
+        is JSONObject -> result.optJSONArray("messages")?.length() ?: result.optInt("total", -1)
+        else -> -1
+    }
 
     /** The accounts page shows the sign-in kind and, after a refusal, "sign in again"; never a token. */
     private fun assertSummary(alias: String, needsReauth: Boolean, provider: OAuthProviderId) {

@@ -161,18 +161,20 @@ through the manifest's scheme-only filter; a made-up code is exchanged at
 `oauth2.googleapis.com/token` and refused there (`invalid_grant: Malformed auth code.`, so the
 client id and the redirect URI are accepted by the token endpoint); and a revoked Google record
 posts its token to `oauth2.googleapis.com/revoke` (the made-up token was refused, as expected).
-Not checked without a real account: the consent page itself (the app name, the Testing notice,
-the scope list) and the grant. A Google refresh token cannot be obtained on the PC for the
-device the way `.python/outlook_oauth_login.py` does for Microsoft (an Android client accepts no
-loopback redirect, and a token issued to a Desktop client would not refresh under the Android
-client id), so the real Gmail record of `docs/dev/p9-oauth2-evidence.md` starts with a sign-in in
-the plugin on a device by the maintainer: the accounts page, the Gmail preset, "Sign in with
-Google (browser)", the Google consent of a test user (the project is in Testing), saved under an
-alias such as `gmail-oauth`; then `py -X utf8 .python/run_oauth_device.py GMAIL_A <serial>
---signed-in-alias gmail-oauth` runs the host status and session scripts, the revocation (a real
-token reaches the revocation endpoint), the host scripts after it and the removal, and "sign in
-again" is reported as skipped because a new grant needs the browser again. In Testing the
-refresh token expires after 7 days, which the plugin shows as "sign in again".
+A Google refresh token cannot be obtained on the PC for the device the way
+`.python/outlook_oauth_login.py` does for Microsoft (an Android client accepts no loopback
+redirect, and a token issued to a Desktop client would not refresh under the Android client id),
+so the real Gmail record starts with a sign-in in the plugin on a device by the maintainer. Done
+on 2026-09-22 on the Sony G8441: the accounts page, the Gmail preset, "Sign in with Google
+(browser)", the Google consent of a test user (the project is in Testing), saved under the alias
+`gmail-oauth`; the consent page and the grant were thereby exercised for real. Then
+`py -X utf8 .python/run_oauth_device.py GMAIL_A BH900ASK9E --signed-in-alias gmail-oauth --skip-host`
+(the maintainer's run of 12:55) revoked the sign-in with the real refresh token posted to
+`oauth2.googleapis.com/revoke`, which accepted it, and removed the record; "sign in again" needs
+the browser and is reported as skipped. What that run did not cover is a live session over the
+record (the in-plugin session step of build 68 came after it, and the host steps were skipped
+to keep the phone's P8 state): the next sign-in on a device followed by the same command covers
+it. In Testing the refresh token expires after 7 days, which the plugin shows as "sign in again".
 
 ## References
 

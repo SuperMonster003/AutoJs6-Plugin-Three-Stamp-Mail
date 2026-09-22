@@ -9,6 +9,7 @@
 ###### 2026/09/22
 
 * `Correctif` L'événement `closed` d'une surveillance à la fermeture de la session porte toujours la raison `closed` : le thread de travail de la session pouvait arrêter certaines surveillances en premier avec `session-closed` (vu une fois dans la suite connected sur l'émulateur API 24).
+* `Amélioration` La version publiée porte aussi l'identifiant de client Google OAuth 2.0 du mainteneur (le client Android enregistré le 2026-09-22) : le préréglage Gmail propose "Se connecter avec Google (navigateur)". Le projet Google est en phase de test : seuls ses utilisateurs de test peuvent se connecter et leurs jetons de rafraîchissement expirent après 7 jours (le plugin affiche ensuite "se reconnecter") ; les autres comptes Google voient la page de refus d'accès de Google, et les chemins par jeton et par mot de passe d'application restent inchangés.
 
 # v1.2.0
 

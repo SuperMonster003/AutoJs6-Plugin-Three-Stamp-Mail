@@ -232,6 +232,7 @@ Los planes y el progreso del plugin se mantienen como una lista verificable en R
 _2026/09/22_
 
 - `Corrección` El evento `closed` de una vigilancia al cerrar la sesión siempre indica el motivo `closed`: el hilo de trabajo de la sesión podía detener antes algunas vigilancias con `session-closed` (visto una vez en la suite connected del emulador API 24).
+- `Mejora` La compilación publicada lleva también el id de cliente Google OAuth 2.0 del mantenedor (el cliente Android registrado el 2026-09-22): el preajuste de Gmail ofrece "Iniciar sesión con Google (navegador)". El proyecto de Google está en fase de prueba: solo sus usuarios de prueba pueden iniciar sesión y sus tokens de actualización caducan a los 7 días (el plugin muestra después "iniciar sesión de nuevo"); las demás cuentas de Google ven la página de acceso denegado de Google, y las vías por token y por contraseña de aplicación siguen igual.
 
 #### v1.2.0
 

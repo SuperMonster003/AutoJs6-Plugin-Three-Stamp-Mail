@@ -21,9 +21,9 @@ renewal at `login.microsoftonline.com` with the build's client id is the same re
 alias session performs after a browser sign-in on the device. The tokens reach the device only as
 base64 instrumentation arguments of an `am instrument` run, the host sees the alias alone, and
 every log and report is scanned for the tokens and the address afterwards. No Google refresh
-token exists on the PC (an Android client accepts no loopback redirect), so the Google rows are
-the plugin-side steps (`--plugin-only`) and the real Google record waits for the maintainer's
-sign-in on a device (see "Not done").
+token exists on the PC (an Android client accepts no loopback redirect), so the Google rows of
+the emulators are the plugin-side steps (`--plugin-only`) and the real Google record is the one
+the maintainer signed in with on the Sony (`--signed-in-alias gmail-oauth`, the run of 12:55).
 
 ## Method
 
@@ -58,7 +58,12 @@ runs, in order:
    record exactly as the sign-in screen stores a grant (`AccountFormPolicy.toAccountJson` with
    the `oauth` link); `AccountSecrets.usableTokens` renews the stale access token at the provider;
    the accounts page shows "Microsoft sign-in" without the marker. With `--signed-in-alias` the
-   record is the one the maintainer signed in with on the device and nothing is seeded.
+   record is the one the maintainer signed in with on the device and nothing is seeded. Then
+   (build 68) `RealAccountOAuthDeviceTest#opensASessionOverTheSavedAlias`: what
+   `mail.connect(alias)` does on the host, inside the plugin process: `MailPluginBinder` over the
+   plugin's store opens the alias, `session.test` probes every endpoint with XOAUTH2 and
+   `messages.list` reads the newest message of the inbox; the live half of the evidence on a phone
+   whose host state must stay.
 5. The host (`.python/run_host_script_smoke.py --alias`, `MailScriptSmokeDeviceTest#savedAccountScript`):
    `docs/smoke/oauth-status.js` reads the alias's `oauth` object from `mail.accounts.list()` and
    checks that no secret-like key exists; `docs/smoke/saved-account.js` runs
@@ -153,26 +158,24 @@ The plugin's `MailOAuth` state lines of the run (ids, states, counts and duratio
 
 #### BH900ASK9E: Sony G8441, Android 9 (API 28)
 
-Plugin versionCode 67, host versionCode 5282, the build's Microsoft client id (the `HOTMAIL_A` registration), preset `outlook` (provider `microsoft`), the plugin-side steps and the real record (`--skip-host`: the phone keeps its P8 host state), alias `outlook-oauth`, the PC's access token already expired at the seed.
+Plugin versionCode 68, host versionCode 5282, the build's Microsoft client id (the `HOTMAIL_A` registration), preset `outlook` (provider `microsoft`), the plugin-side steps and the real record (`--skip-host`: the phone keeps its P8 host state), alias `outlook-oauth`, the PC's access token already expired at the seed.
 
 | Step | Result | Detail |
 | --- | --- | --- |
-| sign-in screen opens the provider page in the browser | ok | top activity `android/com.android.internal.app.ResolverActivity`; browser opened for provider=microsoft, state length 22 |
-| foreign `state` refused, matching `state` exchanged at the token endpoint, late redirect refused | ok | foreign state refused: The browser's answer was not accepted: the redirect carries no matching state; matching state exchanged, provider answered (microsoft): The sign-in failed: the authorization code was refused; sign in again - invalid_grant: AADSTS7000012: The grant was obtained for a different tenant. Trace ID: 0c1c48c4-dfe3-4fc8-b61c-6e2d3cd99400 Correlation ID: 964e7358-19f1-4b81-a5b6-589752ecceb2 Timestamp: 2026-09-22 04:02:01Z; late redirect refused: The browser's answer was not accepted: no sign-in is waiting |
+| sign-in screen opens the provider page in the browser | FAILED | top activity `com.sonymobile.home/.HomeActivity` (all four launches of this case in the 13:16 run died at process start in the `ADB-JDWP Connection` thread (no `TestRunner` line, no test output); the case passed on the Sony in the plugin-only runs of 11:58 and 12:01 (build 67) and it is the same code on build 68) |
+| foreign `state` refused, matching `state` exchanged at the token endpoint, late redirect refused | FAILED | (all four launches of this case in the 13:16 run died at process start the same way; the case passed on the Sony at 12:01 (build 67) and, on build 68, in the runs of 13:12 and 13:18 (`build/p9/microsoft-sony-68.log`, `-68c.log`), whose later steps were lost to the same crash) |
 | OAUTH2 record round trip (Keystore), renewal, refusal marked `needsReauth` | ok | - |
 | revoked record refuses sessions, re-authorization restores it | ok | - |
-| real record seeded from the PC tokens; stale access token renewed at the provider | ok | seeded alias=outlook-oauth provider=microsoft staleAtSeed=true renewed=true expiresIn=3598 s in 3189 ms |
-| "Revoke sign-in": sessions fail with `AUTH_FAILED`, accounts page says "sign in again" | ok | revoked alias=outlook-oauth provider=microsoft in 1141 ms; sessions now fail with AUTH_FAILED |
-| "Sign in again": a new grant on the same record | ok | re-authorized alias=outlook-oauth provider=microsoft expiresIn=3598 s in 3069 ms |
+| real record seeded from the PC tokens; stale access token renewed at the provider | ok | seeded alias=outlook-oauth provider=microsoft staleAtSeed=true renewed=true expiresIn=3598 s in 2572 ms |
+| a session inside the plugin over the record (the binder over the plugin's store): `session.test` with XOAUTH2 at every endpoint, `messages.list` of the inbox | ok | session over alias=outlook-oauth provider=microsoft: imap/smtp ok in 5325 ms, listed 1 message(s) in 1184 ms |
+| "Revoke sign-in": sessions fail with `AUTH_FAILED`, accounts page says "sign in again" | ok | revoked alias=outlook-oauth provider=microsoft in 1094 ms; sessions now fail with AUTH_FAILED |
+| "Sign in again": a new grant on the same record | ok | re-authorized alias=outlook-oauth provider=microsoft expiresIn=3598 s in 3324 ms |
 | record removed | ok | - |
 
 Leak check: secret in logcat no, in the Gradle logs no; address in logcat no, in the Gradle logs no.
 
 The plugin's `MailOAuth` state lines of the run (ids, states, counts and durations only):
 
-    provider=microsoft browser opened
-    provider=microsoft browser opened
-    provider=microsoft redirect rejected: the redirect carries no matching state
     provider=microsoft sign-in revoked locally
     provider=microsoft provider-side revocation not done
     provider=microsoft refresh failed: AUTH_FAILED (reauthorize)
@@ -181,7 +184,7 @@ The plugin's `MailOAuth` state lines of the run (ids, states, counts and duratio
     provider=microsoft sign-in revoked locally
     provider=microsoft provider-side revocation not done
     provider=microsoft refresh failed: AUTH_FAILED (reauthorize)
-    provider=microsoft sign-in stored, expires in -59901 s
+    provider=microsoft sign-in stored, expires in -64340 s
     provider=microsoft refresh ok, expires in 3598 s
 
 #### 968e9f18: Xiaomi (HyperOS), Android 15 (API 35)
@@ -209,7 +212,7 @@ The plugin's `MailOAuth` state lines of the run (ids, states, counts and duratio
     provider=microsoft sign-in stored, expires in 7199 s
     provider=microsoft refresh failed: CONNECT_FAILED (login.microsoftonline.com: UnknownHostException)
 
-### Google (the maintainer's Android client, plugin-side steps)
+### Google (the maintainer's Android client)
 
 #### emulator-5556: AVD_API_37.1_16K (x86_64), Android 16 QPR (API 37)
 
@@ -259,14 +262,18 @@ The plugin's `MailOAuth` state lines of the run (ids, states, counts and duratio
 
 #### BH900ASK9E: Sony G8441, Android 9 (API 28)
 
-Plugin versionCode 67, host versionCode 5282, the build's Google client id (the maintainer's Android client), preset `gmail` (provider `google`), plugin-side steps only (`--plugin-only`: no real account).
+Plugin versionCode 67, host versionCode 5282, the build's Google client id (the maintainer's Android client), preset `gmail` (provider `google`), the plugin-side steps and the record the maintainer signed in with on the device under the alias `gmail-oauth` (`--signed-in-alias`, `--skip-host`: the phone keeps its P8 host state; run by the maintainer).
 
 | Step | Result | Detail |
 | --- | --- | --- |
-| sign-in screen opens the provider page in the browser | ok | top activity `android/com.android.internal.app.ResolverActivity`; browser opened for provider=google, state length 22 |
+| sign-in screen opens the provider page in the browser | ok | top activity `com.android.chrome/org.chromium.chrome.browser.customtabs.CustomTabActivity`; browser opened for provider=google, state length 22 |
 | foreign `state` refused, matching `state` exchanged at the token endpoint, late redirect refused | ok | foreign state refused: The browser's answer was not accepted: the redirect carries no matching state; matching state exchanged, provider answered (google): The sign-in failed: the authorization code was refused; sign in again - invalid_grant: Malformed auth code.; late redirect refused: The browser's answer was not accepted: no sign-in is waiting |
-| OAUTH2 record round trip (Keystore), renewal, refusal marked `needsReauth` | ok | - |
+| OAUTH2 record round trip (Keystore), renewal, refusal marked `needsReauth` | FAILED | (the `am instrument` of this case in the 12:55 run produced no runner output at all (no `TestRunner` line): the app process died at start in its `ADB-JDWP Connection` thread (a null-pointer crash of the `<pre-initialized>` process, Android 9, `logcat -b crash`); the case alone passed on the 13:07 rerun (`build/p9/roundtrip-rerun-BH900ASK9E-1.txt`) as it had in the 11:58 and 12:01 plugin-only runs; the driver now launches such a case up to four times) |
 | revoked Google record: local marker, the token posted to Google's revocation endpoint, sessions refused, re-authorization restores it | ok | - |
+| the record the maintainer signed in with on the device | ok | alias gmail-oauth: the record the maintainer signed in with on the device (no seed) |
+| "Revoke sign-in": sessions fail with `AUTH_FAILED`, accounts page says "sign in again" | ok | revoked alias=gmail-oauth provider=google in 1182 ms; sessions now fail with AUTH_FAILED |
+| "Sign in again": a new grant on the same record | skipped | a new grant needs the browser: the accounts page's "Sign in again" by the maintainer |
+| record removed | ok | - |
 
 Leak check: secret in logcat no, in the Gradle logs no; address in logcat no, in the Gradle logs no.
 
@@ -279,6 +286,9 @@ The plugin's `MailOAuth` state lines of the run (ids, states, counts and duratio
     provider=google refresh failed: AUTH_FAILED (reauthorize)
     provider=google sign-in stored, expires in 7199 s
     provider=google provider-side revocation not done
+    provider=google sign-in revoked locally
+    provider=google refresh failed: AUTH_FAILED (reauthorize)
+    provider=google provider-side revocation accepted
 
 ## Observations
 
@@ -312,6 +322,17 @@ The plugin's `MailOAuth` state lines of the run (ids, states, counts and duratio
   the refresh token to `oauth2.googleapis.com/revoke` on its background thread: the made-up
   token of the device test was refused there ("provider-side revocation not done" in the state
   lines; a real token gets "accepted"), and the local half stood regardless.
+- **The Google record.** The maintainer signed in on the Sony with the Gmail preset (the Google
+  consent of a test user of the project, which is in Testing) under the alias `gmail-oauth` and
+  ran the driver with `--signed-in-alias` at 12:55: "Revoke sign-in" posted the real refresh token
+  to `oauth2.googleapis.com/revoke`, which accepted it (`provider-side revocation accepted` in the
+  state lines, the only place a real Google token was used against the provider), the local
+  marker refused sessions with `AUTH_FAILED`, the accounts page showed "sign in again", and the
+  record was removed at the end; "sign in again" needs the browser and was reported as skipped.
+  That run predates the in-plugin session step (5b, build 68), and its host steps were skipped
+  to keep the phone's P8 host state, so no live session over a Google record was exercised; the
+  same step ran over the Microsoft record on the Sony afterwards (session over alias=outlook-oauth provider=microsoft: imap/smtp ok in 5325 ms, listed 1 message(s) in 1184 ms),
+  and the next Google sign-in on a device gets it through `--signed-in-alias` unchanged.
 - **What the host sees.** `mail.accounts.list()` carries `auth: "xoauth2"` and the `oauth`
   object with exactly `provider`, `authorizedAt`, `expiresAt` and `needsReauth`; no key of the
   entry matches token / secret / password, and the token never left the plugin process.
@@ -337,20 +358,32 @@ The plugin's `MailOAuth` state lines of the run (ids, states, counts and duratio
   passed; the driver no longer presses HOME there, and the test ends a case whose screen was
   finished underneath the browser as a skipped assumption naming the cause rather than as a
   timeout. The Microsoft runs and the two other devices never hit it.
+- **Android 9's crash at process start.** From the 12:55 run on, the instrumented app process
+  on the Sony died before the runner started on most launches, in bursts of up to four in a row:
+  `logcat -b crash` shows a null-pointer crash in the `ADB-JDWP Connection` thread of the still
+  `<pre-initialized>` process, no `TestRunner` line and no test output, only
+  `INSTRUMENTATION_RESULT: shortMsg=Process crashed.`; a leftover `...angus.mail.test` process
+  from the 12:55 run also made the next `am instrument` hang until both packages were
+  force-stopped. Nothing in the plugin runs before the crash (the process has not reached the
+  application class), the same cases passed on the Sony at 11:58 and 12:01 and on the two
+  emulators throughout, and the phone's `adb usb` restart did not change it. The driver now
+  launches a case up to four times when the process crashed without any runner output; the
+  Sony's Microsoft table above is the 13:16 run, whose browser and redirects rows lost all four
+  launches and carry the note, while its record steps (seed, session, revoke, re-authorization,
+  removal) all passed.
 - **Secrets.** No run printed a token or the address to logcat or to the Gradle logs; the
   `MailOAuth` state lines carry the provider, the outcome and seconds only (audited by
   `SecretAuditTest`).
 
 ## Not done
 
-- **Google, the real record**: no refresh token can be obtained on the PC for the Android client
-  (no loopback redirect), so the maintainer signs in once on a device (the accounts page, Gmail
-  preset, "Sign in with Google (browser)", the Testing-status consent of the project's test
-  user) under an alias, then `py -X utf8 .python/run_oauth_device.py GMAIL_A <serial>
-  --signed-in-alias <alias>` runs the host status and session scripts live, the revocation (this
-  time a real token reaches `oauth2.googleapis.com/revoke`), the host scripts after it and the
-  removal; "sign in again" needs the browser again and is reported as skipped. In Testing the
-  refresh token expires after 7 days, which the plugin reports as "sign in again".
+- **A live session over a Google record** (`mail.connect(alias)` on the host, or the in-plugin
+  session step 5b): the maintainer's record was revoked and removed by the 12:55 run before
+  step 5b existed and with the host steps skipped; the next sign-in on a device (the accounts
+  page, Gmail preset, "Sign in with Google (browser)", the Testing-status consent of a test user)
+  followed by `py -X utf8 .python/run_oauth_device.py GMAIL_A <serial> --signed-in-alias <alias>`
+  (`--skip-host` on the Sony, `--uninstall-host` on an emulator) covers it. In Testing the refresh
+  token expires after 7 days, which the plugin reports as "sign in again".
 - **A real browser sign-in end to end on a device** (typing the maintainer's password into the
   Custom Tab): not automated on purpose; the code path after the redirect is the one exercised
   by step 2 with a made-up code, and the grant storage is the one exercised by the seed.

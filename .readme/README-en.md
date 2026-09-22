@@ -232,6 +232,7 @@ The plugin's plans and progress are maintained as a checkable list in ROADMAP.md
 _2026/09/22_
 
 - `Fix` The `closed` event of a watch on a session close always names the reason `closed`: the session's worker thread could stop some of the watches first with `session-closed` (seen once in the connected suite on the API 24 emulator).
+- `Improvement` The release build carries the maintainer's Google OAuth 2.0 client id as well (the Android client registered on 2026-09-22), so the Gmail preset offers "Sign in with Google (browser)". The Google project is in Testing: only its test users can sign in and their refresh tokens expire after 7 days (the plugin then shows "sign in again"); other Google accounts get Google's access-denied page, and the token and app-password paths stay as before.
 
 #### v1.2.0
 
