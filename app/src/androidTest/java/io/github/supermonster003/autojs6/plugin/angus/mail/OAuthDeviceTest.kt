@@ -37,6 +37,8 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
 
 /**
  * The browser sign-in on a device (roadmap P9): the sign-in screen opens the provider's page in
@@ -189,7 +191,9 @@ class OAuthDeviceTest {
     }
 
     @Test
-    fun aRevokedRecordRefusesEverySessionUntilANewSignIn() = aRevokedRecordRefusesEverySession(OAuthProviderId.MICROSOFT, ACCOUNT_JSON)
+    fun aRevokedRecordRefusesEverySessionUntilANewSignIn() {
+        aRevokedRecordRefusesEverySession(OAuthProviderId.MICROSOFT, ACCOUNT_JSON)  // no revocation endpoint: the local half is the whole of it
+    }
 
     /**
      * The same with a Google record: Google offers a revocation endpoint, so the revoker also posts
@@ -200,11 +204,15 @@ class OAuthDeviceTest {
     @Test
     fun aRevokedGoogleRecordRefusesEverySessionUntilANewSignIn() {
         assumeConfigured(OAuthProviderId.GOOGLE)
-        aRevokedRecordRefusesEverySession(OAuthProviderId.GOOGLE, GOOGLE_ACCOUNT_JSON)
-        Thread.sleep(6_000)  // the background revocation call reaches Google and logs its outcome before the instrumentation ends the process
+        val providerSide = aRevokedRecordRefusesEverySession(OAuthProviderId.GOOGLE, GOOGLE_ACCOUNT_JSON)
+        // the made-up token reaches Google's revocation endpoint on the revoker's background thread; waiting for the outcome
+        // (refused) keeps the state line ahead of the end of the instrumentation process
+        val accepted = requireNotNull(providerSide) { "a configured Google client posts the revocation" }.get(30, TimeUnit.SECONDS)
+        assertFalse("Google does not accept a made-up token", accepted)
     }
 
-    private fun aRevokedRecordRefusesEverySession(provider: OAuthProviderId, accountJson: String) {
+    /** Returns the provider-side revocation request of the revoked record (null when nothing was posted). */
+    private fun aRevokedRecordRefusesEverySession(provider: OAuthProviderId, accountJson: String): Future<Boolean>? {
         val store = AccountStores.of(context)
         val alias = "oauth-device-${UUID.randomUUID().toString().take(8)}"
         val now = System.currentTimeMillis()
@@ -213,7 +221,7 @@ class OAuthDeviceTest {
         try {
             assertEquals("access-live", AccountSecrets.of(context).withUsableSecret(alias) { _, chars -> String(chars) })
 
-            TokenRevoker.revoke(context, alias)  // Microsoft has no revocation endpoint (the local half is the whole of it); Google is asked on a background thread
+            val providerSide = TokenRevoker.revoke(context, alias)  // Microsoft has no revocation endpoint (the local half is the whole of it); Google is asked on a background thread
 
             val stored = store.withSecret(alias) { _, chars -> OAuthTokens.parse(String(chars)) }
             assertEquals(TokenRevoker.REVOKED_TOKENS.accessToken, stored.accessToken)
@@ -233,6 +241,7 @@ class OAuthDeviceTest {
             assertEquals("access-new", AccountSecrets.of(context).withUsableSecret(alias) { _, chars -> String(chars) })
             assertFalse(MailAccountOptions.parse(store.get(alias)!!.accountJson, SecretKind.OAUTH2).oauth!!.needsReauth)
             Log.i(TAG, "revoked record refused, re-authorization restored it (provider=${provider.id})")
+            return providerSide
         } finally {
             store.remove(alias)
         }

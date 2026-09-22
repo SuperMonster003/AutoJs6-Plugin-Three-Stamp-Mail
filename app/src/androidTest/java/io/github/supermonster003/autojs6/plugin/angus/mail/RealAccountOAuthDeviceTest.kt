@@ -40,6 +40,7 @@ import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -106,6 +107,28 @@ class RealAccountOAuthDeviceTest {
         Log.i(TAG, "seeded alias=$alias provider=${seed.provider.id} staleAtSeed=$stale renewed=${usable.accessToken != seed.tokens.accessToken} expiresIn=${(usable.expiresAt - System.currentTimeMillis()) / 1000} s in ${System.currentTimeMillis() - started} ms")
     }
 
+    /**
+     * The refresh path over the record the maintainer signed in with (the seed covers it for a seeded
+     * record): the stored access token is made stale (the refresh token stays) and the next use renews
+     * it at the provider, as every alias session does once the hour is over.
+     */
+    @Test
+    fun renewsAStaleAccessTokenAtTheProvider() {
+        val alias = requireAlias()
+        val saved = requireNotNull(store.get(alias)) { "the account '$alias' must be seeded or signed in first" }
+        val provider = MailAccountOptions.parse(saved.accountJson, saved.secretKind).oauth!!.providerId
+        val tokens = store.withSecret(alias) { _, chars -> OAuthTokens.parse(String(chars)) }
+        assertNotNull("the record carries a refresh token", tokens.refreshToken)
+        val stale = store.put(alias, saved.accountJson, SecretKind.OAUTH2, tokens.copy(expiresAt = 0).toJson().toCharArray())
+        val started = System.currentTimeMillis()
+        val usable = AccountSecrets.of(context).usableTokens(stale)
+        assertFalse("the stale token is renewed at the provider", usable.expiresWithin(System.currentTimeMillis()))
+        val after = MailAccountOptions.parse(store.get(alias)!!.accountJson, SecretKind.OAUTH2).oauth!!
+        assertEquals("the link carries the new expiry", usable.expiresAt, after.expiresAt)
+        assertFalse(after.needsReauth)
+        Log.i(TAG, "renewed alias=$alias provider=${provider.id} replaced=${usable.accessToken != tokens.accessToken} expiresIn=${(usable.expiresAt - System.currentTimeMillis()) / 1000} s in ${System.currentTimeMillis() - started} ms")
+    }
+
     @Test
     fun opensASessionOverTheSavedAlias() {
         val alias = requireAlias()
@@ -149,7 +172,7 @@ class RealAccountOAuthDeviceTest {
         val saved = requireNotNull(store.get(alias)) { "the account '$alias' must be seeded first" }
         val provider = MailAccountOptions.parse(saved.accountJson, saved.secretKind).oauth!!.providerId
         val started = System.currentTimeMillis()
-        TokenRevoker.revoke(context, alias)
+        val providerSide = TokenRevoker.revoke(context, alias)
         try {
             AccountSecrets.of(context).withUsableSecret(alias) { _, _ -> fail("a revoked record must not yield a token") }
         } catch (e: MailException) {
@@ -159,7 +182,22 @@ class RealAccountOAuthDeviceTest {
         assertTrue(revokedLink.needsReauth)
         assertEquals(0L, revokedLink.expiresAt)
         assertSummary(alias, needsReauth = true, provider = provider)
-        Log.i(TAG, "revoked alias=$alias provider=${provider.id} in ${System.currentTimeMillis() - started} ms; sessions now fail with ${MailErrorCode.AUTH_FAILED}")
+        val localMs = System.currentTimeMillis() - started
+        // the provider-side half runs on the revoker's background thread and the instrumentation ends this process with the
+        // test: wait for its outcome (a provider with a revocation endpoint must accept the real token; Microsoft has none)
+        val endpoint = OAuthClients.of(context).provider(provider).revocationEndpoint
+        val providerSideOutcome = when {
+            providerSide == null -> "no provider-side revocation (no token or no client)"
+            endpoint == null -> {
+                providerSide.get(30, TimeUnit.SECONDS)
+                "no revocation endpoint at the provider (the local half is the whole of it)"
+            }
+            else -> {
+                assertTrue("the provider must accept the real token's revocation", providerSide.get(30, TimeUnit.SECONDS))
+                "provider-side revocation accepted in ${System.currentTimeMillis() - started} ms"
+            }
+        }
+        Log.i(TAG, "revoked alias=$alias provider=${provider.id} in $localMs ms; sessions now fail with ${MailErrorCode.AUTH_FAILED}; $providerSideOutcome")
     }
 
     @Test

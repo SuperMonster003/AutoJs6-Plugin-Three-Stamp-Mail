@@ -10,20 +10,24 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.core.oauth.OAuthToken
 import io.github.supermonster003.autojs6.plugin.angus.mail.core.oauth.TokenClient
 import io.github.supermonster003.autojs6.plugin.angus.mail.store.AccountStores
 import java.util.concurrent.Executors
+import java.util.concurrent.Future
 
 /**
  * "Revoke sign-in" of the accounts page (roadmap P9): the record keeps its document but its
  * tokens are replaced by an empty, `needsReauth` marker at once (so nothing can use them any
  * more even if the provider is unreachable), and the provider is asked to revoke the refresh
  * token on a background thread when it offers a revocation endpoint (Google does; Microsoft
- * personal accounts revoke through the account's privacy page, which the dialog says).
+ * personal accounts revoke through the account's privacy page, which the dialog says). The
+ * provider-side request is returned as a [Future] of whether the provider accepted it (null when
+ * nothing was posted: no token, no client id), so that a device test can wait for its outcome
+ * before the instrumentation ends the process; the accounts page does not wait.
  */
 object TokenRevoker {
 
     private const val TAG = "MailOAuth"
     private val executor = Executors.newSingleThreadExecutor { runnable -> Thread(runnable, "mail-oauth-revoke").apply { isDaemon = true } }
 
-    fun revoke(context: Context, alias: String) {
+    fun revoke(context: Context, alias: String): Future<Boolean>? {
         val store = AccountStores.of(context.applicationContext)
         val saved = store.get(alias) ?: throw MailException(MailErrorCode.ACCOUNT_NOT_FOUND, "no saved account named '$alias'", retryable = false)
         if (saved.secretKind != SecretKind.OAUTH2) throw MailException.invalidArgument("'$alias' has no browser sign-in to revoke")
@@ -34,12 +38,13 @@ object TokenRevoker {
         store.put(saved.alias, AccountSecrets.withLink(saved.accountJson, link.copy(expiresAt = 0, needsReauth = true)), SecretKind.OAUTH2, REVOKED_TOKENS.toJson().toCharArray())
         Log.i(TAG, "provider=${link.provider} sign-in revoked locally")
         val clients = OAuthClients.of(context)
-        val refreshToken = tokens?.refreshToken ?: tokens?.accessToken ?: return
-        val clientId = clients.clientIdOrNull(link.providerId) ?: return
+        val refreshToken = tokens?.refreshToken ?: tokens?.accessToken ?: return null
+        val clientId = clients.clientIdOrNull(link.providerId) ?: return null
         val provider = clients.provider(link.providerId)
-        executor.execute {
+        return executor.submit<Boolean> {
             val done = TokenClient(HttpsFormPoster()).revoke(provider, clientId, refreshToken)
             Log.i(TAG, "provider=${link.provider} provider-side revocation ${if (done) "accepted" else "not done"}")
+            done
         }
     }
 

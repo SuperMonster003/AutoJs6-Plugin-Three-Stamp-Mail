@@ -13,7 +13,7 @@ stores its grant; the host sees the alias alone.
 GMAIL_A (the Google provider, `googleClientId`): no PC refresh token exists for an Android client, so either
 `--plugin-only` runs steps 1-4 alone (the Google sign-in page, the redirect path against Google's token endpoint,
 the records; no real account) or `--signed-in-alias <alias>` takes the record the maintainer signed in with on
-the device (the plugin's accounts page, Gmail preset, "Sign in with Google"): steps 1-4, 5b, 6, 7 and 9 run over that
+the device (the plugin's accounts page, Gmail preset, "Sign in with Google"): steps 1-4, 5a, 5b, 6, 7 and 9 run over that
 alias, step 5 (the seed) does not exist and step 8 (a new grant) needs the browser again, so it is skipped and the
 account is removed at the end unless --keep. The Google methods of OAuthDeviceTest are
 opensTheGooglePageInTheBrowser, refusesAForeignStateAndExchangesTheMatchingOneAtGoogle and
@@ -32,6 +32,9 @@ Steps (each recorded in build/p9/oauth-<profile>-<serial>.json):
      (Keystore round trip, renewal, refusal marking, revocation, re-authorization; scripted or local only)
   5. RealAccountOAuthDeviceTest#seedsASignedInAccount: the PC-obtained tokens become the alias's OAUTH2 record;
      the stale access token is renewed at the provider (the same refresh every session performs)
+  5a. (--signed-in-alias) RealAccountOAuthDeviceTest#renewsAStaleAccessTokenAtTheProvider: the record's access token
+     made stale in the store, renewed at the provider with the real refresh token (the refresh path; the seed covers it
+     for a seeded record)
   5b. RealAccountOAuthDeviceTest#opensASessionOverTheSavedAlias: what mail.connect(alias) does on the host, inside
      the plugin process (the binder over the plugin's store, session.test with XOAUTH2 at every endpoint,
      messages.list of the inbox); the live half of the evidence on a phone whose host must stay (--skip-host)
@@ -298,6 +301,11 @@ def main():
         passed = True
         summary["steps"]["signedIn"] = {"passed": True, "log": [f"alias {args.alias}: the record the maintainer signed in with on the device (no seed)"]}
         log(f"signed-in alias {args.alias}: the host steps and the revocation run over the maintainer's record")
+        # 5a. the refresh path over the signed-in record: its access token made stale, renewed at the provider with the real
+        # refresh token (the seed does this for a seeded record)
+        passed, _ = instrument(args.serial, REAL_TEST_CLASS, "renewsAStaleAccessTokenAtTheProvider", {"mailAlias": args.alias}, ("RealAccountOAuth", "renewed alias="))
+        summary["steps"]["renew"] = {"passed": passed, "log": marker_lines(args.serial, "RealAccountOAuth")[-1:]}
+        log(f"renew: {'ok' if passed else 'FAILED'}; " + " | ".join(summary["steps"]["renew"]["log"]))
     if not passed:
         # keep what was collected (a device without network stops here) for the evidence document
         summary["leakCheck"] = {"secretInLogcat": any(s in adb(args.serial, "logcat", "-d", check=False) for s in secrets)}

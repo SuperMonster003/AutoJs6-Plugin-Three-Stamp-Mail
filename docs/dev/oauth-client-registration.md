@@ -171,10 +171,16 @@ on 2026-09-22 on the Sony G8441: the accounts page, the Gmail preset, "Sign in w
 `py -X utf8 .python/run_oauth_device.py GMAIL_A BH900ASK9E --signed-in-alias gmail-oauth --skip-host`
 (the maintainer's run of 12:55) revoked the sign-in with the real refresh token posted to
 `oauth2.googleapis.com/revoke`, which accepted it, and removed the record; "sign in again" needs
-the browser and is reported as skipped. What that run did not cover is a live session over the
-record (the in-plugin session step of build 68 came after it, and the host steps were skipped
-to keep the phone's P8 state): the next sign-in on a device followed by the same command covers
-it. In Testing the refresh token expires after 7 days, which the plugin shows as "sign in again".
+the browser and is reported as skipped. The maintainer then signed in again on the API 24
+emulator (AVD_API_24) under the same alias, and
+`py -X utf8 .python/run_oauth_device.py GMAIL_A emulator-5554 --signed-in-alias gmail-oauth`
+(13:55) ran the full signed-in mode there: a session inside the plugin over the record (IMAP and
+SMTP with XOAUTH2, the newest message listed), the host's `mail.accounts.list()` and
+`mail.connect(alias)` -> `test` -> `fetch` live, the revocation, the host's refusal after it and
+the removal (`docs/dev/p9-oauth2-evidence.md`). Still open: a renewal at
+`oauth2.googleapis.com/token` with the real refresh token (that run's access token was minutes
+old; the driver's step 5a of build 70 makes it stale first, so the next sign-in covers it). In
+Testing the refresh token expires after 7 days, which the plugin shows as "sign in again".
 
 ## References
 
