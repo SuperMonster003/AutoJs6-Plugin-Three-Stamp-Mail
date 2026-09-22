@@ -52,7 +52,7 @@ All mail traffic stays inside the plugin process. AutoJs6 discovers the plugin t
 
 ******
 
-Version 1.2.0 adds the browser sign-in for Google and Microsoft accounts (roadmap P9) on top of the background watches of 1.1.0 (roadmap P8); every item of phases P0 to P8 shipped with 1.0.0 to 1.1.0, with evidence in [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Requires AutoJs6 6.8.0 (build 5282) or later; the "On mail arrived" task needs the host build with mail contract version 2; the full script API reference is in the [AutoJs6 documentation](https://docs.autojs6.com/#/mail).
+Version 1.2.1 adds the browser sign-in for Google and Microsoft accounts (roadmap P9) on top of the background watches of 1.1.0 (roadmap P8); every item of phases P0 to P8 shipped with 1.0.0 to 1.1.0, with evidence in [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Requires AutoJs6 6.8.0 (build 5282) or later; the "On mail arrived" task needs the host build with mail contract version 2; the full script API reference is in the [AutoJs6 documentation](https://docs.autojs6.com/#/mail).
 
 ******
 
@@ -227,6 +227,12 @@ The plugin's plans and progress are maintained as a checkable list in ROADMAP.md
 
 ******
 
+#### v1.2.1
+
+_2026/09/22_
+
+- `Fix` The `closed` event of a watch on a session close always names the reason `closed`: the session's worker thread could stop some of the watches first with `session-closed` (seen once in the connected suite on the API 24 emulator).
+
 #### v1.2.0
 
 _2026/09/22_
@@ -244,13 +250,6 @@ _2026/09/21_
 - `Feature` Background watches (mail roadmap P8): the settings gained a Watches page that configures up to 16 watches (`MAX_TRIGGERS`) on saved accounts, each with a name, the account alias, the folder, the mode (auto, IDLE or polling with its interval) and optional sender and subject filters, stored as `mail-triggers/triggers.json` under the no-backup directory; the `specialUse` foreground service `MailWatchService` runs the enabled watches on the P5 watchers (IDLE where the server pushes, polling elsewhere, reconnects with backoff, an immediate reconnect on a network change) while no script runs and shows one low-priority notification; every new message is added to the watch's record list (the last 100 envelope summaries, `MAX_TRIGGER_RECORDS`, never a body) and the page shows the connection state, the last error, the records and a reconnect action; the boot switch (off by default) enables the `BOOT_COMPLETED` receiver that restarts the service after a reboot
 - `Feature` Mail contract version 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, capability feature `backgroundWatch`): the host subscribes to a configured watch with a generation and an optional filter, gets the current status at once and then `onStatus` (stopped, connecting, connected or failed with the reason and the last error) and `onMail(generation, seq, event)` for every matching message, the `mail` event carrying the watch id, alias, address, folder, the message envelope and `receivedAt`; a watch takes at most 4 subscribers (`MAX_TRIGGER_SUBSCRIBERS`), a disabled or unknown watch and unusable options are refused with a `stopped` status whose reason is `refused`, `update` replaces the subscriber's filter and `stop` ends only the subscription; without a live subscriber every event goes to AutoJs6 as the explicit broadcast `org.autojs.autojs6.action.MAIL_TRIGGER` behind its `PLUGIN` signature permission, which starts the host's "On mail arrived" task even when no script is running (`MailTriggerBinderTest` on an API 37 AVD; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)
 - `Feature` The mail core gained the trigger documents and rules shared by the page, the service and the Binder (`TriggerConfig`, `TriggerFilter` with case-insensitive sender and subject substrings, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) and the ceilings `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS` and `MIN_TRIGGER_INTERVAL_MS` (3 s, the host's throttle per task), and the watchers report `onConnected` so that a background watch shows `connected` as soon as its folder is open
-
-#### v1.0.1
-
-_2026/09/21_
-
-- `Fix` Outlook.com POP3 with an OAuth 2.0 token (mail roadmap P6 provider matrix, 2026-09-21): the server answers the one-line `AUTH XOAUTH2 <base64>` that Angus Mail sends by default with `-ERR Protocol error. Connection is closed.` and drops the connection, so a POP3 account on the `outlook` preset failed with `AUTH_FAILED`; the provider presets gained `pop3Xoauth2TwoLine` (catalog version 3, true for `outlook` and `office365`) and the mail core now sends the bare command and the base64 response after the server's `+` continuation for these presets and for any Microsoft POP3 host entered without a preset (`Pop3OAuthScriptedTest`, 5 cases; verified against the real account on the JVM and on an API 33 device)
-- `Improvement` Outlook.com column of the provider matrix (mail roadmap P6) and the P5 device rows, run with a token from the maintainer's Entra public-client registration on one personal account: session test, folders (roles from the conventional names, no SPECIAL-USE), send (`sentCopy = server`, Message-ID rewritten by the server), listing (visible after about 7 s), server searches (every key hits; a Chinese subject is answered correctly but the server takes minutes over a 2300-message inbox), body, attachment, flags (custom keywords not stored), folder creation, `MOVE`, watch (IDLE pushes within about 10 s of the submission, the fastest of the seven providers), POP3 (5-character UIDLs, the just-sent message in the view) and cleanup (sent copies addressable by UID) all pass; on a Redmi (API 33) the baseline, plugin-kill and Wi-Fi-off watch scenarios arrive in 9 to 14 s with the same event sequences as Gmail; the preset notes, the README and the evidence files record the differences, including the `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` refusal Microsoft gives newer personal mailboxes
 
 ##### For more release history
 

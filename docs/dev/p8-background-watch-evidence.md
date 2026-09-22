@@ -1,8 +1,8 @@
 # P8 background-watch evidence (MailWatchService, WatchKeeper, the host's "On mail arrived" task, device matrix)
 
 Evidence for roadmap P8 collected on 2026-09-21 (all emulator rows, the first three Sony rows)
-and 2026-09-22 (the Sony net-off and screen-off rows, after the maintainer unlocked the phone) in
-this repository (Gradle 9.5.0, AGP 9.3.2, Kotlin 2.3.20, JDK 21, Windows 11) and in the host
+and 2026-09-22 (the Sony net-off and screen-off rows after the maintainer unlocked the phone, and
+the Sony reboot resume after the unlock that followed the reboot) in this repository (Gradle 9.5.0, AGP 9.3.2, Kotlin 2.3.20, JDK 21, Windows 11) and in the host
 repository (AutoJs6 6.8.0, build 5282). The plugin side is build 59 (`996e07f`, the P8 feature)
 plus the driver, test and store fixes of build 60 (`69d6cbe`, the 1.1.0 release commit; the Sony
 reruns used its debug APK, versionCode 60); the host side is `6ad80448f` (contract version 2, the
@@ -20,7 +20,7 @@ the secret and the address afterwards ("leak check clean, address in logcat no" 
 | Serial | Device | Android | Notes |
 | --- | --- | --- | --- |
 | emulator-5556 | AVD_API_37.1_16K (x86_64) | 16 QPR (API 37) | all six scenarios; adbd as root (a reboot drops it, the driver restores it: the shell may then start the non-exported service directly, `run-as` from the background is refused by the API 31+ foreground-service restriction) |
-| BH900ASK9E | Sony G8441 | 9 (API 28) | baseline, kill-host, kill-plugin (2026-09-21), net-off and screen-off (2026-09-22, build 60: the build-59 crash loop of net-off did not reproduce); reboot: the driver rebooted the phone with the boot switch on and the service running, but the phone boots into its pattern lock, where credential-encrypted storage stays locked (no `BOOT_COMPLETED` for a non-direct-boot-aware receiver, no data directory, `run-as` answers "corrupt installation") until the maintainer unlocks it; the driver's `--after-reboot` mode then finishes the scenario (below) |
+| BH900ASK9E | Sony G8441 | 9 (API 28) | all six scenarios: baseline, kill-host, kill-plugin (2026-09-21), net-off and screen-off (2026-09-22, build 60: the build-59 crash loop of net-off did not reproduce), reboot (rebooted 2026-09-21 with the boot switch on and the service running; the phone boots into its pattern lock, where credential-encrypted storage stays locked (no `BOOT_COMPLETED` for a non-direct-boot-aware receiver, no data directory, `run-as` answers "corrupt installation") until the maintainer unlocks it; resumed with `--after-reboot` on 2026-09-22 after the unlock, below) |
 
 ## Method
 
@@ -87,6 +87,8 @@ and the service must come back before mail #1).
 | screen-off | BH900ASK9E | #2 | poll | 41.0 s | 42.0 s | 1030 ms | 1 | - |
 | reboot | emulator-5556 | #1 | poll | 58.0 s | 59.0 s | 1045 ms | 1 | - |
 | reboot | emulator-5556 | #2 | poll | 52.2 s | 52.5 s | 347 ms | 1 | - |
+| reboot | BH900ASK9E | #1 | poll | 46.2 s | 50.8 s | 4590 ms | 1 | - |
+| reboot | BH900ASK9E | #2 | poll | 47.5 s | 48.4 s | 956 ms | 1 | - |
 
 "Plugin saw it after" and "Script ran after" count from the moment the PC's SMTP submission
 returned; "Launch delay" is the time from the plugin's broadcast to the script's first statement.
@@ -129,6 +131,8 @@ engine on the Android 9 phone).
 - **reboot / emulator-5556**: boot receiver: boot completed, watches enabled=true service started=true; connected 43.8 s after boot. broadcasts 2, receiver events 2, script launches 2, final state connected (poll), service in the foreground at the end yes, plugin threads 19, secret in logcat no, address in logcat no.
   - batterystats (plugin uid, since the run start): Wifi kernel active time: 2m 17s 890ms (70.6%); Wifi data received: 631.01KB; Wifi data sent: 382.97KB
   - keeper states: state=connected mode=poll
+- **reboot / BH900ASK9E**: resumed after the unlock 10.2 h after the boot; boot evidence: receiver line not in logcat; MailWatchService created 163 s after the boot (createdFromFg=false, lastStartId=1, foreground=True); watch connected (poll) at the resume, service in the foreground yes. broadcasts 2, receiver events 2, script launches 2, final state connected (poll), service in the foreground at the end yes, plugin threads 16, secret in logcat no, address in logcat no.
+  - keeper states: state=connecting mode=poll -> state=connected mode=poll
 
 ## Observations
 
@@ -163,7 +167,18 @@ engine on the Android 9 phone).
   run within 180 s, keeps the run's summary (`rebootedAt`, the subject filter) and exits with
   code 2; `--scenario reboot --after-reboot --no-install` resumes once the phone is unlocked
   (the boot receiver's line, the service, the two mails), so the Sony row needs the maintainer's
-  unlock and one more run rather than a new reboot.
+  unlock and one more run rather than a new reboot. On the Sony the resume ran on 2026-09-22
+  ten hours after the boot (the phone had booted at 01:35 and the maintainer unlocked it later;
+  the service record shows `MailWatchService` created 163 s after the boot by a background
+  start, `createdFromFg=false`, start id 1, in the foreground since, which is the receiver's
+  doing after the unlock): by then the receiver's own log line had rolled out of the phone's
+  256 KB main buffer, so the driver's fallback recorded that service record as the boot evidence
+  (`bootReceiverLineEvicted`); the watch was `connected` (poll) at the resume and both mails ran
+  the script (50.8 s and 48.4 s, one launch each). The pre-reboot summary of the 2026-09-21 22:13
+  run did not exist (that run used the driver before `--after-reboot` did), so `rebootedAt` was
+  taken from the phone's boot time and the subject filter from the watch in the plugin's
+  `triggers.json`. The phone's main buffer is 8 MB now (`logcat -G 8M`, accepted without root
+  on Android 9), so a later rerun keeps the receiver's line itself.
 - **screen-off** (emulator): with the screen off and the device forced into deep idle for ten
   minutes, the foreground service kept its polling connection (the keeper stayed `connected`, no
   reconnect line), the mail sent while idle was seen 44.7 s later and the script ran 0.35 s after
@@ -196,11 +211,11 @@ engine on the Android 9 phone).
 
 ## Not done
 
-- Sony G8441 reboot: rebooted by the driver on 2026-09-21 22:13 with the boot switch on and the
-  service running; the boot receiver cannot run before the maintainer unlocks the pattern lock,
-  and the `--after-reboot` resume (mails #1 and #2 after the unlock) is still to be run. The
-  screen-off rows are ten minutes of forced idle on both devices, not the thirty minutes the
-  roadmap named; the P5 matrix covers the longer Doze windows of a script-level watch.
+- Sony G8441 reboot: the receiver's own log line (the emulator row has it) was not captured on
+  the phone, the service record stands in for it (above); a rerun with the enlarged buffer would
+  record the line, at the price of another reboot into the pattern lock. The screen-off rows are
+  ten minutes of forced idle on both devices, not the thirty minutes the roadmap named; the P5
+  matrix covers the longer Doze windows of a script-level watch.
 - Gmail and 163 columns of the matrix (the roadmap named QQ + Gmail): the Gmail token of the
   test account had expired again at the time of the run and 163's SMTP refused the sender
   account; the IDLE path of the keeper is the P5 `IdleWatcher` unchanged and was exercised on

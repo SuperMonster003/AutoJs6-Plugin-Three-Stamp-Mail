@@ -52,7 +52,7 @@ Angus Mail 为 AutoJs6 脚本提供全局对象 `mail`, 用于发送邮件, 列�
 
 ******
 
-版本 1.2.0 在 1.1.0 的后台守望 (路线图 P8) 之上新增 Google 与 Microsoft 账号的浏览器登录 (路线图 P9); P0 至 P8 各阶段的全部条目已随 1.0.0 至 1.1.0 发布, 证据见 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). 需要 AutoJs6 6.8.0 (build 5282) 或更高版本; "邮件到达时" 任务需要携带邮件契约版本 2 的宿主构建; 完整的脚本 API 参考见 [AutoJs6 文档](https://docs.autojs6.com/#/mail).
+版本 1.2.1 在 1.1.0 的后台守望 (路线图 P8) 之上新增 Google 与 Microsoft 账号的浏览器登录 (路线图 P9); P0 至 P8 各阶段的全部条目已随 1.0.0 至 1.1.0 发布, 证据见 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). 需要 AutoJs6 6.8.0 (build 5282) 或更高版本; "邮件到达时" 任务需要携带邮件契约版本 2 的宿主构建; 完整的脚本 API 参考见 [AutoJs6 文档](https://docs.autojs6.com/#/mail).
 
 ******
 
@@ -227,6 +227,12 @@ minimum host build: 5282 (6.8.0)
 
 ******
 
+#### v1.2.1
+
+_2026/09/22_
+
+- `修复` 会话关闭时守望的 `closed` 事件原因固定为 `closed` (此前工作线程可能先以 `session-closed` 停掉部分守望)
+
 #### v1.2.0
 
 _2026/09/22_
@@ -244,13 +250,6 @@ _2026/09/21_
 - `新增` 后台守望页面, 支持为已保存账户配置最多 16 个守望, 无脚本运行时仍可通过 IDLE 或轮询监听新邮件, 断线后自动重连, 保留最近 100 条邮件摘要并支持开机自启 (默认关闭)
 - `新增` 后台守望支持唤醒 AutoJs6 的 "邮件到达时" 任务, 宿主可订阅连接状态及邮件事件并更新筛选条件 (每个守望最多 4 个订阅者)
 - `新增` 后台守望支持按发件人及主题进行不区分大小写的子串筛选, 文件夹打开后显示已连接状态, 宿主每项任务的最短触发间隔为 3 s
-
-#### v1.0.1
-
-_2026/09/21_
-
-- `修复` Outlook.com 及 Microsoft 365 的 POP3 账户使用 OAuth 2.0 令牌登录时出现 AUTH_FAILED 的问题, 兼容 Microsoft 服务器的两步 XOAUTH2 认证
-- `优化` 补充 Outlook.com 的 OAuth 2.0 兼容性说明, 包含服务器保存已发送副本, 中文搜索延迟及不保留自定义关键字等差异 (部分个人邮箱可能被服务器拒绝 SMTP 登录)
 
 ##### 更多发行历史
 

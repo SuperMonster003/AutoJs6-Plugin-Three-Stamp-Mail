@@ -1,14 +1,24 @@
 """Collects the browser sign-in device evidence (mail roadmap P9) without typing a password on the device.
 
 Usage: python .python/run_oauth_device.py <PROFILE> <serial> [--alias outlook-oauth] [--no-install] [--keep]
-       [--skip-host] [--skip-sign-in]
+       [--skip-host] [--skip-sign-in] [--plugin-only] [--signed-in-alias <alias>]
 
-PROFILE is HOTMAIL_A / HOTMAIL_B / OUTLOOK_A (or GMAIL_A once a Google client exists): a profile whose refresh
-token `.python/outlook_oauth_login.py` wrote to build/outlook-token.properties with the client id this build
-carries (`microsoftClientId` of the git-ignored oauth-clients.properties; a refresh token is bound to its
-client). The address comes from the git-ignored mail-test-accounts.properties. Tokens reach the device only as
-instrumentation arguments (base64, so the device shell never sees their characters) and are stored by the
-plugin exactly as a browser sign-in stores its grant; the host sees the alias alone.
+PROFILE is HOTMAIL_A / HOTMAIL_B / OUTLOOK_A: a profile whose refresh token `.python/outlook_oauth_login.py`
+wrote to build/outlook-token.properties with the client id this build carries (`microsoftClientId` of the
+git-ignored oauth-clients.properties; a refresh token is bound to its client). The address comes from the
+git-ignored mail-test-accounts.properties. Tokens reach the device only as instrumentation arguments (base64,
+so the device shell never sees their characters) and are stored by the plugin exactly as a browser sign-in
+stores its grant; the host sees the alias alone.
+
+GMAIL_A (the Google provider, `googleClientId`): no PC refresh token exists for an Android client, so either
+`--plugin-only` runs steps 1-4 alone (the Google sign-in page, the redirect path against Google's token endpoint,
+the records; no real account) or `--signed-in-alias <alias>` takes the record the maintainer signed in with on
+the device (the plugin's accounts page, Gmail preset, "Sign in with Google"): steps 1-4, 6, 7 and 9 run over that
+alias, step 5 (the seed) does not exist and step 8 (a new grant) needs the browser again, so it is skipped and the
+account is removed at the end unless --keep. The Google methods of OAuthDeviceTest are
+opensTheGooglePageInTheBrowser, refusesAForeignStateAndExchangesTheMatchingOneAtGoogle and
+aRevokedGoogleRecordRefusesEverySessionUntilANewSignIn (the last one posts the made-up token to Google's
+revocation endpoint on the plugin's background thread; the `MailOAuth` state line records the outcome).
 
 Steps (each recorded in build/p9/oauth-<profile>-<serial>.json):
   1. install the plugin debug + androidTest APKs and the host debug (split for the device's ABI) + androidTest
@@ -54,6 +64,10 @@ AAPT2 = os.path.join(os.environ.get("ANDROID_HOME", r"E:\.android\sdk"), "build-
 PRESETS = {"outlook.com": "outlook", "hotmail.com": "outlook", "live.com": "outlook", "msn.com": "outlook", "gmail.com": "gmail"}
 OAUTH_PROVIDERS = {"outlook": "microsoft", "office365": "microsoft", "gmail": "google"}
 CLIENT_KEYS = {"microsoft": "microsoftClientId", "google": "googleClientId"}
+METHODS = {"microsoft": {"browser": "opensTheProviderPageInTheBrowser", "redirects": "refusesAForeignStateAndExchangesTheMatchingOneAtTheProvider",
+                         "revoked": "aRevokedRecordRefusesEverySessionUntilANewSignIn"},
+           "google": {"browser": "opensTheGooglePageInTheBrowser", "redirects": "refusesAForeignStateAndExchangesTheMatchingOneAtGoogle",
+                      "revoked": "aRevokedGoogleRecordRefusesEverySessionUntilANewSignIn"}}
 LOG_TAGS = ["OAuthDevice:I", "RealAccountOAuth:I", "MailOAuth:I", "MailPluginBinder:I", "MailSession:I", "TestRunner:I", "AndroidRuntime:E"]
 STATE_LINES = []
 
@@ -159,6 +173,8 @@ def main():
     parser.add_argument("--skip-host", action="store_true", help="skip the host script runs")
     parser.add_argument("--skip-sign-in", action="store_true", help="skip the browser / redirect cases (steps 2 and 3)")
     parser.add_argument("--uninstall-host", action="store_true", help="on a phone, uninstall an installed host before the connected runs (emulators: always)")
+    parser.add_argument("--plugin-only", action="store_true", help="stop after the plugin-side steps 1-4 (browser, redirects, records): no real account needed")
+    parser.add_argument("--signed-in-alias", default=None, help="an alias the maintainer signed in with on the device (Google): no seed, the re-authorization step is skipped")
     args = parser.parse_args()
 
     props = read_accounts()
@@ -168,8 +184,11 @@ def main():
     access = props.get(f"{kind}_ACCESS_TOKEN_{letter}", "")
     expires_at = props.get(f"{kind}_TOKEN_EXPIRES_AT_{letter}", "0")
     client_id = props.get(f"{kind}_CLIENT_ID_{letter}", "")
-    if not refresh:
-        raise SystemExit(f"no {kind}_REFRESH_TOKEN_{letter} in build/outlook-token.properties: run .python/outlook_oauth_login.py first")
+    seeded = not args.plugin_only and not args.signed_in_alias
+    if seeded and not refresh:
+        raise SystemExit(f"no {kind}_REFRESH_TOKEN_{letter} in build/outlook-token.properties: run .python/outlook_oauth_login.py first (or pass --plugin-only / --signed-in-alias)")
+    if args.signed_in_alias:
+        args.alias = args.signed_in_alias
     preset = PRESETS[address.rsplit("@", 1)[-1].lower()]
     oauth_provider = OAUTH_PROVIDERS[preset]
     clients_file = os.path.join(PLUGIN, "oauth-clients.properties")
@@ -186,8 +205,10 @@ def main():
             text = text.replace(value, "****")
         return text
 
+    methods = METHODS[oauth_provider]
     summary = {"profile": args.profile, "serial": args.serial, "alias": args.alias, "preset": preset, "oauthProvider": oauth_provider,
-               "clientIdPrefix": build_client[:8], "accessTokenStaleAtSeed": int(expires_at or 0) < time.time(), "steps": {}, "startedAt": int(time.time())}
+               "mode": "seeded" if seeded else ("signed-in-alias" if args.signed_in_alias else "plugin-only"),
+               "clientIdPrefix": build_client[:8], "accessTokenStaleAtSeed": int(expires_at or 0) < time.time() if seeded else None, "steps": {}, "startedAt": int(time.time())}
 
     if not args.no_install:
         install(args.serial, plugin_apk())
@@ -216,7 +237,7 @@ def main():
         holder = {}
 
         def hold():
-            holder["result"] = instrument(args.serial, OAUTH_TEST_CLASS, "opensTheProviderPageInTheBrowser", {}, ("OAuthDevice", "browser opened"))
+            holder["result"] = instrument(args.serial, OAUTH_TEST_CLASS, methods["browser"], {}, ("OAuthDevice", "browser opened"))
 
         thread = threading.Thread(target=hold)
         thread.start()
@@ -234,29 +255,37 @@ def main():
         passed, _ = holder["result"]
         summary["steps"]["browser"] = {"passed": passed, "topActivity": top, "screenshot": os.path.relpath(screenshot, PLUGIN), "log": marker_lines(args.serial, "OAuthDevice")[-1:]}
         log(f"browser: {'ok' if passed else 'FAILED'}; top activity {top}; screenshot {os.path.relpath(screenshot, PLUGIN)}")
-        shell(args.serial, "input keyevent KEYCODE_HOME")
+        # no HOME here: the redirect case launches the sign-in screen on a cleared task anyway, and hiding Chrome's UI on the
+        # API 37 emulator makes it crash in its onTrimMemory handler at the next launch, taking the paused screen below with it
 
         # 3. the redirects
-        passed, _ = instrument(args.serial, OAUTH_TEST_CLASS, "refusesAForeignStateAndExchangesTheMatchingOneAtTheProvider", {}, ("OAuthDevice", "late redirect refused"))
+        passed, _ = instrument(args.serial, OAUTH_TEST_CLASS, methods["redirects"], {}, ("OAuthDevice", "late redirect refused"))
         lines = [l for l in marker_lines(args.serial, "OAuthDevice") if "refused" in l or "provider answered" in l]
         summary["steps"]["redirects"] = {"passed": passed, "log": lines[-3:]}
         log(f"redirects: {'ok' if passed else 'FAILED'}; " + " | ".join(lines[-3:]))
         shell(args.serial, "input keyevent KEYCODE_HOME")
 
     # 4. the record
-    for method, marker in (("anOAuthRecordRoundTripsRefreshesAndMarksARefusal", "record round trip ok"), ("aRevokedRecordRefusesEverySessionUntilANewSignIn", "re-authorization restored")):
+    for method, marker in (("anOAuthRecordRoundTripsRefreshesAndMarksARefusal", "record round trip ok"), (methods["revoked"], "re-authorization restored")):
         passed, _ = instrument(args.serial, OAUTH_TEST_CLASS, method, {}, ("OAuthDevice", marker))
         summary["steps"][method] = {"passed": passed}
         log(f"{method}: {'ok' if passed else 'FAILED'}")
+    if args.plugin_only:
+        return finish(args, summary, secrets, address, mask)
 
-    # 5. the real record
+    # 5. the real record (a seeded run); a signed-in alias is the maintainer's record as the sign-in screen stored it
     seed_arguments = {"mailAlias": args.alias, "mailAddress": address, "mailProvider": preset, "oauthProvider": oauth_provider,
                       "oauthRefreshTokenB64": base64.b64encode(refresh.encode("utf-8")).decode("ascii"),
                       "oauthAccessTokenB64": base64.b64encode(access.encode("utf-8")).decode("ascii") if access else "",
                       "oauthExpiresAt": expires_at}
-    passed, _ = instrument(args.serial, REAL_TEST_CLASS, "seedsASignedInAccount", seed_arguments, ("RealAccountOAuth", "seeded alias="))
-    summary["steps"]["seed"] = {"passed": passed, "log": marker_lines(args.serial, "RealAccountOAuth")[-1:]}
-    log(f"seed: {'ok' if passed else 'FAILED'}; " + " | ".join(summary["steps"]["seed"]["log"]))
+    if seeded:
+        passed, _ = instrument(args.serial, REAL_TEST_CLASS, "seedsASignedInAccount", seed_arguments, ("RealAccountOAuth", "seeded alias="))
+        summary["steps"]["seed"] = {"passed": passed, "log": marker_lines(args.serial, "RealAccountOAuth")[-1:]}
+        log(f"seed: {'ok' if passed else 'FAILED'}; " + " | ".join(summary["steps"]["seed"]["log"]))
+    else:
+        passed = True
+        summary["steps"]["signedIn"] = {"passed": True, "log": [f"alias {args.alias}: the record the maintainer signed in with on the device (no seed)"]}
+        log(f"signed-in alias {args.alias}: the host steps and the revocation run over the maintainer's record")
     if not passed:
         # keep what was collected (a device without network stops here) for the evidence document
         summary["leakCheck"] = {"secretInLogcat": any(s in adb(args.serial, "logcat", "-d", check=False) for s in secrets)}
@@ -278,12 +307,16 @@ def main():
         summary["steps"]["hostStatusRevoked"] = run_host_script(args.profile, args.serial, args.alias, "docs/smoke/oauth-status.js", expect_ok=True)
         summary["steps"]["hostSessionRevoked"] = run_host_script(args.profile, args.serial, args.alias, "docs/smoke/saved-account.js", expect_ok=False)
 
-    # 8. signed in again
-    passed, _ = instrument(args.serial, REAL_TEST_CLASS, "signsInAgain", seed_arguments, ("RealAccountOAuth", "re-authorized alias="))
-    summary["steps"]["reauthorize"] = {"passed": passed, "log": marker_lines(args.serial, "RealAccountOAuth")[-1:]}
-    log(f"re-authorize: {'ok' if passed else 'FAILED'}; " + " | ".join(summary["steps"]["reauthorize"]["log"]))
-    if not args.skip_host:
-        summary["steps"]["hostSessionAgain"] = run_host_script(args.profile, args.serial, args.alias, "docs/smoke/saved-account.js", expect_ok=True)
+    # 8. signed in again (a seeded run; a signed-in alias would need the browser again)
+    if seeded:
+        passed, _ = instrument(args.serial, REAL_TEST_CLASS, "signsInAgain", seed_arguments, ("RealAccountOAuth", "re-authorized alias="))
+        summary["steps"]["reauthorize"] = {"passed": passed, "log": marker_lines(args.serial, "RealAccountOAuth")[-1:]}
+        log(f"re-authorize: {'ok' if passed else 'FAILED'}; " + " | ".join(summary["steps"]["reauthorize"]["log"]))
+        if not args.skip_host:
+            summary["steps"]["hostSessionAgain"] = run_host_script(args.profile, args.serial, args.alias, "docs/smoke/saved-account.js", expect_ok=True)
+    else:
+        summary["steps"]["reauthorize"] = {"skipped": "a new grant needs the browser: the accounts page's \"Sign in again\" by the maintainer"}
+        log("re-authorize: skipped (a signed-in alias needs the browser for a new grant)")
 
     # 9. cleanup
     if not args.keep:
@@ -291,7 +324,11 @@ def main():
         summary["steps"]["remove"] = {"passed": passed}
         log(f"remove: {'ok' if passed else 'FAILED'}")
 
-    # evidence: the state log lines of the plugin, leaks
+    return finish(args, summary, secrets, address, mask)
+
+
+def finish(args, summary, secrets, address, mask):
+    """The evidence of a run: the plugin's state log lines, the leak check, the masked log and the summary file."""
     plugin_lines = [l.rstrip() for l in adb(args.serial, "logcat", "-d", "-v", "threadtime", "-s", *LOG_TAGS, check=False).splitlines()]
     summary["oauthStateLines"] = STATE_LINES + [l.split("MailOAuth: ", 1)[-1] for l in plugin_lines if "MailOAuth: " in l and l.split("MailOAuth: ", 1)[-1] not in STATE_LINES]
     logcat_full = adb(args.serial, "logcat", "-d", check=False)

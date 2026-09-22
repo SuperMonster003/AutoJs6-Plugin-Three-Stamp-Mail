@@ -52,7 +52,7 @@ Todo el trafico de correo permanece dentro del proceso del plugin. AutoJs6 descu
 
 ******
 
-La version 1.2.0 anade el inicio de sesion en el navegador para cuentas de Google y Microsoft (hoja de ruta P9) sobre las vigilancias en segundo plano de 1.1.0 (hoja de ruta P8); todos los puntos de las fases P0 a P8 se publicaron con 1.0.0 a 1.1.0, con evidencias en [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Requiere AutoJs6 6.8.0 (build 5282) o posterior; la tarea "Al llegar correo" necesita la compilacion del anfitrion con la version 2 del contrato de correo; la referencia completa de la API de scripts esta en la [documentacion de AutoJs6](https://docs.autojs6.com/#/mail).
+La version 1.2.1 anade el inicio de sesion en el navegador para cuentas de Google y Microsoft (hoja de ruta P9) sobre las vigilancias en segundo plano de 1.1.0 (hoja de ruta P8); todos los puntos de las fases P0 a P8 se publicaron con 1.0.0 a 1.1.0, con evidencias en [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Requiere AutoJs6 6.8.0 (build 5282) o posterior; la tarea "Al llegar correo" necesita la compilacion del anfitrion con la version 2 del contrato de correo; la referencia completa de la API de scripts esta en la [documentacion de AutoJs6](https://docs.autojs6.com/#/mail).
 
 ******
 
@@ -227,6 +227,12 @@ Los planes y el progreso del plugin se mantienen como una lista verificable en R
 
 ******
 
+#### v1.2.1
+
+_2026/09/22_
+
+- `Corrección` El evento `closed` de una vigilancia al cerrar la sesión siempre indica el motivo `closed`: el hilo de trabajo de la sesión podía detener antes algunas vigilancias con `session-closed` (visto una vez en la suite connected del emulador API 24).
+
 #### v1.2.0
 
 _2026/09/22_
@@ -244,13 +250,6 @@ _2026/09/21_
 - `Función` Vigilancias en segundo plano (hoja de ruta de correo P8): los ajustes ganan una página de vigilancias que configura hasta 16 vigilancias (`MAX_TRIGGERS`) sobre cuentas guardadas, cada una con nombre, alias de la cuenta, carpeta, modo (automático, IDLE o sondeo con su intervalo) y filtros opcionales de remitente y asunto, guardadas como `mail-triggers/triggers.json` en el directorio sin copia de seguridad; el servicio en primer plano `specialUse` `MailWatchService` ejecuta las vigilancias activas con los vigilantes de P5 (IDLE donde el servidor empuja, sondeo en el resto, reconexión con espera creciente, reconexión inmediata al cambiar la red) mientras no se ejecuta ningún script y muestra una notificación de baja prioridad; cada correo nuevo se añade a la lista de registros de la vigilancia (los últimos 100 resúmenes de sobre, `MAX_TRIGGER_RECORDS`, nunca un cuerpo) y la página muestra el estado de la conexión, el último error, los registros y una acción de reconexión; el interruptor de arranque (desactivado por defecto) habilita el receptor `BOOT_COMPLETED` que relanza el servicio tras un reinicio
 - `Función` Contrato de correo versión 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, característica `backgroundWatch`): el host se suscribe a una vigilancia configurada con una generación y un filtro opcional, recibe de inmediato el estado actual y después `onStatus` (stopped, connecting, connected o failed con el motivo y el último error) y `onMail(generation, seq, event)` por cada correo que coincide; el evento `mail` lleva el id de la vigilancia, el alias, la dirección, la carpeta, el sobre del correo y `receivedAt`; una vigilancia admite como máximo 4 suscriptores (`MAX_TRIGGER_SUBSCRIBERS`), una vigilancia desactivada o desconocida y unas opciones inservibles se rechazan con un estado `stopped` cuyo motivo es `refused`, `update` sustituye el filtro del suscriptor y `stop` termina solo la suscripción; sin un suscriptor vivo cada evento va a AutoJs6 como la difusión explícita `org.autojs.autojs6.action.MAIL_TRIGGER` tras su permiso de firma `PLUGIN`, que inicia la tarea "Al llegar un correo" del host aunque no se ejecute ningún script (`MailTriggerBinderTest` en un AVD API 37; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)
 - `Función` El núcleo de correo gana los documentos y reglas de disparo compartidos por la página, el servicio y el Binder (`TriggerConfig`, `TriggerFilter` con subcadenas de remitente y asunto sin distinguir mayúsculas, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) y los límites `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS` y `MIN_TRIGGER_INTERVAL_MS` (3 s, la limitación del host por tarea), y los vigilantes informan `onConnected` para que una vigilancia en segundo plano muestre `connected` en cuanto su carpeta está abierta
-
-#### v1.0.1
-
-_2026/09/21_
-
-- `Corrección` POP3 de Outlook.com con un token OAuth 2.0 (matriz de proveedores del roadmap de correo P6, 2026-09-21): el servidor responde al `AUTH XOAUTH2 <base64>` de una línea que Angus Mail envía por defecto con `-ERR Protocol error. Connection is closed.` y corta la conexión, así que una cuenta POP3 con el preajuste `outlook` fallaba con `AUTH_FAILED`; los preajustes ganan `pop3Xoauth2TwoLine` (catálogo versión 3, true en `outlook` y `office365`) y el núcleo de correo envía ahora solo el comando y la respuesta base64 tras la continuación `+` del servidor para esos preajustes y para cualquier host POP3 de Microsoft indicado sin preajuste (`Pop3OAuthScriptedTest`, 5 casos; verificado con la cuenta real en la JVM y en un dispositivo API 33)
-- `Mejora` Columna Outlook.com de la matriz de proveedores (roadmap de correo P6) y filas de dispositivo de P5, ejecutadas con un token del registro de cliente público de Entra del mantenedor en una cuenta personal: prueba de sesión, carpetas (roles por los nombres convencionales, sin SPECIAL-USE), envío (`sentCopy = server`, Message-ID reescrito por el servidor), listado (visible a los 7 s), búsquedas en el servidor (todas las claves aciertan; un asunto en chino se responde bien pero el servidor tarda minutos en una bandeja de 2300 mensajes), cuerpo, adjunto, marcas (las palabras clave propias no se guardan), creación de carpetas, `MOVE`, vigilancia (IDLE avisa en unos 10 s desde el envío, el más rápido de los siete proveedores), POP3 (UIDL de 5 caracteres, el mensaje recién enviado aparece) y limpieza (copias enviadas direccionables por UID), todo pasa; en un Redmi (API 33) los escenarios baseline, plugin terminado y Wi-Fi apagado llegan en 9 a 14 s con las mismas secuencias de eventos que Gmail; las notas de los preajustes, el README y los archivos de evidencia registran las diferencias, incluido el rechazo `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` que Microsoft da a buzones personales recientes
 
 ##### Para más historial de versiones
 

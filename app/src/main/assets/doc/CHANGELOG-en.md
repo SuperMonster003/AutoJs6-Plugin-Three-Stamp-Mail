@@ -4,6 +4,12 @@
 
 ******
 
+# v1.2.1
+
+###### 2026/09/22
+
+* `Fix` The `closed` event of a watch on a session close always names the reason `closed`: the session's worker thread could stop some of the watches first with `session-closed` (seen once in the connected suite on the API 24 emulator).
+
 # v1.2.0
 
 ###### 2026/09/22

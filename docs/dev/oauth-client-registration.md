@@ -92,7 +92,7 @@ Refresh tokens are bound to the client id they were issued to: a token obtained 
 one registration does not refresh under another (`AADSTS7000012` / `invalid_grant`), which is
 also what the device evidence sees when a made-up code is exchanged.
 
-## Google (open)
+## Google (the Android client registered by the maintainer on 2026-09-22; the restricted-scope verification is open)
 
 Google keeps the registration under the **Google Auth Platform** of a Google Cloud project
 (<https://console.cloud.google.com/auth/overview>; the older "APIs & Services > Credentials" page
@@ -150,16 +150,29 @@ scope; this decides the audience questions below.
    process takes weeks. Until this is done the project stays in Testing with test users, which is
    enough for the maintainer's own accounts and for the device evidence.
 
-Checks once `googleClientId` is set: `aapt2 dump xmltree` shows the Google filter's scheme as
-`com.googleusercontent.apps.<prefix>`; on a device, the account editor's Gmail preset offers
-"Sign in with Google (browser)", the Google page shows the app name and the scope consent, and
-the redirect lands on the plugin. A Google refresh token cannot be obtained on the PC for the
+Checks done on build 67 (the first build with `googleClientId`, 2026-09-22): `aapt2 dump
+xmltree` shows the Google filter's scheme as `com.googleusercontent.apps.<prefix>` next to the
+Microsoft filter; `OAuthDeviceTest`'s Google cases passed on AVD_API_37, AVD_API_24 and the Sony
+G8441 (`.python/run_oauth_device.py GMAIL_A <serial> --plugin-only`): the sign-in screen opens
+`accounts.google.com/o/oauth2/v2/auth` with the client id, the reversed-client-id redirect, the
+`https://mail.google.com/ openid email` scopes, `access_type=offline` and `prompt=consent` in a
+Custom Tab; a redirect on the reversed-client-id scheme reaches the plugin's redirect activity
+through the manifest's scheme-only filter; a made-up code is exchanged at
+`oauth2.googleapis.com/token` and refused there (`invalid_grant: Malformed auth code.`, so the
+client id and the redirect URI are accepted by the token endpoint); and a revoked Google record
+posts its token to `oauth2.googleapis.com/revoke` (the made-up token was refused, as expected).
+Not checked without a real account: the consent page itself (the app name, the Testing notice,
+the scope list) and the grant. A Google refresh token cannot be obtained on the PC for the
 device the way `.python/outlook_oauth_login.py` does for Microsoft (an Android client accepts no
 loopback redirect, and a token issued to a Desktop client would not refresh under the Android
-client id), so the Gmail column of `docs/dev/p9-oauth2-evidence.md` needs a real sign-in in the
-plugin on the device by the maintainer; `.python/run_oauth_device.py GMAIL_A <serial>` then
-exercises the record with `GMAIL_REFRESH_TOKEN_A` only if such a token was exported some other
-way, which is not planned.
+client id), so the real Gmail record of `docs/dev/p9-oauth2-evidence.md` starts with a sign-in in
+the plugin on a device by the maintainer: the accounts page, the Gmail preset, "Sign in with
+Google (browser)", the Google consent of a test user (the project is in Testing), saved under an
+alias such as `gmail-oauth`; then `py -X utf8 .python/run_oauth_device.py GMAIL_A <serial>
+--signed-in-alias gmail-oauth` runs the host status and session scripts, the revocation (a real
+token reaches the revocation endpoint), the host scripts after it and the removal, and "sign in
+again" is reported as skipped because a new grant needs the browser again. In Testing the
+refresh token expires after 7 days, which the plugin shows as "sign in again".
 
 ## References
 

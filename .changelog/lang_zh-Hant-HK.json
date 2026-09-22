@@ -5,6 +5,12 @@
   "changelog_label_improvement": "優化",
   "changelog_label_dependency": "依賴",
   "$data": {
+    "v1.2.1": {
+      "released_date": "2026/09/22",
+      "fix": [
+        "會話關閉時守望的 `closed` 事件原因固定為 `closed`: 此前會話的工作線程可能先以 `session-closed` 停掉部分守望 (API 24 模擬器的 connected 套件曾出現一次)."
+      ]
+    },
     "v1.2.0": {
       "released_date": "2026/09/22",
       "hint": [

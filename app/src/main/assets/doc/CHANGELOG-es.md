@@ -4,6 +4,12 @@
 
 ******
 
+# v1.2.1
+
+###### 2026/09/22
+
+* `Corrección` El evento `closed` de una vigilancia al cerrar la sesión siempre indica el motivo `closed`: el hilo de trabajo de la sesión podía detener antes algunas vigilancias con `session-closed` (visto una vez en la suite connected del emulador API 24).
+
 # v1.2.0
 
 ###### 2026/09/22

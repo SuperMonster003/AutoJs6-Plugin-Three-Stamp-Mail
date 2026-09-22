@@ -4,6 +4,12 @@
 
 ******
 
+# v1.2.1
+
+###### 2026/09/22
+
+* `Correctif` L'événement `closed` d'une surveillance à la fermeture de la session porte toujours la raison `closed` : le thread de travail de la session pouvait arrêter certaines surveillances en premier avec `session-closed` (vu une fois dans la suite connected sur l'émulateur API 24).
+
 # v1.2.0
 
 ###### 2026/09/22

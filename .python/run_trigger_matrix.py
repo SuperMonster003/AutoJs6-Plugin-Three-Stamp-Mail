@@ -212,6 +212,24 @@ def service_running(serial):
     return "MailWatchService" in text and "isForeground=true" in text
 
 
+def service_record_evidence(serial):
+    """What `dumpsys activity services` says about the watch service when the receiver's log line is gone: how long
+    after the boot the service was created, whether a background caller started it (the receiver, not a screen) and
+    whether it is in the foreground. `createTime` is relative to now, so the uptime gives the offset from the boot."""
+    text = shell(serial, f"dumpsys activity services {PLUGIN_PACKAGE}")
+    created = re.search(r"createTime=-(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?(\d+)ms", text)
+    if "MailWatchService" not in text or not created:
+        return "no receiver line in logcat and no MailWatchService record"
+    days, hours, minutes, seconds, millis = (int(value or 0) for value in created.groups())
+    age_s = days * 86400 + hours * 3600 + minutes * 60 + seconds + millis / 1000.0
+    uptime_s = float((shell(serial, "cat /proc/uptime").split() or ["0"])[0])
+    from_fg = re.search(r"createdFromFg=(\w+)", text)
+    start_id = re.search(r"lastStartId=(\d+)", text)
+    return (f"receiver line not in logcat; MailWatchService created {uptime_s - age_s:.0f} s after the boot "
+            f"(createdFromFg={from_fg.group(1) if from_fg else '?'}, lastStartId={start_id.group(1) if start_id else '?'}, "
+            f"foreground={'isForeground=true' in text})")
+
+
 def logcat_lines(serial):
     return [line.rstrip() for line in adb(serial, "logcat", "-d", "-v", "threadtime", "-s", *LOG_TAGS, check=False).splitlines()]
 
@@ -345,8 +363,15 @@ def main():
 
     if resumed:
         # the script, the task and the watch survived the reboot; the logcat holds the receiver's line since the unlock
-        boot_line = wait_for(lambda: [l for l in logcat_lines(args.serial) if "MailBootReceiver" in l], 180, "the boot receiver (unlock the device first)")
-        summary["bootReceiver"] = boot_line[-1].split("MailBootReceiver: ", 1)[-1]
+        try:
+            boot_line = wait_for(lambda: [l for l in logcat_lines(args.serial) if "MailBootReceiver" in l], 180, "the boot receiver (unlock the device first)")
+            summary["bootReceiver"] = boot_line[-1].split("MailBootReceiver: ", 1)[-1]
+        except TimeoutError as e:
+            # the line rolled out of the main buffer (256 KB on this phone until `logcat -G`): the service record still says
+            # when the service was created after the boot and that a background caller started it, which is the receiver's doing
+            summary["bootReceiver"] = service_record_evidence(args.serial)
+            summary["bootReceiverLineEvicted"] = True
+            log(f"{e}; {summary['bootReceiver']}")
         summary["uptimeAtResumeS"] = float((shell(args.serial, "cat /proc/uptime").split() or ["0"])[0])
         log(f"boot receiver: {summary['bootReceiver']} (device up for {summary['uptimeAtResumeS']:.0f} s)")
         return finish_run(args, summary, sender, watched, subject_token, secrets, addresses, mask, resumed=True)

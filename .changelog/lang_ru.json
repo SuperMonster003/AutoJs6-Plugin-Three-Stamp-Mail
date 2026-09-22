@@ -5,6 +5,12 @@
   "changelog_label_improvement": "Улучшение",
   "changelog_label_dependency": "Зависимость",
   "$data": {
+    "v1.2.1": {
+      "released_date": "2026/09/22",
+      "fix": [
+        "Событие `closed` наблюдения при закрытии сессии всегда указывает причину `closed`: рабочий поток сессии мог остановить часть наблюдений раньше с причиной `session-closed` (один раз в наборе connected на эмуляторе API 24)."
+      ]
+    },
     "v1.2.0": {
       "released_date": "2026/09/22",
       "hint": [

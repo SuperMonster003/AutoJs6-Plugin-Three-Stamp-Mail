@@ -52,7 +52,7 @@ Angus Mail 為 AutoJs6 指令碼提供全域物件 `mail`, 用於傳送郵件, �
 
 ******
 
-版本 1.2.0 在 1.1.0 的背景守望 (路線圖 P8) 之上新增 Google 與 Microsoft 帳號的瀏覽器登入 (路線圖 P9); P0 至 P8 各階段的全部條目已隨 1.0.0 至 1.1.0 發布, 證據見 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). 需要 AutoJs6 6.8.0 (build 5282) 或更高版本; "郵件到達時" 任務需要攜帶郵件契約版本 2 的宿主建置; 完整的指令碼 API 參考見 [AutoJs6 文件](https://docs.autojs6.com/#/mail).
+版本 1.2.1 在 1.1.0 的背景守望 (路線圖 P8) 之上新增 Google 與 Microsoft 帳號的瀏覽器登入 (路線圖 P9); P0 至 P8 各階段的全部條目已隨 1.0.0 至 1.1.0 發布, 證據見 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). 需要 AutoJs6 6.8.0 (build 5282) 或更高版本; "郵件到達時" 任務需要攜帶郵件契約版本 2 的宿主建置; 完整的指令碼 API 參考見 [AutoJs6 文件](https://docs.autojs6.com/#/mail).
 
 ******
 
@@ -227,6 +227,12 @@ minimum host build: 5282 (6.8.0)
 
 ******
 
+#### v1.2.1
+
+_2026/09/22_
+
+- `修復` 會話關閉時守望的 `closed` 事件原因固定為 `closed`: 此前會話的工作執行緒可能先以 `session-closed` 停掉部分守望 (API 24 模擬器的 connected 套件曾出現一次).
+
 #### v1.2.0
 
 _2026/09/22_
@@ -244,13 +250,6 @@ _2026/09/21_
 - `新增` 背景守望 (郵件路線圖 P8): 設定頁新增守望頁面, 可為已儲存帳戶設定至多 16 個守望 (`MAX_TRIGGERS`), 每個含名稱, 帳戶別名, 資料夾, 模式 (自動, IDLE 或帶間隔的輪詢) 與可選的寄件者 / 主旨過濾, 存於 no-backup 目錄下的 `mail-triggers/triggers.json`; `specialUse` 前景服務 `MailWatchService` 在沒有指令碼執行時以 P5 的監聽器執行已啟用的守望 (伺服器推送時用 IDLE, 否則輪詢, 斷線按退避重連, 網路變化時立即重連) 並顯示一則低優先級通知; 每封新郵件進入守望的記錄清單 (最近 100 筆信封摘要, `MAX_TRIGGER_RECORDS`, 不含正文), 頁面顯示連線狀態, 最近錯誤, 記錄與重連操作; 開機自啟開關 (預設關閉) 啟用 `BOOT_COMPLETED` 接收器, 重新開機後重新拉起服務
 - `新增` 郵件契約版本 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, 能力特性 `backgroundWatch`): 宿主以 generation 與可選過濾訂閱已設定的守望, 立即收到目前狀態, 之後收到 `onStatus` (stopped, connecting, connected 或 failed, 附原因與最近錯誤) 與每封符合郵件的 `onMail(generation, seq, event)`, `mail` 事件攜帶守望 id, 別名, 地址, 資料夾, 郵件信封與 `receivedAt`; 每個守望至多 4 個訂閱者 (`MAX_TRIGGER_SUBSCRIBERS`), 已停用或不存在的守望與不可用的選項以 reason 為 `refused` 的 `stopped` 狀態拒絕, `update` 取代訂閱者的過濾, `stop` 只結束訂閱; 沒有活動訂閱者時每個事件以明確廣播 `org.autojs.autojs6.action.MAIL_TRIGGER` 發往 AutoJs6 (受其 `PLUGIN` 簽章權限保護), 即使沒有指令碼執行也能啟動宿主的 "郵件到達時" 任務 (`MailTriggerBinderTest` 於 API 37 AVD; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)
 - `新增` 郵件核心新增頁面, 服務與 Binder 共用的觸發文件與規則 (`TriggerConfig`, 寄件者與主旨子字串不區分大小寫的 `TriggerFilter`, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) 與上限 `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS`, `MIN_TRIGGER_INTERVAL_MS` (3 s, 宿主每任務的節流間隔), 監聽器新增 `onConnected` 回呼, 背景守望在資料夾開啟後即顯示 `connected`
-
-#### v1.0.1
-
-_2026/09/21_
-
-- `修復` Outlook.com 的 POP3 以 OAuth 2.0 權杖登入 (郵件路線圖 P6 服務商矩陣, 2026-09-21): 伺服器對 Angus Mail 預設傳送的單行 `AUTH XOAUTH2 <base64>` 答 `-ERR Protocol error. Connection is closed.` 並中斷連線, `outlook` 預設的 POP3 帳號因此以 `AUTH_FAILED` 失敗; 服務商預設新增 `pop3Xoauth2TwoLine` (目錄版本 3, `outlook` 與 `office365` 為 true), 郵件核心對這兩個預設以及未用預設而填寫的微軟 POP3 主機改為先傳送裸命令, 收到伺服器的 `+` 續行後再傳送 base64 回應 (`Pop3OAuthScriptedTest` 5 例; 已在真實帳號上經 JVM 與 API 33 真機核實)
-- `優化` 服務商矩陣的 Outlook.com 欄 (郵件路線圖 P6) 與 P5 裝置列, 以維護者 Entra 公用用戶端的權杖在一個個人帳號上跑通: 工作階段測試, 資料夾 (角色來自常規名稱, 無 SPECIAL-USE), 傳送 (`sentCopy = server`, Message-ID 被伺服器改寫), 列表 (約 7 s 可見), 伺服器搜尋 (各鍵均命中; 中文主旨能正確命中但伺服器在 2300 封的收件匣上要花數分鐘), 內文, 附件, 標記 (自訂關鍵字不儲存), 建立資料夾, `MOVE`, 監聽 (IDLE 在提交後約 10 s 內推送, 七家中最快), POP3 (UIDL 5 字元, 剛傳送的郵件在檢視中) 與清理 (已傳送副本可按 UID 定址) 全部通過; Redmi (API 33) 上 baseline / 殺外掛 / 關 Wi-Fi 三個監聽情境 9 到 14 s 到達, 事件順序與 Gmail 一致; 預設 notes, README 與證據檔案記錄了差異, 包括微軟對較新個人信箱給出的 `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` 拒絕
 
 ##### 更多發行歷史
 

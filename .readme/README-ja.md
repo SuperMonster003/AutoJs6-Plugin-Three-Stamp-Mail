@@ -52,7 +52,7 @@ Angus Mail は AutoJs6 スクリプトにグローバルオブジェクト `mail
 
 ******
 
-バージョン 1.2.0 は 1.1.0 のバックグラウンド監視 (ロードマップ P8) に加えて Google と Microsoft アカウントのブラウザーログイン (ロードマップ P9) を追加します. フェーズ P0 から P8 の全項目は 1.0.0 から 1.1.0 で出荷済みで, 証拠は [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) にあります. AutoJs6 6.8.0 (ビルド 5282) 以降が必要です. "メール到着時" タスクにはメール契約バージョン 2 を持つホストビルドが必要です. スクリプト API の完全なリファレンスは [AutoJs6 ドキュメント](https://docs.autojs6.com/#/mail) にあります.
+バージョン 1.2.1 は 1.1.0 のバックグラウンド監視 (ロードマップ P8) に加えて Google と Microsoft アカウントのブラウザーログイン (ロードマップ P9) を追加します. フェーズ P0 から P8 の全項目は 1.0.0 から 1.1.0 で出荷済みで, 証拠は [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) にあります. AutoJs6 6.8.0 (ビルド 5282) 以降が必要です. "メール到着時" タスクにはメール契約バージョン 2 を持つホストビルドが必要です. スクリプト API の完全なリファレンスは [AutoJs6 ドキュメント](https://docs.autojs6.com/#/mail) にあります.
 
 ******
 
@@ -227,6 +227,12 @@ minimum host build: 5282 (6.8.0)
 
 ******
 
+#### v1.2.1
+
+_2026/09/22_
+
+- `修正` セッションを閉じたときの監視の `closed` イベントの理由は常に `closed` になります: これまではセッションのワーカースレッドが一部の監視を先に `session-closed` で停止することがありました (API 24 エミュレーターの connected スイートで一度発生).
+
 #### v1.2.0
 
 _2026/09/22_
@@ -244,13 +250,6 @@ _2026/09/21_
 - `機能` バックグラウンド監視 (メールロードマップ P8): 設定に監視ページが加わり, 保存済みアカウントに最大 16 個の監視 (`MAX_TRIGGERS`) を設定できます. 各監視は名前, アカウントのエイリアス, フォルダー, モード (自動, IDLE, または間隔付きのポーリング), 任意の送信者 / 件名フィルターを持ち, no-backup ディレクトリの `mail-triggers/triggers.json` に保存されます. `specialUse` フォアグラウンドサービス `MailWatchService` はスクリプトが動いていない間も有効な監視を P5 のウォッチャーで動かし (サーバーがプッシュするなら IDLE, そうでなければポーリング, バックオフ付き再接続, ネットワーク変化時は即時再接続), 低優先度の通知を 1 件表示します. 新着メールは監視の記録リスト (直近 100 件のエンベロープ要約, `MAX_TRIGGER_RECORDS`, 本文は含まない) に加わり, ページには接続状態, 最後のエラー, 記録, 再接続操作が表示されます. 起動時自動開始スイッチ (既定はオフ) は再起動後にサービスを立ち上げる `BOOT_COMPLETED` レシーバーを有効にします
 - `機能` メール契約バージョン 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, 機能フラグ `backgroundWatch`): ホストは generation と任意のフィルターで設定済みの監視を購読し, 直ちに現在の状態を受け取り, その後 `onStatus` (stopped, connecting, connected, failed と理由および最後のエラー) と, 一致するメールごとの `onMail(generation, seq, event)` を受け取ります. `mail` イベントは監視 id, エイリアス, アドレス, フォルダー, メールのエンベロープ, `receivedAt` を運びます. 監視あたりの購読者は最大 4 (`MAX_TRIGGER_SUBSCRIBERS`), 無効または存在しない監視と使えないオプションは理由 `refused` の `stopped` 状態で拒否され, `update` は購読者のフィルターを置き換え, `stop` は購読のみを終えます. 生きた購読者がないときは各イベントが明示的ブロードキャスト `org.autojs.autojs6.action.MAIL_TRIGGER` として `PLUGIN` 署名権限の背後の AutoJs6 に送られ, スクリプトが動いていなくてもホストの "メール到着時" タスクを起動します (API 37 AVD での `MailTriggerBinderTest`; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)
 - `機能` メールコアに, ページ, サービス, Binder が共有するトリガー文書と規則 (`TriggerConfig`, 送信者と件名の部分文字列を大文字小文字を区別せず照合する `TriggerFilter`, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) と上限 `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS`, `MIN_TRIGGER_INTERVAL_MS` (3 秒, ホストのタスクごとのスロットル) が加わり, ウォッチャーは `onConnected` を報告してバックグラウンド監視がフォルダーを開いた時点で `connected` を表示できるようになりました
-
-#### v1.0.1
-
-_2026/09/21_
-
-- `修正` OAuth 2.0 トークンによる Outlook.com の POP3 (メールロードマップ P6 プロバイダーマトリクス, 2026-09-21): サーバーは Angus Mail が既定で送る 1 行形式の `AUTH XOAUTH2 <base64>` に `-ERR Protocol error. Connection is closed.` と答えて接続を切るため, `outlook` プリセットの POP3 アカウントは `AUTH_FAILED` で失敗していました; プロバイダープリセットに `pop3Xoauth2TwoLine` (カタログバージョン 3, `outlook` と `office365` で true) を追加し, メールコアはこれらのプリセットとプリセットなしで入力された Microsoft の POP3 ホストに対して, コマンドだけを送りサーバーの `+` 継続の後に base64 応答を送るようになりました (`Pop3OAuthScriptedTest` 5 件; 実アカウントで JVM と API 33 実機の両方で検証済み)
-- `改善` プロバイダーマトリクスの Outlook.com 列 (メールロードマップ P6) と P5 の実機行を, メンテナーの Entra パブリッククライアント登録によるトークンで 1 つの個人アカウントについて実施: セッションテスト, フォルダー (役割は慣用名から, SPECIAL-USE なし), 送信 (`sentCopy = server`, Message-ID はサーバーが書き換え), 一覧 (約 7 秒で可視), サーバー検索 (すべてのキーがヒット; 中国語の件名も正しくヒットするが 2300 通の受信トレイではサーバーが数分かかる), 本文, 添付, フラグ (カスタムキーワードは保存されない), フォルダー作成, `MOVE`, 監視 (IDLE は送信後約 10 秒以内にプッシュ, 7 社中最速), POP3 (UIDL 5 文字, 送信直後のメールも表示) とクリーンアップ (送信済みコピーは UID で操作可能) がすべて通過; Redmi (API 33) の baseline / プラグイン強制終了 / Wi-Fi オフの 3 シナリオは 9 から 14 秒で到達し, イベント順序は Gmail と同じ; プリセットの notes, README, 証拠ファイルに差異を記録 (Microsoft が新しめの個人メールボックスに返す `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` を含む)
 
 ##### さらに詳しいリリース履歴
 

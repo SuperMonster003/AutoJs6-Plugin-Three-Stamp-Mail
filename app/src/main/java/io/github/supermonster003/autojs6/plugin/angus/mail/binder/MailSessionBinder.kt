@@ -308,6 +308,10 @@ internal class MailSessionBinder(
     private fun closeNow(reason: String) {
         if (!finalized.compareAndSet(false, true)) return
         runCatching { callback?.asBinder()?.unlinkToDeath(hostDeath, 0) }
+        // The watches close with the session's reason here as well as in shutdown(): the worker reaches this point while
+        // the closing thread is still stopping them, and the session's own close would name what is left "session-closed"
+        // (a watcher keeps the first reason it is given).
+        lock.withLock { watches.toList() }.forEach { runCatching { it.shutdown(if (reason == "host-died") Watcher.REASON_HOST_DIED else reason) } }
         runCatching { session.close() }
         callback?.let { MailBundles.notifyClosed(it, session.lastError?.let(MailBundles::error), reason) }
     }

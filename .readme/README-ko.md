@@ -52,7 +52,7 @@ Angus Mail은 AutoJs6 스크립트에 전역 객체 `mail`을 제공하여 메�
 
 ******
 
-버전 1.2.0 은 1.1.0 의 백그라운드 감시 (로드맵 P8) 위에 Google 및 Microsoft 계정의 브라우저 로그인 (로드맵 P9) 을 추가합니다. P0 부터 P8 까지의 모든 항목은 1.0.0 부터 1.1.0 으로 출시되었으며 증거는 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) 에 있습니다. AutoJs6 6.8.0 (빌드 5282) 이상이 필요합니다. "메일 도착 시" 작업에는 메일 계약 버전 2 를 가진 호스트 빌드가 필요합니다. 스크립트 API 의 전체 참조는 [AutoJs6 문서](https://docs.autojs6.com/#/mail) 에 있습니다.
+버전 1.2.1 은 1.1.0 의 백그라운드 감시 (로드맵 P8) 위에 Google 및 Microsoft 계정의 브라우저 로그인 (로드맵 P9) 을 추가합니다. P0 부터 P8 까지의 모든 항목은 1.0.0 부터 1.1.0 으로 출시되었으며 증거는 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) 에 있습니다. AutoJs6 6.8.0 (빌드 5282) 이상이 필요합니다. "메일 도착 시" 작업에는 메일 계약 버전 2 를 가진 호스트 빌드가 필요합니다. 스크립트 API 의 전체 참조는 [AutoJs6 문서](https://docs.autojs6.com/#/mail) 에 있습니다.
 
 ******
 
@@ -227,6 +227,12 @@ minimum host build: 5282 (6.8.0)
 
 ******
 
+#### v1.2.1
+
+_2026/09/22_
+
+- `수정` 세션을 닫을 때 감시의 `closed` 이벤트 사유가 항상 `closed` 가 됩니다: 이전에는 세션의 작업 스레드가 일부 감시를 먼저 `session-closed` 로 중지할 수 있었습니다 (API 24 에뮬레이터의 connected 스위트에서 한 번 발생).
+
 #### v1.2.0
 
 _2026/09/22_
@@ -244,13 +250,6 @@ _2026/09/21_
 - `기능` 백그라운드 감시 (메일 로드맵 P8): 설정에 감시 페이지가 추가되어 저장된 계정에 최대 16 개의 감시 (`MAX_TRIGGERS`) 를 설정할 수 있습니다. 각 감시는 이름, 계정 별칭, 폴더, 모드 (자동, IDLE 또는 간격이 있는 폴링), 선택적 보낸 사람 / 제목 필터를 가지며 no-backup 디렉터리의 `mail-triggers/triggers.json` 에 저장됩니다. `specialUse` 포그라운드 서비스 `MailWatchService` 는 스크립트가 실행되지 않는 동안 P5 워처로 활성 감시를 실행하고 (서버가 푸시하면 IDLE, 아니면 폴링, 백오프 재연결, 네트워크 변경 시 즉시 재연결) 낮은 우선순위 알림 하나를 표시합니다. 새 메일은 감시의 기록 목록 (최근 100 개의 봉투 요약, `MAX_TRIGGER_RECORDS`, 본문 없음) 에 추가되고 페이지는 연결 상태, 마지막 오류, 기록, 재연결 동작을 보여 줍니다. 부팅 시 시작 스위치 (기본 꺼짐) 는 재부팅 후 서비스를 다시 시작하는 `BOOT_COMPLETED` 리시버를 활성화합니다
 - `기능` 메일 계약 버전 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, 기능 플래그 `backgroundWatch`): 호스트는 generation 과 선택적 필터로 설정된 감시를 구독하고 즉시 현재 상태를 받은 뒤 `onStatus` (stopped, connecting, connected 또는 failed 와 이유 및 마지막 오류) 와 일치하는 메일마다 `onMail(generation, seq, event)` 를 받습니다. `mail` 이벤트는 감시 id, 별칭, 주소, 폴더, 메일 봉투, `receivedAt` 를 담습니다. 감시당 구독자는 최대 4 (`MAX_TRIGGER_SUBSCRIBERS`), 비활성 또는 존재하지 않는 감시와 사용할 수 없는 옵션은 이유가 `refused` 인 `stopped` 상태로 거부되고, `update` 는 구독자의 필터를 교체하며 `stop` 은 구독만 끝냅니다. 살아 있는 구독자가 없으면 각 이벤트는 `PLUGIN` 서명 권한 뒤의 AutoJs6 로 명시적 브로드캐스트 `org.autojs.autojs6.action.MAIL_TRIGGER` 로 전달되어 스크립트가 실행 중이 아니어도 호스트의 "메일 도착 시" 작업을 시작합니다 (API 37 AVD 의 `MailTriggerBinderTest`; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)
 - `기능` 메일 코어에 페이지, 서비스, Binder 가 공유하는 트리거 문서와 규칙 (`TriggerConfig`, 보낸 사람과 제목 부분 문자열을 대소문자 구분 없이 비교하는 `TriggerFilter`, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) 과 상한 `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS`, `MIN_TRIGGER_INTERVAL_MS` (3 초, 호스트의 작업별 스로틀) 가 추가되었고, 워처는 `onConnected` 를 보고하여 백그라운드 감시가 폴더를 연 즉시 `connected` 를 표시합니다
-
-#### v1.0.1
-
-_2026/09/21_
-
-- `수정` OAuth 2.0 토큰을 쓰는 Outlook.com 의 POP3 (메일 로드맵 P6 제공자 매트릭스, 2026-09-21): 서버가 Angus Mail 이 기본으로 보내는 한 줄 형식의 `AUTH XOAUTH2 <base64>` 에 `-ERR Protocol error. Connection is closed.` 로 답하고 연결을 끊어 `outlook` 프리셋의 POP3 계정이 `AUTH_FAILED` 로 실패했습니다; 제공자 프리셋에 `pop3Xoauth2TwoLine` (카탈로그 버전 3, `outlook` 과 `office365` 에서 true) 을 추가하고, 메일 코어는 이 프리셋들과 프리셋 없이 입력된 Microsoft POP3 호스트에 대해 명령만 먼저 보낸 뒤 서버의 `+` 계속 응답 후에 base64 응답을 보냅니다 (`Pop3OAuthScriptedTest` 5 건; 실제 계정으로 JVM 과 API 33 실기기에서 검증)
-- `개선` 제공자 매트릭스의 Outlook.com 열 (메일 로드맵 P6) 과 P5 기기 행을 관리자의 Entra 공용 클라이언트 등록으로 얻은 토큰으로 개인 계정 하나에서 실행: 세션 테스트, 폴더 (역할은 관례적 이름에서, SPECIAL-USE 없음), 보내기 (`sentCopy = server`, Message-ID 는 서버가 다시 씀), 목록 (약 7 초 후 표시), 서버 검색 (모든 키 적중; 중국어 제목도 정확히 적중하지만 2300 통의 받은 편지함에서 서버가 수 분 소요), 본문, 첨부, 플래그 (사용자 키워드는 저장되지 않음), 폴더 생성, `MOVE`, 감시 (IDLE 이 제출 후 약 10 초 안에 푸시, 일곱 제공자 중 가장 빠름), POP3 (5 자 UIDL, 방금 보낸 메일도 표시) 와 정리 (보낸 사본을 UID 로 지정 가능) 모두 통과; Redmi (API 33) 에서 baseline / 플러그인 강제 종료 / Wi-Fi 끄기 세 시나리오가 9 에서 14 초에 도착하고 이벤트 순서는 Gmail 과 같음; 프리셋 notes, README, 증거 파일에 차이를 기록 (Microsoft 가 최근 개인 사서함에 주는 `535 5.7.139 SmtpClientAuthentication is disabled for the Mailbox` 거부 포함)
 
 ##### 더 많은 릴리스 기록
 

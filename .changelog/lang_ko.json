@@ -5,6 +5,12 @@
   "changelog_label_improvement": "개선",
   "changelog_label_dependency": "의존성",
   "$data": {
+    "v1.2.1": {
+      "released_date": "2026/09/22",
+      "fix": [
+        "세션을 닫을 때 감시의 `closed` 이벤트 사유가 항상 `closed` 가 됩니다: 이전에는 세션의 작업 스레드가 일부 감시를 먼저 `session-closed` 로 중지할 수 있었습니다 (API 24 에뮬레이터의 connected 스위트에서 한 번 발생)."
+      ]
+    },
     "v1.2.0": {
       "released_date": "2026/09/22",
       "hint": [

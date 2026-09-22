@@ -5,6 +5,12 @@
   "changelog_label_improvement": "改善",
   "changelog_label_dependency": "依存関係",
   "$data": {
+    "v1.2.1": {
+      "released_date": "2026/09/22",
+      "fix": [
+        "セッションを閉じたときの監視の `closed` イベントの理由は常に `closed` になります: これまではセッションのワーカースレッドが一部の監視を先に `session-closed` で停止することがありました (API 24 エミュレーターの connected スイートで一度発生)."
+      ]
+    },
     "v1.2.0": {
       "released_date": "2026/09/22",
       "hint": [

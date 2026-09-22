@@ -31,6 +31,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Assume.assumeTrue
+import org.junit.AssumptionViolatedException
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -44,9 +45,10 @@ import java.util.UUID
  * provider's token endpoint over HTTPS (a made-up code, so the provider refuses it and the screen
  * says so), and spends the request either way; an OAuth 2.0 record round-trips through the
  * Keystore-encrypted store, is renewed through the refresh token and marked `needsReauth` when
- * the provider refuses, and a revoked record refuses every session until a new sign-in. The
- * sign-in cases need the Microsoft client id of this build (`oauth-clients.properties`) and skip
- * without it; nothing here types a password anywhere, and no real token is involved.
+ * the provider refuses, and a revoked record refuses every session until a new sign-in (a Google
+ * record also asks Google's revocation endpoint). The sign-in and Google cases need the client
+ * ids of this build (`oauth-clients.properties`) and skip without them; nothing here types a
+ * password anywhere, and no real token is involved.
  */
 @RunWith(AndroidJUnit4::class)
 class OAuthDeviceTest {
@@ -64,15 +66,26 @@ class OAuthDeviceTest {
         get() = OAuthClients.of(context)
 
     @Test
-    fun opensTheProviderPageInTheBrowser() {
-        assumeTrue("this build carries no Microsoft client id", clients.isConfigured(OAuthProviderId.MICROSOFT))
-        val activity = launchSignIn()
+    fun opensTheProviderPageInTheBrowser() = opensTheProviderPage(OAuthProviderId.MICROSOFT)
+
+    @Test
+    fun opensTheGooglePageInTheBrowser() = opensTheProviderPage(OAuthProviderId.GOOGLE)
+
+    @Test
+    fun refusesAForeignStateAndExchangesTheMatchingOneAtTheProvider() = refusesAForeignStateAndExchangesTheMatchingOne(OAuthProviderId.MICROSOFT)
+
+    @Test
+    fun refusesAForeignStateAndExchangesTheMatchingOneAtGoogle() = refusesAForeignStateAndExchangesTheMatchingOne(OAuthProviderId.GOOGLE)
+
+    private fun opensTheProviderPage(provider: OAuthProviderId) {
+        assumeConfigured(provider)
+        val activity = launchSignIn(provider)
         try {
             waitUntil("the browser is opened", 15_000) { activity.isBrowserOpened }
             val state = onMain { activity.pendingState }
             assertNotNull("a request is waiting", state)
-            assertEquals(strings.getString(R.string.oauth_waiting, strings.getString(R.string.editor_oauth_provider_microsoft)), onMain { activity.statusText.toString() })
-            Log.i(TAG, "browser opened for provider=microsoft, state length ${state!!.length}")
+            assertEquals(strings.getString(R.string.oauth_waiting, providerName(provider)), onMain { activity.statusText.toString() })
+            Log.i(TAG, "browser opened for provider=${provider.id}, state length ${state!!.length}")
             // the driver looks at the top activity and takes a screenshot meanwhile
             Thread.sleep(8_000)
         } finally {
@@ -80,34 +93,33 @@ class OAuthDeviceTest {
         }
     }
 
-    @Test
-    fun refusesAForeignStateAndExchangesTheMatchingOneAtTheProvider() {
-        assumeTrue("this build carries no Microsoft client id", clients.isConfigured(OAuthProviderId.MICROSOFT))
-        val redirect = clients.redirectUri(OAuthProviderId.MICROSOFT)
+    private fun refusesAForeignStateAndExchangesTheMatchingOne(provider: OAuthProviderId) {
+        assumeConfigured(provider)
+        val redirect = clients.redirectUri(provider)
         val rejectedPrefix = strings.getString(R.string.oauth_rejected, "").trim()
         val failedPrefix = strings.getString(R.string.oauth_failed, "").trim()
-        val activity = launchSignIn()
+        val activity = launchSignIn(provider)
         try {
             waitUntil("the request is prepared", 15_000) { activity.pendingState != null }
             val state = onMain { activity.pendingState }!!
 
             // 1. a redirect that carries another state: refused, the request stays open
             deliver("$redirect?code=made-up&state=${state}x")
-            waitUntil("the foreign redirect is refused", 20_000) { activity.statusText.toString().startsWith(rejectedPrefix) }
+            waitUntil("the foreign redirect is refused", 20_000, activity) { activity.statusText.toString().startsWith(rejectedPrefix) }
             assertEquals("the request is still waiting", state, onMain { activity.pendingState })
             Log.i(TAG, "foreign state refused: ${onMain { activity.statusText }}")
 
             // 2. the matching state with a code the provider never issued: the exchange reaches the token endpoint and fails there
             deliver("$redirect?code=made-up&state=$state")
-            waitUntil("the exchange fails at the provider", 60_000) { activity.statusText.toString().startsWith(failedPrefix) }
+            waitUntil("the exchange fails at the provider", 60_000, activity) { activity.statusText.toString().startsWith(failedPrefix) }
             assertNull("one code, one exchange: the request is spent", onMain { activity.pendingState })
             val failure = onMain { activity.statusText.toString() }
             assertFalse("the failure text names no code or verifier", failure.contains("made-up"))
-            Log.i(TAG, "matching state exchanged, provider answered: $failure")
+            Log.i(TAG, "matching state exchanged, provider answered (${provider.id}): $failure")
 
             // 3. a late redirect after the exchange: nothing is waiting any more
             deliver("$redirect?code=made-up&state=$state")
-            waitUntil("the late redirect is refused", 20_000) { activity.statusText.toString().startsWith(rejectedPrefix) }
+            waitUntil("the late redirect is refused", 20_000, activity) { activity.statusText.toString().startsWith(rejectedPrefix) }
             Log.i(TAG, "late redirect refused: ${onMain { activity.statusText }}")
         } finally {
             onMain { activity.finish() }
@@ -177,16 +189,31 @@ class OAuthDeviceTest {
     }
 
     @Test
-    fun aRevokedRecordRefusesEverySessionUntilANewSignIn() {
+    fun aRevokedRecordRefusesEverySessionUntilANewSignIn() = aRevokedRecordRefusesEverySession(OAuthProviderId.MICROSOFT, ACCOUNT_JSON)
+
+    /**
+     * The same with a Google record: Google offers a revocation endpoint, so the revoker also posts
+     * the (made-up) refresh token there on its background thread; Google refuses it and the
+     * `MailOAuth` state line says "not done", which the driver records. The revoker asks the
+     * provider only for a configured client, hence the assumption.
+     */
+    @Test
+    fun aRevokedGoogleRecordRefusesEverySessionUntilANewSignIn() {
+        assumeConfigured(OAuthProviderId.GOOGLE)
+        aRevokedRecordRefusesEverySession(OAuthProviderId.GOOGLE, GOOGLE_ACCOUNT_JSON)
+        Thread.sleep(6_000)  // the background revocation call reaches Google and logs its outcome before the instrumentation ends the process
+    }
+
+    private fun aRevokedRecordRefusesEverySession(provider: OAuthProviderId, accountJson: String) {
         val store = AccountStores.of(context)
         val alias = "oauth-device-${UUID.randomUUID().toString().take(8)}"
         val now = System.currentTimeMillis()
-        val link = OAuthLink("microsoft", authorizedAt = now, expiresAt = now + 3_600_000L)
-        store.put(alias, AccountSecrets.withLink(ACCOUNT_JSON, link), SecretKind.OAUTH2, OAuthTokens("access-live", "refresh-live", now + 3_600_000L).toJson().toCharArray())
+        val link = OAuthLink(provider.id, authorizedAt = now, expiresAt = now + 3_600_000L)
+        store.put(alias, AccountSecrets.withLink(accountJson, link), SecretKind.OAUTH2, OAuthTokens("access-live", "refresh-live", now + 3_600_000L).toJson().toCharArray())
         try {
             assertEquals("access-live", AccountSecrets.of(context).withUsableSecret(alias) { _, chars -> String(chars) })
 
-            TokenRevoker.revoke(context, alias)  // Microsoft has no revocation endpoint: the local half is the whole of it
+            TokenRevoker.revoke(context, alias)  // Microsoft has no revocation endpoint (the local half is the whole of it); Google is asked on a background thread
 
             val stored = store.withSecret(alias) { _, chars -> OAuthTokens.parse(String(chars)) }
             assertEquals(TokenRevoker.REVOKED_TOKENS.accessToken, stored.accessToken)
@@ -202,10 +229,10 @@ class OAuthDeviceTest {
             }
 
             // "Sign in again" stores a fresh grant on the same record
-            AccountSecrets.of(context).storeGrant(alias, OAuthProviderId.MICROSOFT, OAuthTokens("access-new", "refresh-new", now + 7_200_000L))
+            AccountSecrets.of(context).storeGrant(alias, provider, OAuthTokens("access-new", "refresh-new", now + 7_200_000L))
             assertEquals("access-new", AccountSecrets.of(context).withUsableSecret(alias) { _, chars -> String(chars) })
             assertFalse(MailAccountOptions.parse(store.get(alias)!!.accountJson, SecretKind.OAUTH2).oauth!!.needsReauth)
-            Log.i(TAG, "revoked record refused, re-authorization restored it")
+            Log.i(TAG, "revoked record refused, re-authorization restored it (provider=${provider.id})")
         } finally {
             store.remove(alias)
         }
@@ -216,10 +243,20 @@ class OAuthDeviceTest {
      * on top of the plugin's task, and a plain launch into that task never reached the resumed
      * state in the same process (`startActivitySync` timed out), while a cleared task starts clean.
      */
-    private fun launchSignIn(): OAuthSignInActivity {
-        val intent = OAuthSignInActivity.intent(context, OAuthProviderId.MICROSOFT).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+    private fun launchSignIn(provider: OAuthProviderId): OAuthSignInActivity {
+        val intent = OAuthSignInActivity.intent(context, provider).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         return instrumentation.startActivitySync(intent) as OAuthSignInActivity
     }
+
+    private fun assumeConfigured(provider: OAuthProviderId) =
+        assumeTrue("this build carries no ${provider.id} client id", clients.isConfigured(provider))
+
+    private fun providerName(provider: OAuthProviderId): String = strings.getString(
+        when (provider) {
+            OAuthProviderId.GOOGLE -> R.string.editor_oauth_provider_google
+            OAuthProviderId.MICROSOFT -> R.string.editor_oauth_provider_microsoft
+        },
+    )
 
     /** What the browser does with the redirect URI: an implicit VIEW that the manifest routes to the redirect activity. */
     private fun deliver(uri: String) {
@@ -233,9 +270,20 @@ class OAuthDeviceTest {
         return value as T
     }
 
-    private fun waitUntil(what: String, timeoutMs: Long, condition: () -> Boolean) {
+    /**
+     * Waits for [condition] on the main thread. With [screen] given, a screen the platform finished
+     * meanwhile ends the case as a skipped assumption: the emulator's Chrome crashes in its
+     * `onTrimMemory` handler now and then (a `SIGILL` of its own check, seen on the API 37 image
+     * when its UI was hidden before the Custom Tab was launched again), and the platform finishes a
+     * paused activity underneath a crashing one, which is an environment condition, not the screen's.
+     */
+    private fun waitUntil(what: String, timeoutMs: Long, screen: OAuthSignInActivity? = null, condition: () -> Boolean) {
         val deadline = System.currentTimeMillis() + timeoutMs
         while (!onMain(condition)) {
+            if (screen != null && onMain { screen.isDestroyed || screen.isFinishing }) {
+                Log.i(TAG, "the sign-in screen was finished underneath the browser before $what (the browser crashed on top of it)")
+                throw AssumptionViolatedException("the sign-in screen was finished underneath the browser before $what (the browser crashed on top of it)")
+            }
             check(System.currentTimeMillis() < deadline) { "timed out waiting until $what" }
             Thread.sleep(250)
         }
@@ -256,5 +304,6 @@ class OAuthDeviceTest {
         const val TAG = "OAuthDevice"
         const val TEST_KEY_ALIAS = "io.github.supermonster003.autojs6.plugin.angus.mail.accounts.oauth-test"
         const val ACCOUNT_JSON = """{"provider":"outlook","address":"alice@outlook.com","auth":"xoauth2"}"""
+        const val GOOGLE_ACCOUNT_JSON = """{"provider":"gmail","address":"alice@gmail.com","auth":"xoauth2"}"""
     }
 }
