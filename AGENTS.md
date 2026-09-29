@@ -207,7 +207,7 @@ AutoJs6-Plugin-Angus-Mail/
 ### 11.1 启动器图标
 
 - `app/src/main/res/mipmap/ic_launcher.png` 与 `mipmap-night/` 变体, adaptive 图层由 `.python/generate_launcher_icons.py` 确定性生成; 修改图标时修改脚本并重新生成, 不手工改 PNG.
-- 图标语义为信封 (开口信封轮廓), 不沿用其他插件的图案或颜色身份; 背景色与 `values*/ic_launcher_background.xml` 保持一致.
+- 图标语义为信封 (开口信封轮廓). `ic_launcher` 与应用内引用保留既有蓝色品牌外观, `.python/generate_brand_icons.py` 保留原几何与配色; `ic_launcher_system` / `_light` / `_auto` 与 `ic_launcher_transparent` 用于四个稳定启动器 alias, 默认暗色. 亮色前景 / 背景为 `#272727` / `#FAFAFA`, 暗色为 `#D8D8D8` / `#212121`; 自动配色与透明背景由启动器能力决定. 修改后运行生成器的 `--check` 与资源 / 选择器 instrumentation, 保留原 Activity 对显式 Intent 的兼容. Auto 必须使用独立 XML 资源 ID, 不使用会在 Manifest 解析时被展开的 values 别名.
 
 ## 12. README 与多语言生成
 

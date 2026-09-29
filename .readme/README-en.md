@@ -52,7 +52,7 @@ All mail traffic stays inside the plugin process. AutoJs6 discovers the plugin t
 
 ******
 
-Version 1.2.1 adds the browser sign-in for Google and Microsoft accounts (roadmap P9) on top of the background watches of 1.1.0 (roadmap P8); every item of phases P0 to P8 shipped with 1.0.0 to 1.1.0, with evidence in [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Requires AutoJs6 6.8.0 (build 5282) or later; the "On mail arrived" task needs the host build with mail contract version 2; the full script API reference is in the [AutoJs6 documentation](https://docs.autojs6.com/#/mail).
+Version 1.3.0 adds the browser sign-in for Google and Microsoft accounts (roadmap P9) on top of the background watches of 1.1.0 (roadmap P8); every item of phases P0 to P8 shipped with 1.0.0 to 1.1.0, with evidence in [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). Requires AutoJs6 6.8.0 (build 5282) or later; the "On mail arrived" task needs the host build with mail contract version 2; the full script API reference is in the [AutoJs6 documentation](https://docs.autojs6.com/#/mail).
 
 ******
 
@@ -70,6 +70,7 @@ The plugin provides the following capabilities:
 - Providers: presets for Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina, and Aliyun fill in hosts, ports, and encryption; any field can be overridden for other servers.
 - Authentication: passwords and provider authorization codes, or XOAUTH2 access tokens supplied by the script together with a refresh callback.
 - Browser sign-in: a Gmail, Outlook.com or Microsoft 365 account can be added by signing in with the Google or Microsoft account in the system browser from the plugin settings (OAuth 2.0 authorization code with PKCE); the plugin keeps the refresh token encrypted on the device, renews the access token before every session and shows the sign-in state with "Sign in again" and "Revoke" on the accounts page. Scripts keep connecting by alias and never see a token.
+- Choose adaptive light, adaptive dark (default), automatic or transparent launcher icons in Settings. Automatic colors and transparency depend on launcher support; switching preserves the running app and may take a few seconds to refresh.
 
 ******
 
@@ -227,6 +228,12 @@ The plugin's plans and progress are maintained as a checkable list in ROADMAP.md
 
 ******
 
+#### v1.3.0
+
+_2026/09/29_
+
+- `Feature` Choose adaptive light, adaptive dark (default), automatic or transparent launcher icons in Settings. Automatic colors and transparency depend on launcher support; switching preserves the running app and may take a few seconds to refresh.
+
 #### v1.2.1
 
 _2026/09/22_
@@ -242,15 +249,6 @@ _2026/09/22_
 - `Feature` Browser sign-in for Google and Microsoft accounts (mail roadmap P9): the account editor offers "Sign in with Google (browser)" for the Gmail preset and "Sign in with Microsoft (browser)" for the Outlook.com and Microsoft 365 presets; the sign-in opens the provider's page in a Custom Tab (any browser as the fallback) with an OAuth 2.0 authorization-code request carrying PKCE (`S256`) and a random `state`, the redirect (`<applicationId>://oauth2/microsoft`, or the reversed Google client id scheme) lands on `OAuthRedirectActivity`, which hands it to the waiting sign-in screen; the screen refuses any redirect whose `state` does not match, exchanges the code at the token endpoint over HTTPS (`HttpsFormPoster`, the only HTTP client of the plugin) and prefills the address from the id token
 - `Feature` Token storage and renewal: the tokens of a browser sign-in are one encrypted record of the new kind `OAUTH2` in the account store (never a Binder field, never in `mail.accounts.list()`), the account document carries an `oauth` object (`provider`, `authorizedAt`, `expiresAt`, `needsReauth`) that `mail.accounts.list()` reports; every session of such an alias (scripts, the connection test, background watches) takes its access token from `AccountSecrets`, which renews it through the refresh token when less than five minutes remain, serialized per account; a refused refresh (`invalid_grant`) marks the record `needsReauth`, fails the session with `AUTH_FAILED` ("sign in again") and the accounts page shows "sign in again" next to the account
 - `Feature` Accounts page actions "Sign in again" (a new browser sign-in stored on the same record) and "Revoke sign-in" (the record's tokens are replaced at once by a revoked marker, Google is asked to revoke the refresh token, and the account stops working until a new sign-in); the `gmail`, `outlook` and `office365` presets' `authHint` names the browser sign-in first (`providers.json` version 4); 35 new strings in 11 languages; JVM tests for PKCE, the authorization request and redirect parsing, the token client against a scripted transport, the token document, the provider table, the build's clients and redirect URIs, `AccountSecrets` (refresh, refusal marking, revoked records, wiping) and the `oauth` object in the account options, the form and the accounts document
-
-#### v1.1.0
-
-_2026/09/21_
-
-- `Hint` Background watches are new in 1.1.0 (mail roadmap P8): the Watches page of the settings keeps saved accounts watched in a foreground service while no script runs and wakes the "On mail arrived" task of AutoJs6. That task and its watch picker need the host build that carries mail contract version 2 (AutoJs6 6.8.0 after build 5282); on an older host the page says that AutoJs6 cannot be woken and the new messages only reach the watch's record list. The feature adds four permissions, each explained in the README security section: FOREGROUND_SERVICE and FOREGROUND_SERVICE_SPECIAL_USE (the watch service), POST_NOTIFICATIONS (its persistent notification, requested only when a watch is enabled) and RECEIVE_BOOT_COMPLETED (the boot switch of the Watches page, off by default).
-- `Feature` Background watches (mail roadmap P8): the settings gained a Watches page that configures up to 16 watches (`MAX_TRIGGERS`) on saved accounts, each with a name, the account alias, the folder, the mode (auto, IDLE or polling with its interval) and optional sender and subject filters, stored as `mail-triggers/triggers.json` under the no-backup directory; the `specialUse` foreground service `MailWatchService` runs the enabled watches on the P5 watchers (IDLE where the server pushes, polling elsewhere, reconnects with backoff, an immediate reconnect on a network change) while no script runs and shows one low-priority notification; every new message is added to the watch's record list (the last 100 envelope summaries, `MAX_TRIGGER_RECORDS`, never a body) and the page shows the connection state, the last error, the records and a reconnect action; the boot switch (off by default) enables the `BOOT_COMPLETED` receiver that restarts the service after a reboot
-- `Feature` Mail contract version 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, capability feature `backgroundWatch`): the host subscribes to a configured watch with a generation and an optional filter, gets the current status at once and then `onStatus` (stopped, connecting, connected or failed with the reason and the last error) and `onMail(generation, seq, event)` for every matching message, the `mail` event carrying the watch id, alias, address, folder, the message envelope and `receivedAt`; a watch takes at most 4 subscribers (`MAX_TRIGGER_SUBSCRIBERS`), a disabled or unknown watch and unusable options are refused with a `stopped` status whose reason is `refused`, `update` replaces the subscriber's filter and `stop` ends only the subscription; without a live subscriber every event goes to AutoJs6 as the explicit broadcast `org.autojs.autojs6.action.MAIL_TRIGGER` behind its `PLUGIN` signature permission, which starts the host's "On mail arrived" task even when no script is running (`MailTriggerBinderTest` on an API 37 AVD; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)
-- `Feature` The mail core gained the trigger documents and rules shared by the page, the service and the Binder (`TriggerConfig`, `TriggerFilter` with case-insensitive sender and subject substrings, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) and the ceilings `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS` and `MIN_TRIGGER_INTERVAL_MS` (3 s, the host's throttle per task), and the watchers report `onConnected` so that a background watch shows `connected` as soon as its folder is open
 
 ##### For more release history
 

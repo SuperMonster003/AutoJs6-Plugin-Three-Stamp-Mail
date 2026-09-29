@@ -133,6 +133,15 @@
     <string name="language_zh_hans">简体中文</string>
     <string name="language_zh_hant_hk">繁體中文 (香港)</string>
     <string name="language_zh_hant_tw">繁體中文 (台灣)</string>
+    <string name="launcher_icon_applied_note">قد يستغرق تحديث المشغل بضع ثوان. قد تحتاج إلى إضافة بعض اختصارات الشاشة الرئيسية مرة أخرى.</string>
+    <string name="launcher_icon_auto">متكيف تلقائي</string>
+    <string name="launcher_icon_auto_note">يحاول اتباع سمة النظام. بعض المشغلات تخزن الرموز مؤقتا أو تستخدم نظام ألوان واحدا فقط.</string>
+    <string name="launcher_icon_dark">متكيف داكن</string>
+    <string name="launcher_icon_failed">تعذر تغيير رمز المشغل. يرجى المحاولة مرة أخرى.</string>
+    <string name="launcher_icon_light">متكيف فاتح</string>
+    <string name="launcher_icon_title">رمز المشغل</string>
+    <string name="launcher_icon_transparent">خلفية شفافة</string>
+    <string name="launcher_icon_transparent_note">قد تضيف بعض المشغلات خلفية أو قناعا, لذلك قد لا يتم الحفاظ على الشفافية.</string>
     <string name="navigation_back">رجوع</string>
     <string name="oauth_action_cancel">إلغاء</string>
     <string name="oauth_action_open_browser">فتح المتصفح مجددا</string>

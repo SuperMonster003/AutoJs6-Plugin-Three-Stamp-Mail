@@ -5,6 +5,12 @@
   "changelog_label_improvement": "Amélioration",
   "changelog_label_dependency": "Dépendance",
   "$data": {
+    "v1.3.0": {
+      "released_date": "2026/09/29",
+      "feature": [
+        "Choisissez une icône de lanceur adaptative claire, sombre (par défaut), automatique ou transparente dans les paramètres. Les couleurs automatiques et la transparence dépendent du lanceur. Le changement conserve l'application en cours et peut demander quelques secondes."
+      ]
+    },
     "v1.2.1": {
       "released_date": "2026/09/22",
       "fix": [

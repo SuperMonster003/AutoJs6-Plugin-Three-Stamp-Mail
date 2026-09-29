@@ -52,7 +52,7 @@ Angus Mail 為 AutoJs6 腳本提供全域物件 `mail`, 用於傳送郵件, 列�
 
 ******
 
-版本 1.2.1 在 1.1.0 的後台守望 (路線圖 P8) 之上新增 Google 與 Microsoft 帳號的瀏覽器登入 (路線圖 P9); P0 至 P8 各階段的全部條目已隨 1.0.0 至 1.1.0 發佈, 證據見 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). 需要 AutoJs6 6.8.0 (build 5282) 或更高版本; "郵件到達時" 任務需要攜帶郵件契約版本 2 的宿主建置; 完整的指令碼 API 參考見 [AutoJs6 文件](https://docs.autojs6.com/#/mail).
+版本 1.3.0 在 1.1.0 的後台守望 (路線圖 P8) 之上新增 Google 與 Microsoft 帳號的瀏覽器登入 (路線圖 P9); P0 至 P8 各階段的全部條目已隨 1.0.0 至 1.1.0 發佈, 證據見 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). 需要 AutoJs6 6.8.0 (build 5282) 或更高版本; "郵件到達時" 任務需要攜帶郵件契約版本 2 的宿主建置; 完整的指令碼 API 參考見 [AutoJs6 文件](https://docs.autojs6.com/#/mail).
 
 ******
 
@@ -70,6 +70,7 @@ Angus Mail 為 AutoJs6 腳本提供全域物件 `mail`, 用於傳送郵件, 列�
 - 服務商: 內建 Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina 和 Aliyun 預設, 自動填入主機, 連接埠與加密方式; 任何欄位都可為其他伺服器覆蓋.
 - 認證: 密碼與服務商授權碼, 或由腳本提供並附帶重新整理回呼的 XOAUTH2 存取權杖.
 - 瀏覽器登入: Gmail, Outlook.com 或 Microsoft 365 帳戶可以在外掛設定頁經系統瀏覽器以 Google 或 Microsoft 帳號登入後新增 (OAuth 2.0 授權碼流程 + PKCE); 外掛把重新整理權杖加密儲存在本機, 每次會話前續期存取權杖, 並在帳戶頁顯示登入狀態與 "重新登入" / "撤銷登入" 操作. 指令碼仍按別名連接, 不接觸任何權杖.
+- 設定中可選擇自適應亮色, 自適應暗色 (預設), 自動或透明背景啟動器圖示. 自動配色與透明效果取決於啟動器支援, 切換時保留應用程式執行狀態, 圖示可能需要幾秒鐘重新整理.
 
 ******
 
@@ -227,6 +228,12 @@ minimum host build: 5282 (6.8.0)
 
 ******
 
+#### v1.3.0
+
+_2026/09/29_
+
+- `新增` 設定中可選擇自適應亮色, 自適應暗色 (預設), 自動或透明背景啟動器圖示. 自動配色與透明效果取決於啟動器支援, 切換時保留應用程式執行狀態, 圖示可能需要幾秒鐘重新整理.
+
 #### v1.2.1
 
 _2026/09/22_
@@ -242,15 +249,6 @@ _2026/09/22_
 - `新增` Google 與 Microsoft 帳號的瀏覽器登入 (郵件路線圖 P9): 帳戶編輯器為 Gmail 預設提供 "使用 Google 帳號登入 (瀏覽器)", 為 Outlook.com 與 Microsoft 365 預設提供 "使用 Microsoft 帳號登入 (瀏覽器)"; 登入在 Custom Tab (回退為任意瀏覽器) 中開啟服務商頁面, 攜帶 PKCE (`S256`) 與隨機 `state` 的 OAuth 2.0 授權碼請求, 重新導向 (`<applicationId>://oauth2/microsoft`, 或 Google 反轉用戶端 id 的 scheme) 落在 `OAuthRedirectActivity`, 由它交給等待中的登入頁面; 頁面拒絕任何 `state` 不匹配的重新導向, 經 HTTPS 在權杖端點交換授權碼 (`HttpsFormPoster`, 外掛唯一的 HTTP 用戶端), 並從 id 權杖預填地址
 - `新增` 權杖儲存與續期: 瀏覽器登入的權杖是帳戶儲存中新種類 `OAUTH2` 的一條加密記錄 (從不作為 Binder 欄位, 從不出現在 `mail.accounts.list()`), 帳戶文件帶有 `oauth` 物件 (`provider`, `authorizedAt`, `expiresAt`, `needsReauth`), `mail.accounts.list()` 會報告它; 該別名的每個會話 (指令碼, 連接測試, 後台守望) 都從 `AccountSecrets` 取存取權杖, 剩餘不足五分鐘時經重新整理權杖續期, 按帳戶串行; 續期被拒 (`invalid_grant`) 時記錄標記 `needsReauth`, 會話以 `AUTH_FAILED` ("sign in again") 失敗, 帳戶頁在該帳戶旁顯示 "需要重新登入"
 - `新增` 帳戶頁操作 "重新登入" (新的瀏覽器登入存入同一記錄) 與 "撤銷登入" (記錄的權杖立即換成已撤銷標記, 請求 Google 撤銷重新整理權杖, 帳戶在重新登入前停止工作); `gmail`, `outlook` 與 `office365` 預設的 `authHint` 首先提及瀏覽器登入 (`providers.json` 版本 4); 11 語言各 35 條新字串; JVM 測試覆蓋 PKCE, 授權請求與重新導向解析, 基於指令碼化傳輸的權杖用戶端, 權杖文件, 服務商表, 建置的用戶端與重新導向 URI, `AccountSecrets` (續期, 拒絕標記, 已撤銷記錄, 擦除) 以及帳戶選項, 表單與帳戶文件中的 `oauth` 物件
-
-#### v1.1.0
-
-_2026/09/21_
-
-- `提示` 1.1.0 新增後台守望 (郵件路線圖 P8): 設定頁的守望頁面在沒有腳本運行時以前台服務保持已儲存帳戶的守望, 並喚醒 AutoJs6 的 "郵件到達時" 任務. 該任務及其守望選擇器需要攜帶郵件契約版本 2 的宿主構建 (AutoJs6 6.8.0 構建 5282 之後); 舊版宿主上頁面會提示無法喚醒 AutoJs6, 新郵件只進入守望的記錄列表. 此功能新增四項權限, 理由見 README 安全章節: FOREGROUND_SERVICE 與 FOREGROUND_SERVICE_SPECIAL_USE (守望服務), POST_NOTIFICATIONS (其常駐通知, 僅在啟用守望時申請) 與 RECEIVE_BOOT_COMPLETED (守望頁面的開機自啟開關, 預設關閉).
-- `新增` 後台守望 (郵件路線圖 P8): 設定頁新增守望頁面, 可為已儲存帳戶配置至多 16 個守望 (`MAX_TRIGGERS`), 每個含名稱, 帳戶別名, 資料夾, 模式 (自動, IDLE 或帶間隔的輪詢) 與可選的寄件人 / 主旨過濾, 存於 no-backup 目錄下的 `mail-triggers/triggers.json`; `specialUse` 前台服務 `MailWatchService` 在沒有腳本運行時以 P5 的監聽器運行已啟用的守望 (伺服器推送時用 IDLE, 否則輪詢, 斷線按退避重連, 網絡變化時立即重連) 並顯示一條低優先級通知; 每封新郵件進入守望的記錄列表 (最近 100 條信封摘要, `MAX_TRIGGER_RECORDS`, 不含正文), 頁面顯示連接狀態, 最近錯誤, 記錄與重連操作; 開機自啟開關 (預設關閉) 啟用 `BOOT_COMPLETED` 接收器, 重啟後重新拉起服務
-- `新增` 郵件契約版本 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, 能力特性 `backgroundWatch`): 宿主以 generation 與可選過濾訂閱已配置的守望, 立即收到當前狀態, 之後收到 `onStatus` (stopped, connecting, connected 或 failed, 附原因與最近錯誤) 與每封匹配郵件的 `onMail(generation, seq, event)`, `mail` 事件攜帶守望 id, 別名, 地址, 資料夾, 郵件信封與 `receivedAt`; 每個守望至多 4 個訂閱者 (`MAX_TRIGGER_SUBSCRIBERS`), 已停用或不存在的守望與不可用的選項以 reason 為 `refused` 的 `stopped` 狀態拒絕, `update` 替換訂閱者的過濾, `stop` 只結束訂閱; 沒有活動訂閱者時每個事件以顯式廣播 `org.autojs.autojs6.action.MAIL_TRIGGER` 發往 AutoJs6 (受其 `PLUGIN` 簽名權限保護), 即使沒有腳本運行也能啟動宿主的 "郵件到達時" 任務 (`MailTriggerBinderTest` 於 API 37 AVD; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)
-- `新增` 郵件核心新增頁面, 服務與 Binder 共用的觸發文檔與規則 (`TriggerConfig`, 寄件人與主旨子串不區分大小寫的 `TriggerFilter`, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) 與上限 `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS`, `MIN_TRIGGER_INTERVAL_MS` (3 s, 宿主每任務的節流間隔), 監聽器新增 `onConnected` 回調, 後台守望在資料夾打開後即顯示 `connected`
 
 ##### 更多發行歷史
 

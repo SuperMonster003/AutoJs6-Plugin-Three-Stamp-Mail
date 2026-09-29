@@ -52,7 +52,7 @@ Angus Mail은 AutoJs6 스크립트에 전역 객체 `mail`을 제공하여 메�
 
 ******
 
-버전 1.2.1 은 1.1.0 의 백그라운드 감시 (로드맵 P8) 위에 Google 및 Microsoft 계정의 브라우저 로그인 (로드맵 P9) 을 추가합니다. P0 부터 P8 까지의 모든 항목은 1.0.0 부터 1.1.0 으로 출시되었으며 증거는 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) 에 있습니다. AutoJs6 6.8.0 (빌드 5282) 이상이 필요합니다. "메일 도착 시" 작업에는 메일 계약 버전 2 를 가진 호스트 빌드가 필요합니다. 스크립트 API 의 전체 참조는 [AutoJs6 문서](https://docs.autojs6.com/#/mail) 에 있습니다.
+버전 1.3.0 은 1.1.0 의 백그라운드 감시 (로드맵 P8) 위에 Google 및 Microsoft 계정의 브라우저 로그인 (로드맵 P9) 을 추가합니다. P0 부터 P8 까지의 모든 항목은 1.0.0 부터 1.1.0 으로 출시되었으며 증거는 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) 에 있습니다. AutoJs6 6.8.0 (빌드 5282) 이상이 필요합니다. "메일 도착 시" 작업에는 메일 계약 버전 2 를 가진 호스트 빌드가 필요합니다. 스크립트 API 의 전체 참조는 [AutoJs6 문서](https://docs.autojs6.com/#/mail) 에 있습니다.
 
 ******
 
@@ -70,6 +70,7 @@ Angus Mail은 AutoJs6 스크립트에 전역 객체 `mail`을 제공하여 메�
 - 제공자: Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina, Aliyun 프리셋이 호스트, 포트, 암호화를 채워 주며, 다른 서버를 위해 어떤 필드든 재정의할 수 있습니다.
 - 인증: 비밀번호와 제공자 인증 코드, 또는 스크립트가 갱신 콜백과 함께 제공하는 XOAUTH2 액세스 토큰을 지원합니다.
 - 브라우저 로그인: Gmail, Outlook.com 또는 Microsoft 365 계정은 플러그인 설정에서 시스템 브라우저로 Google 또는 Microsoft 계정에 로그인하여 추가할 수 있습니다 (PKCE 를 사용하는 OAuth 2.0 인증 코드 흐름). 플러그인은 새로 고침 토큰을 기기 안에 암호화하여 보관하고 세션마다 액세스 토큰을 갱신하며 계정 페이지에 로그인 상태와 "다시 로그인" / "로그인 취소" 를 표시합니다. 스크립트는 계속 별칭으로 연결하며 토큰을 보지 않습니다.
+- 설정에서 밝은색, 어두운색 (기본값), 자동 또는 투명 배경 런처 아이콘을 선택합니다. 자동 색상과 투명도는 런처 지원에 따라 달라집니다. 변경해도 앱 실행 상태가 유지되며 아이콘 갱신에 몇 초가 걸릴 수 있습니다.
 
 ******
 
@@ -227,6 +228,12 @@ minimum host build: 5282 (6.8.0)
 
 ******
 
+#### v1.3.0
+
+_2026/09/29_
+
+- `기능` 설정에서 밝은색, 어두운색 (기본값), 자동 또는 투명 배경 런처 아이콘을 선택합니다. 자동 색상과 투명도는 런처 지원에 따라 달라집니다. 변경해도 앱 실행 상태가 유지되며 아이콘 갱신에 몇 초가 걸릴 수 있습니다.
+
 #### v1.2.1
 
 _2026/09/22_
@@ -242,15 +249,6 @@ _2026/09/22_
 - `기능` Google 및 Microsoft 계정의 브라우저 로그인 (메일 로드맵 P9): 계정 편집기는 Gmail 프리셋에 "Google 계정으로 로그인 (브라우저)", Outlook.com 및 Microsoft 365 프리셋에 "Microsoft 계정으로 로그인 (브라우저)" 를 제공합니다. 로그인은 Custom Tab (대체는 아무 브라우저) 에서 제공업체 페이지를 열고 PKCE (`S256`) 와 무작위 `state` 를 담은 OAuth 2.0 인증 코드 요청을 보내며, 리디렉션 (`<applicationId>://oauth2/microsoft`, 또는 Google 의 역순 클라이언트 id 스킴) 은 `OAuthRedirectActivity` 에 도착하여 대기 중인 로그인 화면으로 전달됩니다. 화면은 `state` 가 일치하지 않는 리디렉션을 거부하고, HTTPS 로 토큰 엔드포인트에서 코드를 교환하며 (`HttpsFormPoster`, 플러그인의 유일한 HTTP 클라이언트), id 토큰에서 주소를 미리 채웁니다
 - `기능` 토큰 저장과 갱신: 브라우저 로그인의 토큰은 계정 저장소의 새 종류 `OAUTH2` 인 암호화 레코드 하나입니다 (Binder 필드에도 `mail.accounts.list()` 에도 절대 나타나지 않음). 계정 문서는 `oauth` 객체 (`provider`, `authorizedAt`, `expiresAt`, `needsReauth`) 를 가지며 `mail.accounts.list()` 가 이를 보고합니다. 그 별칭의 모든 세션 (스크립트, 연결 테스트, 백그라운드 감시) 은 `AccountSecrets` 에서 액세스 토큰을 받으며, 5 분 미만 남으면 새로 고침 토큰으로 갱신합니다 (계정별 직렬화). 갱신이 거부되면 (`invalid_grant`) 레코드에 `needsReauth` 가 표시되고 세션은 `AUTH_FAILED` ("sign in again") 로 실패하며 계정 페이지는 해당 계정 옆에 "다시 로그인 필요" 를 표시합니다
 - `기능` 계정 페이지 작업 "다시 로그인" (새 브라우저 로그인을 같은 레코드에 저장) 과 "로그인 취소" (레코드의 토큰을 즉시 취소 표시로 바꾸고 Google 에 새로 고침 토큰 취소를 요청하며 다시 로그인할 때까지 계정이 작동하지 않음). `gmail`, `outlook`, `office365` 프리셋의 `authHint` 는 브라우저 로그인을 먼저 언급합니다 (`providers.json` 버전 4). 11 개 언어에 35 개의 새 문자열. JVM 테스트: PKCE, 인증 요청과 리디렉션 파싱, 스크립트화된 전송에 대한 토큰 클라이언트, 토큰 문서, 제공업체 표, 빌드의 클라이언트와 리디렉션 URI, `AccountSecrets` (갱신, 거부 표시, 취소된 레코드, 지우기), 계정 옵션 / 폼 / 계정 문서의 `oauth` 객체
-
-#### v1.1.0
-
-_2026/09/21_
-
-- `힌트` 1.1.0 에 백그라운드 감시가 추가되었습니다 (메일 로드맵 P8): 설정의 감시 페이지는 스크립트가 실행되지 않는 동안에도 포그라운드 서비스로 저장된 계정의 감시를 유지하고 AutoJs6 의 "메일 도착 시" 작업을 깨웁니다. 이 작업과 감시 선택기는 메일 계약 버전 2 를 포함한 호스트 빌드 (AutoJs6 6.8.0 빌드 5282 이후) 가 필요합니다. 이전 호스트에서는 페이지에 AutoJs6 를 깨울 수 없다고 표시되며 새 메일은 감시의 기록 목록에만 남습니다. 이 기능은 네 가지 권한을 추가하며 각 이유는 README 보안 절에 있습니다: FOREGROUND_SERVICE 와 FOREGROUND_SERVICE_SPECIAL_USE (감시 서비스), POST_NOTIFICATIONS (상주 알림, 감시를 켤 때만 요청), RECEIVE_BOOT_COMPLETED (감시 페이지의 부팅 시 시작 스위치, 기본 꺼짐).
-- `기능` 백그라운드 감시 (메일 로드맵 P8): 설정에 감시 페이지가 추가되어 저장된 계정에 최대 16 개의 감시 (`MAX_TRIGGERS`) 를 설정할 수 있습니다. 각 감시는 이름, 계정 별칭, 폴더, 모드 (자동, IDLE 또는 간격이 있는 폴링), 선택적 보낸 사람 / 제목 필터를 가지며 no-backup 디렉터리의 `mail-triggers/triggers.json` 에 저장됩니다. `specialUse` 포그라운드 서비스 `MailWatchService` 는 스크립트가 실행되지 않는 동안 P5 워처로 활성 감시를 실행하고 (서버가 푸시하면 IDLE, 아니면 폴링, 백오프 재연결, 네트워크 변경 시 즉시 재연결) 낮은 우선순위 알림 하나를 표시합니다. 새 메일은 감시의 기록 목록 (최근 100 개의 봉투 요약, `MAX_TRIGGER_RECORDS`, 본문 없음) 에 추가되고 페이지는 연결 상태, 마지막 오류, 기록, 재연결 동작을 보여 줍니다. 부팅 시 시작 스위치 (기본 꺼짐) 는 재부팅 후 서비스를 다시 시작하는 `BOOT_COMPLETED` 리시버를 활성화합니다
-- `기능` 메일 계약 버전 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, 기능 플래그 `backgroundWatch`): 호스트는 generation 과 선택적 필터로 설정된 감시를 구독하고 즉시 현재 상태를 받은 뒤 `onStatus` (stopped, connecting, connected 또는 failed 와 이유 및 마지막 오류) 와 일치하는 메일마다 `onMail(generation, seq, event)` 를 받습니다. `mail` 이벤트는 감시 id, 별칭, 주소, 폴더, 메일 봉투, `receivedAt` 를 담습니다. 감시당 구독자는 최대 4 (`MAX_TRIGGER_SUBSCRIBERS`), 비활성 또는 존재하지 않는 감시와 사용할 수 없는 옵션은 이유가 `refused` 인 `stopped` 상태로 거부되고, `update` 는 구독자의 필터를 교체하며 `stop` 은 구독만 끝냅니다. 살아 있는 구독자가 없으면 각 이벤트는 `PLUGIN` 서명 권한 뒤의 AutoJs6 로 명시적 브로드캐스트 `org.autojs.autojs6.action.MAIL_TRIGGER` 로 전달되어 스크립트가 실행 중이 아니어도 호스트의 "메일 도착 시" 작업을 시작합니다 (API 37 AVD 의 `MailTriggerBinderTest`; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)
-- `기능` 메일 코어에 페이지, 서비스, Binder 가 공유하는 트리거 문서와 규칙 (`TriggerConfig`, 보낸 사람과 제목 부분 문자열을 대소문자 구분 없이 비교하는 `TriggerFilter`, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) 과 상한 `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS`, `MIN_TRIGGER_INTERVAL_MS` (3 초, 호스트의 작업별 스로틀) 가 추가되었고, 워처는 `onConnected` 를 보고하여 백그라운드 감시가 폴더를 연 즉시 `connected` 를 표시합니다
 
 ##### 더 많은 릴리스 기록
 

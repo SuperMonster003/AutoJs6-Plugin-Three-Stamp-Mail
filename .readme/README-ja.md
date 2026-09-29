@@ -52,7 +52,7 @@ Angus Mail は AutoJs6 スクリプトにグローバルオブジェクト `mail
 
 ******
 
-バージョン 1.2.1 は 1.1.0 のバックグラウンド監視 (ロードマップ P8) に加えて Google と Microsoft アカウントのブラウザーログイン (ロードマップ P9) を追加します. フェーズ P0 から P8 の全項目は 1.0.0 から 1.1.0 で出荷済みで, 証拠は [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) にあります. AutoJs6 6.8.0 (ビルド 5282) 以降が必要です. "メール到着時" タスクにはメール契約バージョン 2 を持つホストビルドが必要です. スクリプト API の完全なリファレンスは [AutoJs6 ドキュメント](https://docs.autojs6.com/#/mail) にあります.
+バージョン 1.3.0 は 1.1.0 のバックグラウンド監視 (ロードマップ P8) に加えて Google と Microsoft アカウントのブラウザーログイン (ロードマップ P9) を追加します. フェーズ P0 から P8 の全項目は 1.0.0 から 1.1.0 で出荷済みで, 証拠は [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md) にあります. AutoJs6 6.8.0 (ビルド 5282) 以降が必要です. "メール到着時" タスクにはメール契約バージョン 2 を持つホストビルドが必要です. スクリプト API の完全なリファレンスは [AutoJs6 ドキュメント](https://docs.autojs6.com/#/mail) にあります.
 
 ******
 
@@ -70,6 +70,7 @@ Angus Mail は AutoJs6 スクリプトにグローバルオブジェクト `mail
 - プロバイダー: Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina, Aliyun のプリセットがホスト, ポート, 暗号化を補完し, 他のサーバー向けに任意の項目を上書きできます.
 - 認証: パスワードとプロバイダーの認証コード, またはスクリプトが更新コールバックとともに渡す XOAUTH2 アクセストークンに対応します.
 - ブラウザーログイン: Gmail, Outlook.com, Microsoft 365 のアカウントは, プラグイン設定からシステムブラウザーで Google または Microsoft アカウントにログインして追加できます (PKCE 付き OAuth 2.0 認可コードフロー). プラグインはリフレッシュトークンを端末内に暗号化して保存し, セッションのたびにアクセストークンを更新し, アカウントページにログイン状態と "再ログイン" / "ログインを取り消す" を表示します. スクリプトは引き続きエイリアスで接続し, トークンに触れることはありません.
+- 設定でランチャーアイコンを明色, 暗色 (初期値), 自動, 透明背景から選べます. 自動配色と透明表示はランチャーの対応状況によります. 切り替えてもアプリの実行状態は維持され, 表示の更新に数秒かかる場合があります.
 
 ******
 
@@ -227,6 +228,12 @@ minimum host build: 5282 (6.8.0)
 
 ******
 
+#### v1.3.0
+
+_2026/09/29_
+
+- `機能` 設定でランチャーアイコンを明色, 暗色 (初期値), 自動, 透明背景から選べます. 自動配色と透明表示はランチャーの対応状況によります. 切り替えてもアプリの実行状態は維持され, 表示の更新に数秒かかる場合があります.
+
 #### v1.2.1
 
 _2026/09/22_
@@ -242,15 +249,6 @@ _2026/09/22_
 - `機能` Google と Microsoft アカウントのブラウザーログイン (メールロードマップ P9): アカウントエディターは Gmail プリセットに "Google アカウントでログイン (ブラウザー)", Outlook.com と Microsoft 365 プリセットに "Microsoft アカウントでログイン (ブラウザー)" を提供します. ログインは Custom Tab (フォールバックは任意のブラウザー) でプロバイダーのページを開き, PKCE (`S256`) とランダムな `state` を伴う OAuth 2.0 認可コード要求を送ります. リダイレクト (`<applicationId>://oauth2/microsoft`, または Google の反転クライアント id スキーム) は `OAuthRedirectActivity` に着地し, 待機中のログイン画面へ渡されます. 画面は `state` が一致しないリダイレクトを拒否し, HTTPS でトークンエンドポイントにてコードを交換し (`HttpsFormPoster`, プラグイン唯一の HTTP クライアント), id トークンからアドレスを事前入力します
 - `機能` トークンの保存と更新: ブラウザーログインのトークンはアカウントストアの新種別 `OAUTH2` の暗号化レコード 1 件です (Binder フィールドにも `mail.accounts.list()` にも決して現れません). アカウント文書は `oauth` オブジェクト (`provider`, `authorizedAt`, `expiresAt`, `needsReauth`) を持ち, `mail.accounts.list()` がそれを報告します. そのエイリアスのすべてのセッション (スクリプト, 接続テスト, バックグラウンド監視) は `AccountSecrets` からアクセストークンを受け取り, 残り 5 分未満ならリフレッシュトークンで更新します (アカウントごとに直列化). 更新が拒否されると (`invalid_grant`) レコードに `needsReauth` が付き, セッションは `AUTH_FAILED` ("sign in again") で失敗し, アカウントページはそのアカウントの横に "再ログインが必要" と表示します
 - `機能` アカウントページの操作 "再ログイン" (新しいブラウザーログインを同じレコードに保存) と "ログインを取り消す" (レコードのトークンを直ちに取り消し済みマーカーに置き換え, Google にリフレッシュトークンの取り消しを要求し, 再ログインまでアカウントは動作しません). `gmail`, `outlook`, `office365` プリセットの `authHint` はブラウザーログインを最初に挙げます (`providers.json` バージョン 4). 11 言語に 35 の新しい文字列. JVM テスト: PKCE, 認可要求とリダイレクトの解析, スクリプト化した通信に対するトークンクライアント, トークン文書, プロバイダー表, ビルドのクライアントとリダイレクト URI, `AccountSecrets` (更新, 拒否のマーク, 取り消し済みレコード, 消去), アカウントオプション / フォーム / アカウント文書の `oauth` オブジェクト
-
-#### v1.1.0
-
-_2026/09/21_
-
-- `ヒント` 1.1.0 でバックグラウンド監視が加わりました (メールロードマップ P8): 設定の監視ページは, スクリプトが動いていない間もフォアグラウンドサービスで保存済みアカウントの監視を保ち, AutoJs6 の "メール到着時" タスクを起動します. このタスクと監視の選択にはメール契約バージョン 2 を持つホストビルド (AutoJs6 6.8.0 のビルド 5282 より後) が必要です. 古いホストではページに AutoJs6 を起動できない旨が表示され, 新着メールは監視の記録リストにのみ残ります. この機能のために 4 つの権限が追加され, それぞれの理由は README のセキュリティ節にあります: FOREGROUND_SERVICE と FOREGROUND_SERVICE_SPECIAL_USE (監視サービス), POST_NOTIFICATIONS (常駐通知, 監視を有効にするときだけ要求), RECEIVE_BOOT_COMPLETED (監視ページの起動時自動開始スイッチ, 既定はオフ).
-- `機能` バックグラウンド監視 (メールロードマップ P8): 設定に監視ページが加わり, 保存済みアカウントに最大 16 個の監視 (`MAX_TRIGGERS`) を設定できます. 各監視は名前, アカウントのエイリアス, フォルダー, モード (自動, IDLE, または間隔付きのポーリング), 任意の送信者 / 件名フィルターを持ち, no-backup ディレクトリの `mail-triggers/triggers.json` に保存されます. `specialUse` フォアグラウンドサービス `MailWatchService` はスクリプトが動いていない間も有効な監視を P5 のウォッチャーで動かし (サーバーがプッシュするなら IDLE, そうでなければポーリング, バックオフ付き再接続, ネットワーク変化時は即時再接続), 低優先度の通知を 1 件表示します. 新着メールは監視の記録リスト (直近 100 件のエンベロープ要約, `MAX_TRIGGER_RECORDS`, 本文は含まない) に加わり, ページには接続状態, 最後のエラー, 記録, 再接続操作が表示されます. 起動時自動開始スイッチ (既定はオフ) は再起動後にサービスを立ち上げる `BOOT_COMPLETED` レシーバーを有効にします
-- `機能` メール契約バージョン 2 (`IMailPlugin.openTrigger` / `listTriggers`, `IMailTrigger`, `IMailTriggerCallback`, 機能フラグ `backgroundWatch`): ホストは generation と任意のフィルターで設定済みの監視を購読し, 直ちに現在の状態を受け取り, その後 `onStatus` (stopped, connecting, connected, failed と理由および最後のエラー) と, 一致するメールごとの `onMail(generation, seq, event)` を受け取ります. `mail` イベントは監視 id, エイリアス, アドレス, フォルダー, メールのエンベロープ, `receivedAt` を運びます. 監視あたりの購読者は最大 4 (`MAX_TRIGGER_SUBSCRIBERS`), 無効または存在しない監視と使えないオプションは理由 `refused` の `stopped` 状態で拒否され, `update` は購読者のフィルターを置き換え, `stop` は購読のみを終えます. 生きた購読者がないときは各イベントが明示的ブロードキャスト `org.autojs.autojs6.action.MAIL_TRIGGER` として `PLUGIN` 署名権限の背後の AutoJs6 に送られ, スクリプトが動いていなくてもホストの "メール到着時" タスクを起動します (API 37 AVD での `MailTriggerBinderTest`; `TriggerStoreTest`, `TriggerFilterTest`, `TriggerConfigTest`, `TriggerDocumentsTest`)
-- `機能` メールコアに, ページ, サービス, Binder が共有するトリガー文書と規則 (`TriggerConfig`, 送信者と件名の部分文字列を大文字小文字を区別せず照合する `TriggerFilter`, `TriggerOptions`, `TriggerStatusDocument`, `TriggerEventDocument`, `TriggerRecord`) と上限 `MAX_TRIGGERS`, `MAX_TRIGGER_SUBSCRIBERS`, `MAX_TRIGGER_RECORDS`, `MIN_TRIGGER_INTERVAL_MS` (3 秒, ホストのタスクごとのスロットル) が加わり, ウォッチャーは `onConnected` を報告してバックグラウンド監視がフォルダーを開いた時点で `connected` を表示できるようになりました
 
 ##### さらに詳しいリリース履歴
 

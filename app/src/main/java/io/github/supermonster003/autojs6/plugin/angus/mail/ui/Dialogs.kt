@@ -163,7 +163,7 @@ internal fun ConfiguredActivity.singleChoiceDialog(
     checkedIndex: Int,
     enabledAt: (Int) -> Boolean = { true },
     onSelect: (Int) -> Unit,
-) {
+): androidx.appcompat.app.AlertDialog {
     val dialog = materialDialog()
         .setTitle(title)
         .setSingleChoiceItems(
@@ -177,6 +177,7 @@ internal fun ConfiguredActivity.singleChoiceDialog(
         .show()
     presentedDialog = dialog
     tintDialogButtons(dialog)
+    return dialog
 }
 
 /** Themed form field label used above a group of fields. */

@@ -103,7 +103,8 @@ class AngusMailPluginContractTest {
         // The launcher entry stays reachable without the permission.
         val launcher = requireNotNull(context.packageManager.getLaunchIntentForPackage(packageName)) { "no launcher entry" }
         val launcherComponent = requireNotNull(launcher.component)
-        assertEquals(AccountsActivity::class.java.name, launcherComponent.className)
+        assertEquals(LauncherIcons.current(context).component(context), launcherComponent)
+        assertEquals(AccountsActivity::class.java.name, context.packageManager.getActivityInfo(launcherComponent, 0).targetActivity)
         assertNull(context.packageManager.getActivityInfo(launcherComponent, 0).permission)
     }
 

@@ -30,6 +30,10 @@ import java.util.Locale
  */
 class AppSettingsActivity : ConfiguredActivity() {
 
+    internal lateinit var launcherIconRow: SettingRow
+    internal var launcherIconDialog: androidx.appcompat.app.AlertDialog? = null
+        private set
+
     private lateinit var settingsStore: ApplicationSettingsStore
     private lateinit var settings: ApplicationSettings
     private lateinit var hostResult: AutoJs6HostSettingsResult
@@ -73,6 +77,13 @@ class AppSettingsActivity : ConfiguredActivity() {
                 onClick = ::showThemeColorDialog,
             ).view,
         )
+        launcherIconRow = settingRow(
+            title = getString(R.string.launcher_icon_title),
+            summary = getString(launcherIconLabels[LauncherIcons.current(this).ordinal]),
+            iconResource = R.drawable.ic_palette_24,
+            onClick = ::showLauncherIconDialog,
+        )
+        content.addView(launcherIconRow.view)
         content.addView(hairline())
         buildExtraSections(content)
         content.addView(sectionHeader(R.string.settings_section_information))
@@ -157,6 +168,37 @@ class AppSettingsActivity : ConfiguredActivity() {
     }
 
     // region Appearance dialogs
+
+    private fun showLauncherIconDialog() {
+        val modes = LauncherIconMode.entries
+        val labels: List<CharSequence> = modes.map { mode ->
+            val label = getString(launcherIconLabels[mode.ordinal])
+            val note = when (mode) {
+                LauncherIconMode.AUTO -> R.string.launcher_icon_auto_note
+                LauncherIconMode.TRANSPARENT -> R.string.launcher_icon_transparent_note
+                else -> null
+            }
+            if (note == null) label else SpannableString("$label\n${getString(note)}").apply {
+                setSpan(RelativeSizeSpan(0.8f), label.length + 1, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                setSpan(ForegroundColorSpan(appPalette.secondaryText), label.length + 1, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+        }
+        launcherIconDialog = singleChoiceDialog(
+            title = getString(R.string.launcher_icon_title),
+            labels = labels,
+            checkedIndex = modes.indexOf(LauncherIcons.current(this)),
+        ) { index ->
+            val succeeded = runCatching { LauncherIcons.select(this, modes[index]) }.isSuccess
+            launcherIconRow.summaryView.text = getString(launcherIconLabels[LauncherIcons.current(this).ordinal])
+            Toast.makeText(this, if (succeeded) R.string.launcher_icon_applied_note else R.string.launcher_icon_failed, Toast.LENGTH_LONG).show()
+        }
+        // The checked dark row must not scroll the first choice out of view.
+        launcherIconDialog?.listView?.post { launcherIconDialog?.listView?.setSelection(0) }
+    }
+
+    internal companion object {
+        val launcherIconLabels = listOf(R.string.launcher_icon_light, R.string.launcher_icon_dark, R.string.launcher_icon_auto, R.string.launcher_icon_transparent)
+    }
 
     private fun showLanguageDialog() {
         val values = AppLanguage.entries
