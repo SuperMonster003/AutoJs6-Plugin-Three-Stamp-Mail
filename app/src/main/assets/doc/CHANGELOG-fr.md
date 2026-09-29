@@ -4,6 +4,12 @@
 
 ******
 
+# v1.3.0
+
+###### 2026/09/29
+
+* `Fonctionnalité` Choisissez une icône de lanceur adaptative claire, sombre (par défaut), automatique ou transparente dans les paramètres. Les couleurs automatiques et la transparence dépendent du lanceur. Le changement conserve l'application en cours et peut demander quelques secondes.
+
 # v1.2.1
 
 ###### 2026/09/22

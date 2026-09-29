@@ -1,50 +1,31 @@
-# -*- coding: utf-8 -*-
-"""Render the Angus Mail launcher icons.
+"""Generate separate transparent UI icons and adaptive/legacy launcher icons.
 
-Outputs (all RGBA PNG, regenerated deterministically from this script):
-  app/src/main/res/mipmap/ic_launcher.png              432 x 432 legacy icon (rounded square)
-  app/src/main/res/mipmap/ic_launcher_round.png        192 x 192 legacy round icon
-  app/src/main/res/mipmap/ic_launcher_foreground.png   432 x 432 adaptive foreground (white glyph)
-  app/src/main/res/mipmap/ic_launcher_monochrome.png   432 x 432 adaptive monochrome (black glyph)
-  app/src/main/res/mipmap-night/*.png                  same set on the night background
-
-The glyph is an envelope with an open flap and a small "at" mark in the lower right corner, so the
-icon reads as "mail" at launcher and plugin-center sizes. Background colors match
-values/ic_launcher_background.xml and values-night/ic_launcher_background.xml.
-
-Usage: py .python/generate_launcher_icons.py
+The retained source geometry is the artwork. Colors and output geometry are generated,
+never inferred from antialiased source RGB. Run with --check to verify without writes.
+Dark is the default launcher mode. Explicit light and best-effort automatic modes
+have independent resources; transparent launcher icons follow the launcher configuration; brand UI assets stay separate.
 """
 
 from __future__ import annotations
 
+import argparse
+import io
+import math
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
+import generate_brand_icons as brand
 
 ROOT = Path(__file__).resolve().parents[1]
-RES = ROOT / "app" / "src" / "main" / "res"
+RES = ROOT / "app/src/main/res"
 SIZE = 432
-ROUND_SIZE = 192
 SCALE = 4
-
-DAY_BACKGROUND = (0x1D, 0x4E, 0xD8, 255)
-NIGHT_BACKGROUND = (0x1E, 0x3A, 0x8A, 255)
-GLYPH_WHITE = (255, 255, 255, 255)
-GLYPH_BLACK = (0, 0, 0, 255)
-TRANSPARENT = (0, 0, 0, 0)
-
-FONT_CANDIDATES = (
-    "C:/Windows/Fonts/segoeuib.ttf",
-    "C:/Windows/Fonts/arialbd.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-)
-
-
-def load_font(size: int) -> ImageFont.FreeTypeFont:
-    for candidate in FONT_CANDIDATES:
-        if Path(candidate).is_file():
-            return ImageFont.truetype(candidate, size)
-    raise SystemExit("No bold TrueType font found; add a candidate path to FONT_CANDIDATES")
+UI_GLYPH = 0.66
+ADAPTIVE_GLYPH = 0.44
+DAY_GLYPH = (0x27, 0x27, 0x27)
+NIGHT_GLYPH = (0xD8, 0xD8, 0xD8)
+NIGHT_BACKGROUND = (0x21, 0x21, 0x21, 255)
+DAY_BACKGROUND = (0xFA, 0xFA, 0xFA, 255)
 
 
 def draw_glyph(draw: ImageDraw.ImageDraw, center: tuple[float, float], box: float, color: tuple[int, int, int, int]) -> None:
@@ -73,41 +54,113 @@ def draw_glyph(draw: ImageDraw.ImageDraw, center: tuple[float, float], box: floa
     draw.line([(right - inset, bottom - inset), (cx + width * 0.16, fold_end_y)], fill=color, width=stroke)
 
 
-def render(
-    size: int,
-    background: tuple[int, int, int, int] | None,
-    mask: str | None,
-    glyph_color: tuple[int, int, int, int],
-    glyph_ratio: float,
-) -> Image.Image:
-    scaled = size * SCALE
-    canvas = Image.new("RGBA", (scaled, scaled), TRANSPARENT)
-    draw = ImageDraw.Draw(canvas)
+def source_alpha() -> Image.Image:
+    canvas = Image.new("RGBA", (1728, 1728), (0, 0, 0, 0))
+    draw_glyph(ImageDraw.Draw(canvas), (864, 864), 1400, (0, 0, 0, 255))
+    alpha = canvas.getchannel("A")
+    bounds = alpha.getbbox()
+    if bounds is None:
+        raise ValueError("Icon source has no visible artwork")
+    alpha = alpha.crop(bounds)
+    radius = 0.5 * ADAPTIVE_GLYPH * 108 * math.hypot(1, alpha.height / alpha.width)
+    if radius >= 33:
+        raise ValueError(f"Adaptive artwork exceeds the 66 dp safe circle: radius {radius:.2f} dp")
+    return alpha
+
+
+def render(alpha: Image.Image, ratio: float, color: tuple[int, int, int], background=None) -> Image.Image:
+    size = SIZE * SCALE
+    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     if background is not None:
-        if mask == "circle":
-            draw.ellipse((0, 0, scaled - 1, scaled - 1), fill=background)
-        elif mask == "rounded":
-            draw.rounded_rectangle((0, 0, scaled - 1, scaled - 1), radius=scaled * 0.2, fill=background)
-        else:
-            draw.rectangle((0, 0, scaled - 1, scaled - 1), fill=background)
-    draw_glyph(draw, (scaled / 2, scaled / 2), scaled * glyph_ratio, glyph_color)
-    return canvas.resize((size, size), Image.LANCZOS)
+        ImageDraw.Draw(canvas).ellipse((0, 0, size - 1, size - 1), fill=background)
+    width = round(size * ratio)
+    height = max(1, round(width * alpha.height / alpha.width))
+    scaled_alpha = alpha.resize((width, height), Image.Resampling.LANCZOS)
+    glyph = Image.new("RGBA", (width, height), (*color, 255))
+    glyph.putalpha(scaled_alpha)
+    canvas.alpha_composite(glyph, ((size - width) // 2, (size - height) // 2))
+    if background is not None:
+        return canvas.resize((SIZE, SIZE), Image.Resampling.LANCZOS)
+    # Resize only alpha for transparent artwork: premultiplied RGBA resampling can
+    # change foreground RGB by one level, including at fully opaque pixels.
+    result = Image.new("RGBA", (SIZE, SIZE), (*color, 255))
+    result.putalpha(canvas.getchannel("A").resize((SIZE, SIZE), Image.Resampling.LANCZOS))
+    return result
 
 
-def write(image: Image.Image, path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    image.save(path, format="PNG", optimize=True)
-    print(f"Generated {path.relative_to(ROOT).as_posix()} {image.size[0]}x{image.size[1]}")
+def generated_files() -> dict[Path, bytes]:
+    alpha = source_alpha()
+    images = {
+        "mipmap/ic_launcher_transparent.png": render(alpha, UI_GLYPH, DAY_GLYPH),
+        "mipmap-night/ic_launcher_transparent.png": render(alpha, UI_GLYPH, NIGHT_GLYPH),
+        "mipmap/ic_launcher_system.png": render(alpha, UI_GLYPH, NIGHT_GLYPH, NIGHT_BACKGROUND),
+        "mipmap/ic_launcher_system_foreground.png": render(alpha, ADAPTIVE_GLYPH, NIGHT_GLYPH),
+        "mipmap/ic_launcher_system_light.png": render(alpha, UI_GLYPH, DAY_GLYPH, DAY_BACKGROUND),
+        "mipmap/ic_launcher_system_light_foreground.png": render(alpha, ADAPTIVE_GLYPH, DAY_GLYPH),
+        "mipmap/ic_launcher_system_monochrome.png": render(alpha, ADAPTIVE_GLYPH, (0, 0, 0)),
+    }
+    for directory, background in (("mipmap", brand.DAY_BACKGROUND), ("mipmap-night", brand.NIGHT_BACKGROUND)):
+        images[f"{directory}/ic_launcher.png"] = brand.render(brand.SIZE, background, "rounded", brand.GLYPH_WHITE, 0.68)
+        images[f"{directory}/ic_launcher_round.png"] = brand.render(brand.ROUND_SIZE, background, "circle", brand.GLYPH_WHITE, 0.62)
+        images[f"{directory}/ic_launcher_foreground.png"] = brand.render(brand.SIZE, None, None, brand.GLYPH_WHITE, 0.54)
+        images[f"{directory}/ic_launcher_monochrome.png"] = brand.render(brand.SIZE, None, None, brand.GLYPH_BLACK, 0.54)
+    result = {}
+    for name, image in images.items():
+        output = io.BytesIO()
+        image.save(output, format="PNG", optimize=True)
+        result[RES / name] = output.getvalue()
+    def adaptive(foreground: str, background: str) -> bytes:
+        return f'''<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/{background}"/>
+    <foreground android:drawable="@mipmap/{foreground}"/>
+    <monochrome android:drawable="@mipmap/ic_launcher_system_monochrome"/>
+</adaptive-icon>
+'''.encode("utf-8")
+    for name, background in (("ic_launcher_system", "ic_launcher_system_background"), ("ic_launcher_system_light", "ic_launcher_system_background_light")):
+        result[RES / "mipmap-anydpi-v26" / f"{name}.xml"] = adaptive(f"{name}_foreground", background)
+    for name, color in (("ic_launcher_system_background", "#212121"), ("ic_launcher_system_background_light", "#FAFAFA")):
+        result[RES / "values" / f"{name}.xml"] = (
+            '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
+            f'    <color name="{name}">{color}</color>\n</resources>\n'
+        ).encode("utf-8")
+    # Keep Auto's own resource ID in the compiled manifest. Resource aliases in
+    # values/ are eagerly resolved by PackageManager and freeze one theme's ID.
+    for qualifier, target, background in (("", "ic_launcher_system", "ic_launcher_system_background"), ("-notnight", "ic_launcher_system_light", "ic_launcher_system_background_light")):
+        result[RES / f"mipmap{qualifier}" / "ic_launcher_system_auto.xml"] = (
+            '<?xml version="1.0" encoding="utf-8"?>\n'
+            f'<bitmap xmlns:android="http://schemas.android.com/apk/res/android" android:src="@mipmap/{target}"/>\n'
+        ).encode("utf-8")
+        result[RES / f"mipmap{qualifier}-anydpi-v26" / "ic_launcher_system_auto.xml"] = adaptive(f"{target}_foreground", background)
+    return result
+
+
+def obsolete_files() -> list[Path]:
+    # The pre-existing brand assets belong to application/README/About, independently
+    # of the selectable launcher aliases, and must remain intact.
+    return [path for path in (RES / "values/ic_launcher_system_auto.xml", RES / "values-notnight/ic_launcher_system_auto.xml") if path.is_file()]
 
 
 def main() -> None:
-    for directory, background in (("mipmap", DAY_BACKGROUND), ("mipmap-night", NIGHT_BACKGROUND)):
-        target = RES / directory
-        write(render(SIZE, background, "rounded", GLYPH_WHITE, 0.68), target / "ic_launcher.png")
-        write(render(ROUND_SIZE, background, "circle", GLYPH_WHITE, 0.62), target / "ic_launcher_round.png")
-        # Adaptive layers: the glyph stays inside the 66% safe zone of the 108 dp canvas.
-        write(render(SIZE, None, None, GLYPH_WHITE, 0.54), target / "ic_launcher_foreground.png")
-        write(render(SIZE, None, None, GLYPH_BLACK, 0.54), target / "ic_launcher_monochrome.png")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true", help="Check all generated resources without changing files")
+    options = parser.parse_args()
+    outputs = generated_files()
+    stale = [path for path, expected in outputs.items() if not path.is_file() or path.read_bytes() != expected]
+    obsolete = obsolete_files()
+    if options.check:
+        if stale or obsolete:
+            raise SystemExit("Stale icon resources: " + ", ".join(str(p.relative_to(ROOT)) for p in stale + obsolete))
+        print(f"Verified {len(outputs)} icon resources")
+        return
+    for path in obsolete:
+        if not path.resolve().is_relative_to(RES.resolve()):
+            raise ValueError("Icon output escaped resource directory")
+        path.unlink()
+    for path, data in outputs.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        print(f"Generated {path.relative_to(ROOT).as_posix()}")
 
 
 if __name__ == "__main__":

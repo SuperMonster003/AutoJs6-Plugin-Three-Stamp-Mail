@@ -5,6 +5,12 @@
   "changelog_label_improvement": "优化",
   "changelog_label_dependency": "依赖",
   "$data": {
+    "v1.3.0": {
+      "released_date": "2026/09/29",
+      "feature": [
+        "设置中可选择自适应亮色, 自适应暗色 (默认), 自动或透明背景启动器图标. 自动配色与透明效果取决于启动器支持, 切换时保留应用运行状态, 图标可能需要几秒钟刷新."
+      ]
+    },
     "v1.2.1": {
       "released_date": "2026/09/22",
       "fix": [

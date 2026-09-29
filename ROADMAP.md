@@ -1009,3 +1009,11 @@ mail.searchAsync({ subject: '发票', since: '2026-09-01' }).then(list => consol
 - 教训: 宿主 Rhino 2.0 快照的 `TopLevelScope` 派生自 `ScopeObject` (`SlotMapOwner<VarScope>`), 不是 `ScriptableObject`, `as? ScriptableObject` 静默为 null 让按作用域的缓存失效; `IMailSessionCallback` 是 oneway, 被拒的 `openSession` 返回 null 时其 `closed` 状态可能尚未到达, 宿主须等待后再取错误码; `BaseFunction` 直接返回 `LinkedHashMap` 会成为 `NativeJavaObject` (`JSON.stringify` 得 `undefined`), 同步结果也要过 `RhinoUtils.toJsValue`; `mail.connect` 不联网, 关闭端口要在 `test()` 的结果里看 `CONNECT_FAILED` 而不是期待 `connect` 抛出; API 24 模拟器上 `adb install -r` 后测试引擎仍报 `INSTALL_FAILED_ALREADY_EXISTS`, 需先 `adb uninstall` (报 `DELETE_FAILED_INTERNAL_ERROR` 但包已移除), Redmi 上按摘要跳过安装的做法仍有效.
 - 未做: 全局便捷方法 `send / fetch / ...` 在客户端尚无对应方法时答 `UNSUPPORTED_OPERATION` (P3.2 补齐); `tokenProvider` 只在 JVM 形态检查中覆盖, 未跑 Gmail XOAUTH2 脚本; 宿主 changelog 条目与协议文档的脚本方法到 op 对照表留给 P3.3; 其余同上次 (`CallerGuard` 官方证书分支, POP3 真实账户, `autoSavesSent` 三家, 插件侧宿主死亡).
 - 下次会话建议起点: P3.2 发信与收信 (`MailClient` 的 `send` / `folders` / `fetch` / `search` / `get` / `download` / `raw` / `setFlags` 系列 / `move` / `copy` / `delete` / `expunge` / `append` 及 Async 版, 参数规范化的纯 Kotlin 函数与 JVM 测试, `docs/smoke/*.js` 冒烟脚本对 QQ / 163 / Gmail), 随后 P3.3.
+
+
+### 2026-09-29: 可选启动器图标
+
+- [x] 设置提供自适应亮色, 自适应暗色 (默认), 自动和透明背景四种模式; 保留原图案, 原品牌图标与应用内引用保持独立.
+- [x] 四个稳定 alias 共用原 Activity, 切换不终止进程, 更新可变快捷方式归属并保留原 Intent, 失败时恢复旧模式. 自动与透明模式的启动器限制在选择项中说明.
+- [x] 十语言设置与用户文档同步, 次版本按新增功能递增为 1.3.0.
+- [x] 验证: 图标生成器23个产物与十语言文档36个产物check通过; 79项app JVM测试, debug/androidTest组装与lint通过 (0 error, 53 warnings). API 24与API 37 AVD各4项LauncherIconSelectionTest/LauncherIconResourceTest通过, 覆盖真实四选项UI, 首行可见, 唯一入口, 进程存活, 页面重建, API 25+动态快捷方式归属, Auto独立资源ID及原品牌图标保持; finally恢复原alias状态. 本轮不涉及邮箱或OAuth网络测试.

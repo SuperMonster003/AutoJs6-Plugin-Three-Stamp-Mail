@@ -5,6 +5,12 @@
   "changelog_label_improvement": "Mejora",
   "changelog_label_dependency": "Dependencia",
   "$data": {
+    "v1.3.0": {
+      "released_date": "2026/09/29",
+      "feature": [
+        "Elige iconos de inicio adaptables claros, oscuros (predeterminados), automáticos o transparentes en Ajustes. Los colores automáticos y la transparencia dependen del lanzador. El cambio mantiene la aplicación en ejecución y puede tardar unos segundos."
+      ]
+    },
     "v1.2.1": {
       "released_date": "2026/09/22",
       "fix": [

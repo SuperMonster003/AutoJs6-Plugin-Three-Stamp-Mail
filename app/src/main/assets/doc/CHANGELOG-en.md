@@ -4,6 +4,12 @@
 
 ******
 
+# v1.3.0
+
+###### 2026/09/29
+
+* `Feature` Choose adaptive light, adaptive dark (default), automatic or transparent launcher icons in Settings. Automatic colors and transparency depend on launcher support; switching preserves the running app and may take a few seconds to refresh.
+
 # v1.2.1
 
 ###### 2026/09/22

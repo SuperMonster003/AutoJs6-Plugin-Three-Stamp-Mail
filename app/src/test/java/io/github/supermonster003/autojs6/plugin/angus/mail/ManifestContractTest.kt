@@ -102,9 +102,19 @@ class ManifestContractTest {
         assertNull("the launcher entry carries no permission", accounts.androidAttributeOrNull("permission"))
         assertEquals("@style/Theme.AngusMail", accounts.androidAttribute("theme"))
         assertEquals("@string/accounts_title", accounts.androidAttribute("label"))
-        val launcher = accounts.child("intent-filter")
-        assertEquals(listOf("android.intent.action.MAIN"), launcher.children("action").map { it.androidAttribute("name") })
-        assertEquals(listOf("android.intent.category.LAUNCHER"), launcher.children("category").map { it.androidAttribute("name") })
+        assertTrue("real Activity stays explicit-only", accounts.children("intent-filter").isEmpty())
+        val aliases = manifest.child("application").children("activity-alias")
+        assertEquals(4, aliases.size)
+        assertEquals(1, aliases.count { it.androidAttribute("enabled") == "true" })
+        aliases.forEach { alias ->
+            val launcher = alias.child("intent-filter")
+            assertEquals(".settings.AccountsActivity", alias.androidAttribute("targetActivity"))
+            assertEquals("true", alias.androidAttribute("exported"))
+            assertNull(alias.androidAttributeOrNull("permission"))
+            assertEquals(alias.androidAttribute("name") == ".launcher.AdaptiveDarkIconAlias", alias.androidAttribute("enabled") == "true")
+            assertEquals(listOf("android.intent.action.MAIN"), launcher.children("action").map { it.androidAttribute("name") })
+            assertEquals(listOf("android.intent.category.LAUNCHER"), launcher.children("category").map { it.androidAttribute("name") })
+        }
 
         val chain = mapOf(
             ".settings.AccountEditorActivity" to ".settings.AccountsActivity",

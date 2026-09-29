@@ -75,12 +75,60 @@
             android:name=".settings.AccountsActivity"
             android:exported="true"
             android:label="@string/accounts_title"
-            android:theme="@style/Theme.AngusMail">
+            android:theme="@style/Theme.AngusMail" />
+
+        <!-- Stable launcher aliases leave the real Activity available to existing explicit intents. -->
+        <activity-alias
+            android:name=".launcher.AdaptiveLightIconAlias"
+            android:targetActivity=".settings.AccountsActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_system_light"
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.AdaptiveDarkIconAlias"
+            android:targetActivity=".settings.AccountsActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_system"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.AdaptiveAutoIconAlias"
+            android:targetActivity=".settings.AccountsActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_system_auto"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.TransparentIconAlias"
+            android:targetActivity=".settings.AccountsActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_transparent"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <activity
             android:name=".settings.AccountEditorActivity"

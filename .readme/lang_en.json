@@ -19,7 +19,8 @@
     "Background watches: the Watches page of the settings keeps IMAP IDLE or polling connections to saved accounts in a foreground service while no script runs, records every new message, and wakes the \"On mail arrived\" task of AutoJs6 for the chosen watch, optionally filtered by sender and subject, with the message in `engines.myEngine().execArgv.mail`.",
     "Providers: presets for Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina, and Aliyun fill in hosts, ports, and encryption; any field can be overridden for other servers.",
     "Authentication: passwords and provider authorization codes, or XOAUTH2 access tokens supplied by the script together with a refresh callback.",
-    "Browser sign-in: a Gmail, Outlook.com or Microsoft 365 account can be added by signing in with the Google or Microsoft account in the system browser from the plugin settings (OAuth 2.0 authorization code with PKCE); the plugin keeps the refresh token encrypted on the device, renews the access token before every session and shows the sign-in state with \"Sign in again\" and \"Revoke\" on the accounts page. Scripts keep connecting by alias and never see a token."
+    "Browser sign-in: a Gmail, Outlook.com or Microsoft 365 account can be added by signing in with the Google or Microsoft account in the system browser from the plugin settings (OAuth 2.0 authorization code with PKCE); the plugin keeps the refresh token encrypted on the device, renews the access token before every session and shows the sign-in state with \"Sign in again\" and \"Revoke\" on the accounts page. Scripts keep connecting by alias and never see a token.",
+    "Choose adaptive light, adaptive dark (default), automatic or transparent launcher icons in Settings. Automatic colors and transparency depend on launcher support; switching preserves the running app and may take a few seconds to refresh."
   ],
   "h3_usage": "Usage",
   "usage_steps": [

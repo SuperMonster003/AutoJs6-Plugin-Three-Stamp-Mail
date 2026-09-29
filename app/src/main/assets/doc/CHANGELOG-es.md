@@ -4,6 +4,12 @@
 
 ******
 
+# v1.3.0
+
+###### 2026/09/29
+
+* `Función` Elige iconos de inicio adaptables claros, oscuros (predeterminados), automáticos o transparentes en Ajustes. Los colores automáticos y la transparencia dependen del lanzador. El cambio mantiene la aplicación en ejecución y puede tardar unos segundos.
+
 # v1.2.1
 
 ###### 2026/09/22
