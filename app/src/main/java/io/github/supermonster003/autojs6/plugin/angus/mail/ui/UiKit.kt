@@ -24,6 +24,10 @@ internal object Ui {
     const val SPACE_XXXL = 32
     const val SCREEN_MARGIN = 20
     const val SECTION_GAP = 24
+    const val SETTINGS_HORIZONTAL = 24
+    const val SETTINGS_ROW_MIN = 72
+    const val SETTINGS_SUMMARY = 14f
+    const val SETTINGS_SECTION = 14f
 
     // Corner radii (dp).
     const val RADIUS_CONTROL = 10

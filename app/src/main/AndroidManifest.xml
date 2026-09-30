@@ -94,7 +94,7 @@
         <activity-alias
             android:name=".launcher.AdaptiveDarkIconAlias"
             android:targetActivity=".settings.AccountsActivity"
-            android:enabled="true"
+            android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_system"
             android:label="@string/app_name">
@@ -107,7 +107,7 @@
         <activity-alias
             android:name=".launcher.AdaptiveAutoIconAlias"
             android:targetActivity=".settings.AccountsActivity"
-            android:enabled="false"
+            android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_system_auto"
             android:label="@string/app_name">
@@ -316,6 +316,13 @@
             android:name="androidx.profileinstaller.ProfileInstallReceiver"
             tools:ignore="MissingClass"
             tools:node="remove" />
+
+        <!-- Update-only repair keeps one launcher entry after changing the default to Auto. -->
+        <receiver android:name=".LauncherIconUpdateReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

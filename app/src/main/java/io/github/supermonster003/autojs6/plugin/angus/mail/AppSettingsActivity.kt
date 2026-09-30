@@ -57,7 +57,7 @@ class AppSettingsActivity : ConfiguredActivity() {
             settingRow(
                 title = getString(R.string.settings_language),
                 summary = languageSummary(),
-                iconResource = R.drawable.ic_language_24,
+                iconResource = R.drawable.ic_settings_language,
                 onClick = ::showLanguageDialog,
             ).view,
         )
@@ -65,7 +65,7 @@ class AppSettingsActivity : ConfiguredActivity() {
             settingRow(
                 title = getString(R.string.settings_dark_mode),
                 summary = darkModeSummary(),
-                iconResource = R.drawable.ic_dark_mode_24,
+                iconResource = R.drawable.ic_settings_night,
                 onClick = ::showDarkModeDialog,
             ).view,
         )
@@ -73,14 +73,14 @@ class AppSettingsActivity : ConfiguredActivity() {
             settingRow(
                 title = getString(R.string.settings_theme_color),
                 summary = themeSummary(),
-                iconResource = R.drawable.ic_palette_24,
+                iconResource = R.drawable.ic_settings_theme,
                 onClick = ::showThemeColorDialog,
             ).view,
         )
         launcherIconRow = settingRow(
             title = getString(R.string.launcher_icon_title),
             summary = getString(launcherIconLabels[LauncherIcons.current(this).ordinal]),
-            iconResource = R.drawable.ic_palette_24,
+            iconResource = R.drawable.ic_settings_launcher,
             onClick = ::showLauncherIconDialog,
         )
         content.addView(launcherIconRow.view)
@@ -179,7 +179,7 @@ class AppSettingsActivity : ConfiguredActivity() {
                 else -> null
             }
             if (note == null) label else SpannableString("$label\n${getString(note)}").apply {
-                setSpan(RelativeSizeSpan(0.8f), label.length + 1, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                setSpan(RelativeSizeSpan(14f / 16f), label.length + 1, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
                 setSpan(ForegroundColorSpan(appPalette.secondaryText), label.length + 1, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
         }
@@ -187,6 +187,7 @@ class AppSettingsActivity : ConfiguredActivity() {
             title = getString(R.string.launcher_icon_title),
             labels = labels,
             checkedIndex = modes.indexOf(LauncherIcons.current(this)),
+            confirmSelection = true,
         ) { index ->
             val succeeded = runCatching { LauncherIcons.select(this, modes[index]) }.isSuccess
             launcherIconRow.summaryView.text = getString(launcherIconLabels[LauncherIcons.current(this).ordinal])
@@ -201,6 +202,7 @@ class AppSettingsActivity : ConfiguredActivity() {
     }
 
     private fun showLanguageDialog() {
+        hostResult = AutoJs6HostSettingsClient.query(this)
         val values = AppLanguage.entries
         val labels: List<CharSequence> = values.mapIndexed { index, language ->
             val label = getString(language.labelResource())
@@ -210,10 +212,12 @@ class AppSettingsActivity : ConfiguredActivity() {
             title = getString(R.string.settings_language),
             labels = labels,
             checkedIndex = values.indexOf(settings.language),
+            confirmSelection = true,
         ) { index -> saveSettings(settings.copy(language = values[index])) }
     }
 
     private fun showDarkModeDialog() {
+        hostResult = AutoJs6HostSettingsClient.query(this)
         val values = AppDarkMode.entries
         val labels: List<CharSequence> = values.mapIndexed { index, mode ->
             val label = getString(mode.labelResource())
@@ -223,97 +227,32 @@ class AppSettingsActivity : ConfiguredActivity() {
             title = getString(R.string.settings_dark_mode),
             labels = labels,
             checkedIndex = values.indexOf(settings.darkMode),
+            confirmSelection = true,
         ) { index -> saveSettings(settings.copy(darkMode = values[index])) }
     }
 
     private fun showThemeColorDialog() {
-        val choices = themeChoices()
-        val checkedIndex = selectedThemeChoiceIndex(choices)
-        val labels: List<CharSequence> = choices.mapIndexed { index, choice ->
-            val label = getString(choice.labelResource)
-            when {
-                choice.followAutoJs6 -> followAutoJs6ChoiceLabel(
-                    label,
-                    AppSettingsPolicy.colorHex(followedThemeColor()),
-                )
-                choice.color != null -> "$label (${AppSettingsPolicy.colorHex(choice.color)})"
-                index == checkedIndex && settings.themeSelection == AppThemeSelection.CUSTOM ->
-                    "$label (${AppSettingsPolicy.colorHex(settings.customThemeColor)})"
-                else -> label
-            }
-        }
-        singleChoiceDialog(
-            title = getString(R.string.settings_theme_color),
-            labels = labels,
-            checkedIndex = checkedIndex,
-        ) { index ->
-            val choice = choices[index]
-            when {
-                choice.followAutoJs6 -> saveSettings(
-                    settings.copy(themeSelection = AppThemeSelection.FOLLOW_AUTOJS6),
-                )
-                choice.color != null -> saveSettings(
-                    settings.copy(
-                        themeSelection = AppThemeSelection.CUSTOM,
-                        customThemeColor = choice.color,
-                    ),
-                )
-                else -> showCustomThemeColorDialog()
-            }
+        hostResult = AutoJs6HostSettingsClient.query(this)
+        presentedDialog = ThemeColorChooser.show(
+            this,
+            if (settings.themeSelection == AppThemeSelection.FOLLOW_AUTOJS6) null else settings.customThemeColor,
+            followedThemeColor(),
+            ThemeColorChooser.Palette(appPalette.accent, appPalette.surface, appPalette.primaryText, appPalette.secondaryText, appPalette.outline),
+            ThemeColorChooser.Labels(getString(R.string.settings_theme_color), getString(R.string.follow_autojs6),
+                getString(R.string.theme_picker_presets), getString(R.string.theme_picker_custom), getString(R.string.theme_picker_input),
+                getString(R.string.theme_picker_invalid), getString(R.string.theme_picker_preview)),
+        ) { color ->
+            saveSettings(if (color == null) settings.copy(themeSelection = AppThemeSelection.FOLLOW_AUTOJS6)
+                else settings.copy(themeSelection = AppThemeSelection.CUSTOM, customThemeColor = color))
         }
     }
-
-    private fun showCustomThemeColorDialog() {
-        inputDialog(
-            title = getString(R.string.theme_custom_title),
-            initialValue = AppSettingsPolicy.colorHex(settings.customThemeColor),
-            hint = "#RRGGBB",
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS,
-            maxLength = 7,
-            positiveResource = R.string.action_save,
-            validate = { value ->
-                if (AppSettingsPolicy.parseOpaqueColor(value) == null) {
-                    getString(R.string.theme_custom_error)
-                } else {
-                    null
-                }
-            },
-        ) { value ->
-            val color = AppSettingsPolicy.parseOpaqueColor(value) ?: return@inputDialog
-            saveSettings(
-                settings.copy(
-                    themeSelection = AppThemeSelection.CUSTOM,
-                    customThemeColor = color,
-                ),
-            )
-        }
-    }
-
-    private fun themeChoices(): List<ThemeChoice> = listOf(
-        ThemeChoice(R.string.follow_autojs6, followAutoJs6 = true),
-        ThemeChoice(R.string.theme_color_brand, AppSettingsPolicy.BRAND_THEME_COLOR),
-        ThemeChoice(R.string.theme_color_teal, AppSettingsPolicy.TEAL_THEME_COLOR),
-        ThemeChoice(R.string.theme_color_blue, AppSettingsPolicy.BLUE_THEME_COLOR),
-        ThemeChoice(R.string.theme_color_green, AppSettingsPolicy.GREEN_THEME_COLOR),
-        ThemeChoice(R.string.theme_color_purple, AppSettingsPolicy.PURPLE_THEME_COLOR),
-        ThemeChoice(R.string.theme_color_custom),
-    )
-
-    private fun selectedThemeChoiceIndex(choices: List<ThemeChoice>): Int =
-        when (settings.themeSelection) {
-            AppThemeSelection.FOLLOW_AUTOJS6 -> 0
-            AppThemeSelection.CUSTOM -> {
-                val color = AppSettingsPolicy.normalizeOpaqueColor(settings.customThemeColor)
-                choices.indexOfFirst { it.color == color }.takeIf { it >= 1 }
-                    ?: choices.lastIndex
-            }
-        }
 
     // endregion
 
     // region Summaries and labels
 
     private fun saveSettings(updated: ApplicationSettings) {
+        if (updated == settings) return
         settingsStore.save(updated)
         settings = updated
         Toast.makeText(this, R.string.settings_saved, Toast.LENGTH_SHORT).show()
@@ -374,7 +313,7 @@ class AppSettingsActivity : ConfiguredActivity() {
                 length,
                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
             )
-            setSpan(RelativeSizeSpan(0.82f), start, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(RelativeSizeSpan(14f / 16f), start, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             setSpan(
                 TypefaceSpan("sans-serif-light"),
                 start,
@@ -417,9 +356,3 @@ class AppSettingsActivity : ConfiguredActivity() {
 
     // endregion
 }
-
-private data class ThemeChoice(
-    @param:StringRes val labelResource: Int,
-    val color: Int? = null,
-    val followAutoJs6: Boolean = false,
-)

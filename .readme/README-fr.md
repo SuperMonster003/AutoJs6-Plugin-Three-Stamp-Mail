@@ -70,7 +70,8 @@ Le plugin fournit les capacités suivantes:
 - Fournisseurs: des preconfigurations pour Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina et Aliyun renseignent hotes, ports et chiffrement; chaque champ peut etre remplace pour d'autres serveurs.
 - Authentification: mots de passe et codes d'autorisation des fournisseurs, ou jetons d'acces XOAUTH2 fournis par le script avec une fonction de renouvellement.
 - Connexion par le navigateur : un compte Gmail, Outlook.com ou Microsoft 365 peut etre ajoute en se connectant au compte Google ou Microsoft dans le navigateur systeme depuis les reglages du plugin (code d'autorisation OAuth 2.0 avec PKCE); le plugin garde le jeton de rafraichissement chiffre sur l'appareil, renouvelle le jeton d'acces avant chaque session et affiche l'etat de connexion avec "Se reconnecter" et "Revoquer la connexion" sur la page des comptes. Les scripts continuent de se connecter par alias et ne voient jamais de jeton.
-- Choisissez une icône de lanceur adaptative claire, sombre (par défaut), automatique ou transparente dans les paramètres. Les couleurs automatiques et la transparence dépendent du lanceur. Le changement conserve l'application en cours et peut demander quelques secondes.
+- Choisissez une icône de lanceur adaptative claire, sombre, automatique (par défaut) ou transparente dans les paramètres. Les couleurs automatiques et la transparence dépendent du lanceur.
+- Paramètres de langue, de mode sombre, de couleur et d'icône harmonisés, avec surfaces neutres, contrôles thématiques et dialogues de confirmation. Prévisualisez les couleurs prédéfinies ou HEX/RGB avant de valider. Annuler conserve les paramètres enregistrés.
 
 ******
 
@@ -230,9 +231,11 @@ Les plans et l'avancement du plugin sont tenus sous forme de liste cochable dans
 
 #### v1.3.0
 
-_2026/09/29_
+_2026/09/30_
 
-- `Fonctionnalité` Choisissez une icône de lanceur adaptative claire, sombre (par défaut), automatique ou transparente dans les paramètres. Les couleurs automatiques et la transparence dépendent du lanceur. Le changement conserve l'application en cours et peut demander quelques secondes.
+- `Fonctionnalité` Choisissez une icône de lanceur adaptative claire, sombre, automatique (par défaut) ou transparente dans les paramètres. Les couleurs automatiques et la transparence dépendent du lanceur.
+- `Correctif` Les mises à jour conservent une seule entrée de lanceur et un choix d'icône antérieur explicite. L'apparence de l'hôte est lue en arrière-plan sans interrompre une sélection en cours.
+- `Amélioration` Paramètres de langue, de mode sombre, de couleur et d'icône harmonisés, avec surfaces neutres, contrôles thématiques et dialogues de confirmation. Prévisualisez les couleurs prédéfinies ou HEX/RGB avant de valider. Annuler conserve les paramètres enregistrés.
 
 #### v1.2.1
 

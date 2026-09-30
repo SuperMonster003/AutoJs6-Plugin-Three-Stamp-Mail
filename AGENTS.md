@@ -325,3 +325,11 @@ Release 前额外执行 `.\gradlew.bat :app:appendDigestToReleasedFiles`, 检查
 - `ParcelFileDescriptor` 流式落盘 (`ArchiveEntryMaterializer` 模式), 宿主入口, 插件发现, 安装和启用引导: `D:/idea-projects/AutoJs6`
 
 参考时以这些仓库的当前代码为准, 不以历史 README 或旧 release 中已经淘汰的写法为准.
+
+
+## Standalone settings convention (2026-09-29)
+
+- Follow the workspace `AUTOJS6_PLUGIN_STANDALONE_SETTINGS_AGENTS.md`: language, dark mode, theme color, launcher icon; flat grouped rows, 16/14sp text, 72dp minimum, 24dp padding, a 24dp line icon in a 40dp slot, and text-aligned dividers.
+- Appearance dialogs keep draft changes local until OK. Use the shared neutral surfaces and HCT primary/onPrimary roles. Presets and a single HEX/RGB field preview the actual control colors; Cancel writes nothing.
+- New launcher installs default to Auto. Keep PackageManager as the sole mode store, normalize mixed upgrade states through the internal MY_PACKAGE_REPLACED receiver, preserve unique explicit choices, and migrate mutable shortcut ownership before disabling an alias.
+- Host appearance acquisition and IPC must run on a worker. Cache in process, discard stale generations, refresh only effective followed fields, and defer host-driven recreation after user interaction or while a dialog is open. Never rewrite local choices because the host is unavailable.
