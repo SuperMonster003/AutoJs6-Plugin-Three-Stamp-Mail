@@ -17,19 +17,19 @@ import io.github.supermonster003.autojs6.plugin.angus.mail.R
 internal fun ConfiguredActivity.sectionHeader(@StringRes titleResource: Int): TextView =
     TextView(this).apply {
         text = getString(titleResource)
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, Ui.TEXT_SECTION)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, Ui.SETTINGS_SECTION)
         typeface = Ui.mediumTypeface
         setTextColor(appPalette.accent)
         setPaddingRelative(
-            uiDp(Ui.SCREEN_MARGIN),
+            uiDp(Ui.SETTINGS_HORIZONTAL),
             uiDp(Ui.SECTION_GAP),
-            uiDp(Ui.SCREEN_MARGIN),
+            uiDp(Ui.SETTINGS_HORIZONTAL),
             uiDp(Ui.SPACE_SM),
         )
     }
 
 /** 1dp divider between row groups, inset from the leading edge by default. */
-internal fun ConfiguredActivity.hairline(insetStartDp: Int = Ui.SCREEN_MARGIN): View =
+internal fun ConfiguredActivity.hairline(insetStartDp: Int = Ui.SETTINGS_HORIZONTAL + 40): View =
     View(this).apply {
         setBackgroundColor(appPalette.divider)
         layoutParams = LinearLayout.LayoutParams(
@@ -37,6 +37,7 @@ internal fun ConfiguredActivity.hairline(insetStartDp: Int = Ui.SCREEN_MARGIN): 
             uiDp(1),
         ).apply {
             marginStart = uiDp(insetStartDp)
+            marginEnd = uiDp(Ui.SETTINGS_HORIZONTAL)
         }
     }
 
@@ -50,11 +51,11 @@ internal class SettingRow(
 private fun ConfiguredActivity.rowShell(): LinearLayout = LinearLayout(this).apply {
     orientation = LinearLayout.HORIZONTAL
     gravity = Gravity.CENTER_VERTICAL
-    minimumHeight = uiDp(64)
+    minimumHeight = uiDp(Ui.SETTINGS_ROW_MIN)
     setPaddingRelative(
-        uiDp(Ui.SCREEN_MARGIN),
+        uiDp(Ui.SETTINGS_HORIZONTAL),
         uiDp(Ui.SPACE_MD),
-        uiDp(Ui.SCREEN_MARGIN),
+        uiDp(Ui.SETTINGS_HORIZONTAL),
         uiDp(Ui.SPACE_MD),
     )
     layoutParams = LinearLayout.LayoutParams(
@@ -83,10 +84,10 @@ private fun ConfiguredActivity.rowTextColumn(
     }
     val summaryView = TextView(this).apply {
         text = summary
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, Ui.TEXT_SECONDARY)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, Ui.SETTINGS_SUMMARY)
         setTextColor(appPalette.secondaryText)
         setLineSpacing(0f, 1.1f)
-        setPaddingRelative(0, uiDp(3), 0, 0)
+        setPaddingRelative(0, uiDp(4), 0, 0)
         visibility = if (summary.isNullOrEmpty()) View.GONE else View.VISIBLE
     }
     val column = LinearLayout(this).apply {
@@ -117,7 +118,7 @@ internal fun ConfiguredActivity.settingRow(
         row.addView(
             TextView(this).apply {
                 text = value
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, Ui.TEXT_SECONDARY)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, Ui.SETTINGS_SUMMARY)
                 setTextColor(appPalette.secondaryText)
                 setPaddingRelative(uiDp(Ui.SPACE_MD), 0, 0, 0)
             },
@@ -127,7 +128,7 @@ internal fun ConfiguredActivity.settingRow(
         row.addView(
             ImageView(this).apply {
                 setImageDrawable(
-                    tintedDrawable(R.drawable.ic_chevron_right_24, appPalette.secondaryText),
+                    tintedDrawable(R.drawable.ic_settings_chevron, appPalette.secondaryText),
                 )
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 alpha = 0.6f
@@ -171,6 +172,7 @@ internal fun ConfiguredActivity.switchRow(
         // The row is the single interactive surface; the switch only displays state.
         isClickable = false
         isFocusable = false
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         layoutParams = LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -179,6 +181,17 @@ internal fun ConfiguredActivity.switchRow(
         }
     }
     row.addView(switchView)
+    titleView.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+    summaryView.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+    androidx.core.view.ViewCompat.setAccessibilityDelegate(row, object : androidx.core.view.AccessibilityDelegateCompat() {
+        override fun onInitializeAccessibilityNodeInfo(host: View, info: androidx.core.view.accessibility.AccessibilityNodeInfoCompat) {
+            super.onInitializeAccessibilityNodeInfo(host, info)
+            info.className = android.widget.Switch::class.java.name
+            info.isCheckable = true
+            info.isChecked = switchView.isChecked
+            info.text = listOf(titleView.text, summaryView.text).filter { it.isNotBlank() }.joinToString(", ")
+        }
+    })
     row.isClickable = true
     row.isFocusable = true
     row.applyThemedSelectableBackground()

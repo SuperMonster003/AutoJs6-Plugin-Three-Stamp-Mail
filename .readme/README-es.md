@@ -70,7 +70,8 @@ El complemento ofrece las siguientes capacidades:
 - Proveedores: los ajustes predefinidos de Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina y Aliyun completan hosts, puertos y cifrado; cualquier campo puede sobrescribirse para otros servidores.
 - Autenticacion: contrasenas y codigos de autorizacion del proveedor, o tokens de acceso XOAUTH2 que el script aporta junto con una funcion de renovacion.
 - Inicio de sesion en el navegador: una cuenta de Gmail, Outlook.com o Microsoft 365 puede anadirse iniciando sesion con la cuenta de Google o Microsoft en el navegador del sistema desde los ajustes del plugin (codigo de autorizacion OAuth 2.0 con PKCE); el plugin guarda el token de actualizacion cifrado en el dispositivo, renueva el token de acceso antes de cada sesion y muestra el estado de la sesion con "Volver a iniciar sesion" y "Revocar el inicio de sesion" en la pagina de cuentas. Los scripts siguen conectandose por alias y nunca ven un token.
-- Elige iconos de inicio adaptables claros, oscuros (predeterminados), automáticos o transparentes en Ajustes. Los colores automáticos y la transparencia dependen del lanzador. El cambio mantiene la aplicación en ejecución y puede tardar unos segundos.
+- Elige iconos de inicio adaptables claros, oscuros, automáticos (predeterminados) o transparentes en Ajustes. Los colores automáticos y la transparencia dependen del lanzador.
+- Ajustes uniformes de idioma, modo oscuro, color e icono, con fondos neutros, controles temáticos y confirmación. Previsualiza colores predefinidos o HEX/RGB antes de aplicarlos. Cancelar conserva los ajustes guardados.
 
 ******
 
@@ -230,9 +231,11 @@ Los planes y el progreso del plugin se mantienen como una lista verificable en R
 
 #### v1.3.0
 
-_2026/09/29_
+_2026/09/30_
 
-- `Función` Elige iconos de inicio adaptables claros, oscuros (predeterminados), automáticos o transparentes en Ajustes. Los colores automáticos y la transparencia dependen del lanzador. El cambio mantiene la aplicación en ejecución y puede tardar unos segundos.
+- `Función` Elige iconos de inicio adaptables claros, oscuros, automáticos (predeterminados) o transparentes en Ajustes. Los colores automáticos y la transparencia dependen del lanzador.
+- `Corrección` Las actualizaciones mantienen una sola entrada y conservan el icono elegido expresamente. La apariencia del anfitrión se lee en segundo plano sin interrumpir los cambios pendientes.
+- `Mejora` Ajustes uniformes de idioma, modo oscuro, color e icono, con fondos neutros, controles temáticos y confirmación. Previsualiza colores predefinidos o HEX/RGB antes de aplicarlos. Cancelar conserva los ajustes guardados.
 
 #### v1.2.1
 

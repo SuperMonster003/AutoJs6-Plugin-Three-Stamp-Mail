@@ -2,7 +2,7 @@
 
 The retained source geometry is the artwork. Colors and output geometry are generated,
 never inferred from antialiased source RGB. Run with --check to verify without writes.
-Dark is the default launcher mode. Explicit light and best-effort automatic modes
+Auto is the default launcher choice. Explicit light/dark and best-effort automatic modes
 have independent resources; transparent launcher icons follow the launcher configuration; brand UI assets stay separate.
 """
 

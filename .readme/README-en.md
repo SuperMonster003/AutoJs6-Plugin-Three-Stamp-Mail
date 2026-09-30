@@ -70,7 +70,8 @@ The plugin provides the following capabilities:
 - Providers: presets for Gmail, Outlook.com, Microsoft 365, QQ, 163, 126, iCloud, Yahoo, Sina, and Aliyun fill in hosts, ports, and encryption; any field can be overridden for other servers.
 - Authentication: passwords and provider authorization codes, or XOAUTH2 access tokens supplied by the script together with a refresh callback.
 - Browser sign-in: a Gmail, Outlook.com or Microsoft 365 account can be added by signing in with the Google or Microsoft account in the system browser from the plugin settings (OAuth 2.0 authorization code with PKCE); the plugin keeps the refresh token encrypted on the device, renews the access token before every session and shows the sign-in state with "Sign in again" and "Revoke" on the accounts page. Scripts keep connecting by alias and never see a token.
-- Choose adaptive light, adaptive dark (default), automatic or transparent launcher icons in Settings. Automatic colors and transparency depend on launcher support; switching preserves the running app and may take a few seconds to refresh.
+- Choose adaptive light, adaptive dark, automatic (default) or transparent launcher icons in Settings. Automatic colors and transparency depend on launcher support.
+- Consistent language, dark mode, theme color and launcher settings with neutral surfaces, themed controls and confirmation dialogs. Preview preset or HEX/RGB colors before applying; Cancel leaves the saved settings unchanged.
 
 ******
 
@@ -230,9 +231,11 @@ The plugin's plans and progress are maintained as a checkable list in ROADMAP.md
 
 #### v1.3.0
 
-_2026/09/29_
+_2026/09/30_
 
-- `Feature` Choose adaptive light, adaptive dark (default), automatic or transparent launcher icons in Settings. Automatic colors and transparency depend on launcher support; switching preserves the running app and may take a few seconds to refresh.
+- `Feature` Choose adaptive light, adaptive dark, automatic (default) or transparent launcher icons in Settings. Automatic colors and transparency depend on launcher support.
+- `Fix` App updates keep one launcher entry and preserve an explicitly chosen earlier icon. Host appearance is read in the background without replacing an active settings draft.
+- `Improvement` Consistent language, dark mode, theme color and launcher settings with neutral surfaces, themed controls and confirmation dialogs. Preview preset or HEX/RGB colors before applying; Cancel leaves the saved settings unchanged.
 
 #### v1.2.1
 

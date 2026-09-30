@@ -77,7 +77,7 @@ class ManifestContractTest {
         assertEquals(listOf("android.intent.category.DEFAULT"), filter.children("category").map { it.androidAttribute("name") })
 
         // AppCompat / Material contribute auto-start components; the manifest only removes them. The
-        // boot receiver of the background watches (roadmap P8) is the one receiver of the plugin's own.
+        // boot receiver and update-only icon receiver are the plugin's intentional receivers.
         val components = application.children("receiver") + application.children("provider")
         val removals = components.filter { it.hasAttributeNS(TOOLS_NAMESPACE, "node") }
         assertEquals(
@@ -86,8 +86,11 @@ class ManifestContractTest {
         )
         removals.forEach { component -> assertEquals("remove", component.getAttributeNS(TOOLS_NAMESPACE, "node")) }
         val own = components - removals.toSet()
-        assertEquals(listOf(".trigger.BootReceiver"), own.map { it.androidAttribute("name") })
-        val boot = own.single()
+        assertEquals(listOf(".trigger.BootReceiver", ".LauncherIconUpdateReceiver"), own.map { it.androidAttribute("name") })
+        val update = own.single { it.androidAttribute("name") == ".LauncherIconUpdateReceiver" }
+        assertEquals("false", update.androidAttribute("exported"))
+        assertEquals(listOf("android.intent.action.MY_PACKAGE_REPLACED"), update.child("intent-filter").children("action").map { it.androidAttribute("name") })
+        val boot = own.single { it.androidAttribute("name") == ".trigger.BootReceiver" }
         assertEquals("the boot receiver stays off until the user enables the switch", "false", boot.androidAttribute("enabled"))
         assertEquals("true", boot.androidAttribute("exported"))
         assertEquals(listOf("android.intent.action.BOOT_COMPLETED"), boot.child("intent-filter").children("action").map { it.androidAttribute("name") })
@@ -111,7 +114,7 @@ class ManifestContractTest {
             assertEquals(".settings.AccountsActivity", alias.androidAttribute("targetActivity"))
             assertEquals("true", alias.androidAttribute("exported"))
             assertNull(alias.androidAttributeOrNull("permission"))
-            assertEquals(alias.androidAttribute("name") == ".launcher.AdaptiveDarkIconAlias", alias.androidAttribute("enabled") == "true")
+            assertEquals(alias.androidAttribute("name") == ".launcher.AdaptiveAutoIconAlias", alias.androidAttribute("enabled") == "true")
             assertEquals(listOf("android.intent.action.MAIN"), launcher.children("action").map { it.androidAttribute("name") })
             assertEquals(listOf("android.intent.category.LAUNCHER"), launcher.children("category").map { it.androidAttribute("name") })
         }

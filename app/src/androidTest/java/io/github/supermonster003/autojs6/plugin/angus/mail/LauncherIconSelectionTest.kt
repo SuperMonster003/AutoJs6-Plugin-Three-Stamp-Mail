@@ -19,6 +19,9 @@ class LauncherIconSelectionTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test fun fourChoicesKeepOneEntryPreserveTheProcessAndSurviveRecreation() {
+        val hostReady = java.util.concurrent.CountDownLatch(1)
+        AutoJs6HostSettingsClient.refresh(context, force = true) { hostReady.countDown() }
+        assertTrue(hostReady.await(15, java.util.concurrent.TimeUnit.SECONDS))
         val pm = context.packageManager
         val before = LauncherIconMode.entries.associateWith { pm.getComponentEnabledSetting(it.component(context)) }
         val previous = LauncherIcons.current(context)
@@ -33,6 +36,7 @@ class LauncherIconSelectionTest {
                         .setIntent(Intent(context, AccountsActivity::class.java).setAction(Intent.ACTION_VIEW)).build())))
                 }
                 for (mode in LauncherIconMode.entries) {
+                    val beforeChoice = LauncherIcons.current(context)
                     scenario.onActivity { activity ->
                         activity.launcherIconRow.view.performClick()
                     }
@@ -44,7 +48,10 @@ class LauncherIconSelectionTest {
                         assertTrue(dialog.listView.adapter.getItem(LauncherIconMode.AUTO.ordinal).toString().contains(activity.getString(R.string.launcher_icon_auto_note)))
                         assertTrue(dialog.listView.adapter.getItem(LauncherIconMode.TRANSPARENT.ordinal).toString().contains(activity.getString(R.string.launcher_icon_transparent_note)))
                         dialog.listView.performItemClick(null, mode.ordinal, dialog.listView.adapter.getItemId(mode.ordinal))
+                        assertEquals("A draft choice must not apply before OK", beforeChoice, LauncherIcons.current(context))
+                        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick()
                     }
+                    InstrumentationRegistry.getInstrumentation().waitForIdleSync()
                     assertEquals(mode, LauncherIcons.current(context))
                     assertEquals(process, Process.myPid())
                     val matches = pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setPackage(context.packageName), 0)

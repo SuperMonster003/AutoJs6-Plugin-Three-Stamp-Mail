@@ -58,8 +58,7 @@ internal object ApplicationSettingsResolver {
 }
 
 internal object AppConfiguration {
-    fun wrap(base: Context): Context {
-        val resolved = ApplicationSettingsResolver.resolve(base)
+    fun wrap(base: Context, resolved: ResolvedApplicationSettings = ApplicationSettingsResolver.resolve(base)): Context {
         val settings = resolved.settings
         val host = resolved.hostResult?.snapshot
         val configuration = Configuration(base.resources.configuration)
@@ -234,60 +233,31 @@ internal data class AppThemePalette(
     val isDark: Boolean,
 ) {
     companion object {
-        fun resolve(context: Context): AppThemePalette {
-            val resolved = ApplicationSettingsResolver.resolve(context)
+        fun resolve(context: Context, resolved: ResolvedApplicationSettings = ApplicationSettingsResolver.resolve(context)): AppThemePalette {
             val settings = resolved.settings
             val themeSeed = AppSettingsPolicy.resolveThemeColor(
                 settings,
                 resolved.hostResult?.snapshot?.themeColorPrimary,
             )
-            val seedPrimary = themeSeed.let { normalized ->
-                // The brand color adapts to the active mode; arbitrary host or custom
-                // colors retain their brightness and gain only a small chroma floor.
-                if (normalized == AppSettingsPolicy.BRAND_THEME_COLOR) {
-                    context.getColor(R.color.mail_brand_primary)
-                } else {
-                    normalized
-                }
-            }
             val background = context.getColor(R.color.mail_window_background)
-            val isDark = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
-                Configuration.UI_MODE_NIGHT_YES
-            val curated = AppSettingsPolicy.isCuratedThemeColor(themeSeed)
-            val primary = if (curated) seedPrimary else AppColorPolicy.dynamicPrimary(seedPrimary)
-            val accent = if (curated) {
-                AppColorPolicy.readableAccent(primary, background)
-            } else {
-                AppColorPolicy.dynamicAccent(primary, background)
-            }
-            val primaryText = context.getColor(R.color.mail_text_primary)
-            val secondaryText = context.getColor(R.color.mail_text_secondary)
-            val surface = context.getColor(R.color.mail_surface)
-            val surfaceVariant = context.getColor(R.color.mail_surface_variant)
-            val outline = context.getColor(R.color.mail_outline)
-            val divider = context.getColor(R.color.mail_divider)
+            val dark = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+            val roles = ThemeAccentRoles.fromSeed(themeSeed, dark)
+            val accentSeed = if (settings.themeSelection == AppThemeSelection.FOLLOW_AUTOJS6)
+                resolved.hostResult?.snapshot?.themeColorAccent ?: themeSeed else themeSeed
+            val primary = roles.primary
+            val accent = AppColorPolicy.readableAccent(ThemeAccentRoles.fromSeed(accentSeed, dark).primary, background)
             return AppThemePalette(
                 primary = primary,
-                onPrimary = AppColorPolicy.onFilledColor(primary),
+                onPrimary = roles.onPrimary,
                 accent = accent,
-                windowBackground = if (curated) background else AppColorPolicy.harmonizeSurface(
-                    background, accent, primaryText, if (isDark) 0.035 else 0.02,
-                ),
-                surface = if (curated) surface else AppColorPolicy.harmonizeSurface(
-                    surface, accent, primaryText, if (isDark) 0.055 else 0.025,
-                ),
-                surfaceVariant = if (curated) surfaceVariant else AppColorPolicy.harmonizeSurface(
-                    surfaceVariant, accent, primaryText, if (isDark) 0.11 else 0.07,
-                ),
-                outline = if (curated) outline else AppColorPolicy.harmonizeSurface(
-                    outline, accent, primaryText, if (isDark) 0.18 else 0.13,
-                ),
-                primaryText = primaryText,
-                secondaryText = secondaryText,
-                divider = if (curated) divider else AppColorPolicy.harmonizeSurface(
-                    divider, accent, primaryText, if (isDark) 0.10 else 0.06,
-                ),
-                isDark = isDark,
+                windowBackground = background,
+                surface = context.getColor(R.color.mail_surface),
+                surfaceVariant = context.getColor(R.color.mail_surface_variant),
+                outline = context.getColor(R.color.mail_outline),
+                primaryText = context.getColor(R.color.mail_text_primary),
+                secondaryText = context.getColor(R.color.mail_text_secondary),
+                divider = context.getColor(R.color.mail_divider),
+                isDark = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES,
             )
         }
     }
@@ -313,9 +283,18 @@ abstract class ConfiguredActivity : AppCompatActivity() {
     private var appliedSettingsRevision = Long.MIN_VALUE
     private var appliedHostAppearanceSignature: Int? = null
     private var recreationRequested = false
+    private var interactionStarted = false
+    private var attachedSettings: ResolvedApplicationSettings? = null
+    private var attachedHostSignature: Int? = null
+    private val hostAppearanceListener: () -> Unit = {
+        if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) refreshCreatedAppearance()
+    }
 
     override fun attachBaseContext(newBase: Context) {
-        val configuredBase = AppConfiguration.wrap(newBase)
+        val resolved = ApplicationSettingsResolver.resolve(newBase)
+        attachedSettings = resolved
+        attachedHostSignature = hostAppearanceSignature(resolved.settings, resolved.hostResult?.snapshot, newBase.resources.configuration)
+        val configuredBase = AppConfiguration.wrap(newBase, resolved)
         val configuredNightMode = configuredBase.resources.configuration.uiMode and
             Configuration.UI_MODE_NIGHT_MASK
         delegate.localNightMode = if (configuredNightMode == Configuration.UI_MODE_NIGHT_YES) {
@@ -328,9 +307,10 @@ abstract class ConfiguredActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LauncherIcons.normalizeAsync(this)
         appliedSettingsRevision = ApplicationSettingsStore(this).revision()
-        appliedHostAppearanceSignature = currentHostAppearanceSignature()
-        appPalette = AppThemePalette.resolve(this)
+        appliedHostAppearanceSignature = attachedHostSignature
+        appPalette = AppThemePalette.resolve(this, requireNotNull(attachedSettings))
         applyWindowAppearance()
     }
 
@@ -339,27 +319,63 @@ abstract class ConfiguredActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
+    override fun onStart() {
+        super.onStart()
+        AutoJs6HostSettingsClient.addListener(hostAppearanceListener)
+    }
+
+    override fun onStop() {
+        AutoJs6HostSettingsClient.removeListener(hostAppearanceListener)
+        super.onStop()
+    }
+
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        interactionStarted = true
+    }
+
     override fun onResume() {
         super.onResume()
-        if (
-            !recreationRequested &&
-            (
-                ApplicationSettingsStore(this).revision() != appliedSettingsRevision ||
-                    currentHostAppearanceSignature() != appliedHostAppearanceSignature
-                )
-        ) {
-            recreationRequested = true
-            recreate()
-        }
+        interactionStarted = false
+        refreshCreatedAppearance()
+        AutoJs6HostSettingsClient.refresh(this, force = true)
     }
 
     private fun currentHostAppearanceSignature(): Int? {
         val settings = ApplicationSettingsStore(this).load()
-        val followsHost = settings.themeSelection == AppThemeSelection.FOLLOW_AUTOJS6 ||
-            settings.darkMode == AppDarkMode.FOLLOW_AUTOJS6 ||
-            settings.language == AppLanguage.FOLLOW_AUTOJS6
-        if (!followsHost) return null
-        return AutoJs6HostSettingsClient.query(this).hashCode()
+        val follows = settings.themeSelection == AppThemeSelection.FOLLOW_AUTOJS6 ||
+            settings.darkMode == AppDarkMode.FOLLOW_AUTOJS6 || settings.language == AppLanguage.FOLLOW_AUTOJS6
+        if (!follows) return null
+        return hostAppearanceSignature(settings, AutoJs6HostSettingsClient.query(this).snapshot,
+            applicationContext.resources.configuration)
+    }
+
+    private fun hostAppearanceSignature(settings: ApplicationSettings, host: AutoJs6HostSettingsSnapshot?, system: Configuration): Int? {
+        val followsColor = settings.themeSelection == AppThemeSelection.FOLLOW_AUTOJS6
+        val followsNight = settings.darkMode == AppDarkMode.FOLLOW_AUTOJS6
+        val followsLanguage = settings.language == AppLanguage.FOLLOW_AUTOJS6
+        if (!followsColor && !followsNight && !followsLanguage) return null
+        val night = when (host?.darkModePolicy) {
+            AutoJs6DarkModePolicy.LIGHT -> false
+            AutoJs6DarkModePolicy.DARK -> true
+            else -> system.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        }
+        return listOf(
+            if (followsColor) host?.themeColorPrimary ?: AppSettingsPolicy.AUTOJS6_DEFAULT_THEME_COLOR else null,
+            if (followsColor) host?.themeColorAccent ?: AppSettingsPolicy.AUTOJS6_DEFAULT_THEME_COLOR else null,
+            if (followsNight) night else null,
+            if (followsLanguage) host?.resolvedLanguageTag?.takeIf(String::isNotBlank) ?: system.locales[0].toLanguageTag() else null,
+        ).hashCode()
+    }
+
+    private fun refreshCreatedAppearance() {
+        if (recreationRequested || isFinishing || isDestroyed) return
+        val localChanged = ApplicationSettingsStore(this).revision() != appliedSettingsRevision
+        val hostChanged = currentHostAppearanceSignature() != appliedHostAppearanceSignature
+        if (localChanged || (hostChanged && !interactionStarted && presentedDialog?.isShowing != true)) {
+            recreationRequested = true
+            recreate()
+        }
     }
 
     internal fun createAppToolbar(
@@ -470,7 +486,30 @@ abstract class ConfiguredActivity : AppCompatActivity() {
     }
 
     internal fun tintDialogButtons(dialog: AlertDialog) {
-        dialog.listView?.let(::applyThemeToControls)
+        presentedDialog = dialog
+        val width = min(uiDp(560), resources.displayMetrics.widthPixels - uiDp(48))
+        val maxHeight = (resources.displayMetrics.heightPixels * 0.85f).toInt()
+        dialog.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.window?.decorView?.addOnLayoutChangeListener { _, _, _, _, bottom, _, _, _, _ ->
+            if (bottom > maxHeight) dialog.window?.setLayout(width, maxHeight)
+        }
+        dialog.findViewById<android.widget.TextView>(androidx.appcompat.R.id.alertTitle)?.apply {
+            setTextColor(appPalette.primaryText)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
+        }
+        dialog.listView?.let { list ->
+            val painted = java.util.WeakHashMap<View, Boolean>()
+            fun tintVisibleRows() {
+                for (index in 0 until list.childCount) {
+                    val child = list.getChildAt(index)
+                    if (painted.put(child, true) == null) applyThemeToControls(child)
+                }
+            }
+            // Multi-choice platform rows are created after show(), including when scrolled.
+            // Tint each new row once; a pre-layout tree walk misses those check marks.
+            list.viewTreeObserver.addOnGlobalLayoutListener { tintVisibleRows() }
+            tintVisibleRows()
+        }
         listOf(
             AlertDialog.BUTTON_POSITIVE,
             AlertDialog.BUTTON_NEGATIVE,
