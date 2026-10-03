@@ -139,6 +139,9 @@ class MailWatchBinderTest {
         assertFalse(message.getBoolean("bodyLoaded"))
         assertFalse(events.threads.poll()!!.contains("Binder"))
 
+        // This scripted server broadcasts only to active IDLE subscribers. The first callback
+        // can arrive during FETCH, before the watcher subscribes again for the next push.
+        imap.awaitIdling(1)
         imap.push("second")
         val second = events.next()
         assertEquals(2L, second.second)

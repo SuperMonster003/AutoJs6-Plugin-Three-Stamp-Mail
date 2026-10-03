@@ -1,6 +1,6 @@
 # 3-Stamp Mail 2.0 validation
 
-Validated on 2026-10-03. Version 2.0.0, build 75; package
+Validated on 2026-10-03. Version 2.0.0, build 76; package
 `io.github.supermonster003.autojs6.plugin.three.stamp.mail`, plugin id `three-stamp-mail`.
 The generic `mail` engine, `default` variant, discovery categories and Binder protocol remain
 unchanged. New installations require AutoJs6 6.8.0 build 5316. Old installations and their data
@@ -61,3 +61,18 @@ reported with the release handoff instead of being inferred from these local che
 
 The final light/dark screenshots also exposed the Android 7 light-navigation contrast issue.
 Build 75 keeps that system bar dark on API 24/25, where dark navigation buttons are unavailable.
+
+Build 76 corrects the asynchronous host-appearance test fixture: hosted CI has no AutoJs6
+installation, so it must receive NOT_INSTALLED with no snapshot. Fixtures with an enabled,
+matching-signature host still require AVAILABLE and a real snapshot. Both paths retain the
+timed main-thread cached-read and asynchronous completion checks; absence is not skipped.
+
+The standalone local run also exposed a scripted IMAP fixture race: its second synthetic push
+could occur before the client re-entered IDLE, when this minimal server has no subscriber to
+notify. The Binder event-order test now waits for that explicit server readiness before pushing;
+its generation, sequence, payload and close assertions are unchanged. Production mail code is
+unchanged by these fixture corrections.
+
+The final build-76 standalone API 24 image contains no AutoJs6 host. Its complete run passed
+41 cases with 14 assumption skips. The no-host probe returned NOT_INSTALLED with a 0 ms cached
+main-thread read; the installed-host probe also passed on the Sony API 31 fixture.
