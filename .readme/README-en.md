@@ -242,6 +242,7 @@ _2026/10/03_
 - `Improvement` The application is now 3-Stamp Mail, with a new package, plugin identity, repository and release filenames
 - `Improvement` New light/dark envelope artwork for in-app and launcher icons, retaining four launcher choices
 - `Improvement` Consistent language, dark mode, theme color and launcher settings with neutral surfaces, themed controls and confirmation dialogs. Preview preset or HEX/RGB colors before applying; Cancel leaves the saved settings unchanged.
+- `Improvement` Consistent visual sizing for launcher and Plugin Center icons, with transparent backgrounds and neutral black, white or grayscale artwork
 
 #### v1.2.1
 
