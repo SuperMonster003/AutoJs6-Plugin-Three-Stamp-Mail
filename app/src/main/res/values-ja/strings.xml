@@ -227,7 +227,7 @@
     <string name="watches_notification_channel">バックグラウンド監視</string>
     <string name="watches_notification_channel_description">メールフォルダーへの接続を保つバックグラウンド監視の状態</string>
     <string name="watches_notification_text">%2$d 件の監視のうち %1$d 件が接続中</string>
-    <string name="watches_notification_title">Angus Mail がメールを監視中</string>
+    <string name="watches_notification_title">3-Stamp Mail がメールを監視中</string>
     <string name="watches_permission_granted">許可済み: 常駐通知に監視の状態が表示されます</string>
     <string name="watches_permission_missing">未許可: サービスは動作しますが Android は状態通知を表示しません; タップして許可</string>
     <string name="watches_permission_title">通知の権限</string>

@@ -40,7 +40,9 @@ CASES = ["exit", "exit-open", "stop-all", "kill-host", "kill-plugin", "upgrade",
 SCRIPT_DIR = "/sdcard/Download/lifecycle"
 WORK_DIR = SCRIPT_DIR
 PROGRESS = f"{WORK_DIR}/lifecycle-progress.json"
-PLUGIN_APK = os.path.join(PLUGIN, "app", "build", "outputs", "apk", "debug", "autojs6-plugin-angus-mail-v1.0.0.apk")
+with open(os.path.join(PLUGIN, "version.properties"), encoding="utf-8") as version_file:
+    PLUGIN_VERSION = next(line.split("=", 1)[1].strip() for line in version_file if line.startswith("VERSION_NAME="))
+PLUGIN_APK = os.path.join(PLUGIN, "app", "build", "outputs", "apk", "debug", f"autojs6-plugin-three-stamp-mail-v{PLUGIN_VERSION}.apk")
 FD_TOLERANCE = 3
 THREAD_TOLERANCE = 2
 

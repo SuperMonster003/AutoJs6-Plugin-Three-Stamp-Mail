@@ -227,7 +227,7 @@
     <string name="watches_notification_channel">Veilles en arriere-plan</string>
     <string name="watches_notification_channel_description">Etat des veilles en arriere-plan qui gardent les dossiers connectes</string>
     <string name="watches_notification_text">%1$d veilles connectees sur %2$d</string>
-    <string name="watches_notification_title">Angus Mail veille sur le courriel</string>
+    <string name="watches_notification_title">3-Stamp Mail veille sur le courriel</string>
     <string name="watches_permission_granted">Accordee: la notification permanente affiche l\'etat des veilles</string>
     <string name="watches_permission_missing">Non accordee: le service tourne, mais Android n\'affiche pas de notification d\'etat; touchez pour autoriser</string>
     <string name="watches_permission_title">Autorisation de notification</string>

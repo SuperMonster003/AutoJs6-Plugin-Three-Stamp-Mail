@@ -227,7 +227,7 @@
     <string name="watches_notification_channel">Фоновые наблюдатели</string>
     <string name="watches_notification_channel_description">Состояние фоновых наблюдателей, которые держат папки почты подключенными</string>
     <string name="watches_notification_text">Подключено %1$d из %2$d наблюдателей</string>
-    <string name="watches_notification_title">Angus Mail следит за почтой</string>
+    <string name="watches_notification_title">3-Stamp Mail следит за почтой</string>
     <string name="watches_permission_granted">Выдано: постоянное уведомление показывает состояние наблюдателей</string>
     <string name="watches_permission_missing">Не выдано: служба работает, но Android не показывает уведомление о состоянии; нажмите, чтобы разрешить</string>
     <string name="watches_permission_title">Разрешение на уведомления</string>

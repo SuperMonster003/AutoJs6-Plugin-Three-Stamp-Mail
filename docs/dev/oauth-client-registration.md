@@ -35,7 +35,7 @@ The redirect URIs the providers must know (nothing else is app-specific on their
 
 | Provider | Redirect URI | Where it is registered |
 | --- | --- | --- |
-| Microsoft | `io.github.supermonster003.autojs6.plugin.angus.mail://oauth2/microsoft` | Entra app registration, platform "Mobile and desktop applications" |
+| Microsoft | `io.github.supermonster003.autojs6.plugin.three.stamp.mail://oauth2/microsoft` | Entra app registration, platform "Mobile and desktop applications" |
 | Google | `com.googleusercontent.apps.<client id prefix>:/oauth2redirect` | implied by the Android client type (no field to type; the "Enable custom URI scheme" setting must be on) |
 
 The signing certificate of the APKs matters for Google only. On the maintainer's machine both
@@ -71,7 +71,7 @@ that tenant still serves personal accounts when the audience below admits them.
    (then `microsoftTenant=common`, which also admits work and school accounts); no redirect URI
    on this page yet.
 2. **Authentication** > Add a platform > **Mobile and desktop applications** > custom redirect
-   URI `io.github.supermonster003.autojs6.plugin.angus.mail://oauth2/microsoft`. The same
+   URI `io.github.supermonster003.autojs6.plugin.three.stamp.mail://oauth2/microsoft`. The same
    registration may keep `http://localhost` for `.python/outlook_oauth_login.py` (the PC login of
    the P6 matrix): the two redirects coexist. Further down the page, **Allow public client
    flows** = Yes (the mobile redirect implies it; the setting matters for the refresh grant
@@ -85,7 +85,7 @@ that tenant still serves personal accounts when the audience below admits them.
    created.
 
 Checks: an authorization URL of the form
-`https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=<id>&response_type=code&redirect_uri=io.github.supermonster003.autojs6.plugin.angus.mail%3A%2F%2Foauth2%2Fmicrosoft&scope=openid&code_challenge=x&code_challenge_method=S256`
+`https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=<id>&response_type=code&redirect_uri=io.github.supermonster003.autojs6.plugin.three.stamp.mail%3A%2F%2Foauth2%2Fmicrosoft&scope=openid&code_challenge=x&code_challenge_method=S256`
 opened in a PC browser must show the login page (an `AADSTS50011` page means the redirect URI is
 not registered; `AADSTS7000218` at the token endpoint means public client flows are off).
 Refresh tokens are bound to the client id they were issued to: a token obtained on the PC with
@@ -121,7 +121,7 @@ scope; this decides the audience questions below.
    the address). Save. The scopes must match what the app requests
    (`OAuthProviders.GOOGLE.scopes` + `identityScopes`).
 5. **Clients > Create client**: application type **Android**; name (internal); package name
-   `io.github.supermonster003.autojs6.plugin.angus.mail`; SHA-1 certificate fingerprint
+   `io.github.supermonster003.autojs6.plugin.three.stamp.mail`; SHA-1 certificate fingerprint
    `3C:E4:58:EE:42:22:C5:ED:1E:B4:84:4E:FA:79:79:9B:AD:53:EE:FD` (the release key above, which
    also signs the debug builds on the maintainer's machine). Expand **Advanced Settings** and turn
    on **Enable custom URI scheme**: since 2023 Google disables custom-scheme redirects for new
@@ -200,3 +200,19 @@ expires after 7 days, which the plugin shows as "sign in again".
   <https://learn.microsoft.com/entra/identity-platform/quickstart-register-app>
 - Microsoft, "Authenticate an IMAP, POP or SMTP connection using OAuth" (the Exchange Online
   delegated permissions): <https://learn.microsoft.com/exchange/client-developer/legacy-protocols/how-to-authenticate-an-imap-pop-smtp-application-by-using-oauth>
+
+
+## 3-Stamp Mail 2.0 registration change (2026-10-03)
+
+The maintainer confirmed adding the new Microsoft redirect to the existing registration,
+creating a Google Android client for `io.github.supermonster003.autojs6.plugin.three.stamp.mail`
+with the release certificate above and custom URI schemes enabled, and saving its new
+`googleClientId` in the ignored root `oauth-clients.properties`. The Microsoft client id and
+tenant are unchanged. Keep the old provider registrations available for users of the old app.
+
+Android treats the new package as a separate app: accounts, settings and watch configurations
+must be set up again, including browser sign-in. The two Google registrations use separate
+callback schemes; no old package aliases are added. These configuration confirmations do not
+by themselves establish a successful live-account sign-in, provider verification, or access
+for accounts outside the existing Google project's configured audience. Current-release test
+evidence is recorded separately; the build-67 account evidence above remains historical.

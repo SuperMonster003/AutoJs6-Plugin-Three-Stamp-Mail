@@ -5,10 +5,10 @@
   "h3_languages_with_ascii": "언어",
   "p_languages_all_supported_for_readme": "현재 README.md는 다음 언어를 지원합니다",
   "h3_introduction": "소개",
-  "p_introduction_what": "Angus Mail은 AutoJs6 스크립트에 전역 객체 `mail`을 제공하여 메일 보내기, 메일함 나열과 검색, 본문 읽기, 첨부 파일 다운로드, 플래그와 폴더 관리, 폴더의 새 메일 감시를 지원합니다. Jakarta Mail의 참조 구현인 [Eclipse Angus Mail]({{ angus_mail_url }}) {{ angus_mail_version }}을 기반으로 하며 TLS 위에서 IMAP, POP3, SMTP를 사용합니다.",
+  "p_introduction_what": "3-Stamp Mail은 AutoJs6 스크립트에 전역 객체 `mail`을 제공하여 메일 보내기, 메일함 나열과 검색, 본문 읽기, 첨부 파일 다운로드, 플래그와 폴더 관리, 폴더의 새 메일 감시를 지원합니다. Jakarta Mail의 참조 구현인 [Eclipse Angus Mail]({{ angus_mail_url }}) {{ angus_mail_version }}을 기반으로 하며 TLS 위에서 IMAP, POP3, SMTP를 사용합니다.",
   "p_introduction_how": "모든 메일 트래픽은 플러그인 프로세스 안에서 처리됩니다. AutoJs6는 Binder 서비스를 통해 플러그인을 발견하고, 스크립트가 제공한 계정 (또는 플러그인 설정 페이지에 저장한 별칭)을 넘기며, JSON 결과와 첨부 파일 스트림을 받습니다. 호스트 자체에는 메일 코드가 없습니다. 플러그인에 계정을 저장하지 않는 한 자격 증명은 세션이 유지되는 동안만 메모리에 머뭅니다.",
   "h3_status": "현재 상태",
-  "p_status": "버전 {{ version_name }} 은 1.1.0 의 백그라운드 감시 (로드맵 P8) 위에 Google 및 Microsoft 계정의 브라우저 로그인 (로드맵 P9) 을 추가합니다. P0 부터 P8 까지의 모든 항목은 1.0.0 부터 1.1.0 으로 출시되었으며 증거는 [ROADMAP.md]({{ roadmap_url }}) 에 있습니다. AutoJs6 {{ required_host_version_name }} (빌드 {{ required_host_version_code }}) 이상이 필요합니다. \"메일 도착 시\" 작업에는 메일 계약 버전 2 를 가진 호스트 빌드가 필요합니다. 스크립트 API 의 전체 참조는 [AutoJs6 문서]({{ docs_mail_url }}) 에 있습니다.",
+  "p_status": "메일 작업, 계정 저장, 백그라운드 감시 및 Google/Microsoft 브라우저 로그인을 지원합니다. AutoJs6 {{ required_host_version_name }} build {{ required_host_version_code }} 이상이 필요합니다. [mail API 문서]({{ docs_mail_url }}).",
   "h3_features": "기능",
   "p_features_intro": "플러그인은 다음 기능을 제공합니다",
   "features": [
@@ -26,7 +26,7 @@
   "h3_usage": "사용 방법",
   "usage_steps": [
     "AutoJs6 빌드 {{ required_host_version_code }} ({{ required_host_version_name }}) 이상이 설치된 기기에 [Releases]({{ repo_url }}/releases) 에서 플러그인 APK 를 설치합니다.",
-    "AutoJs6 플러그인 센터를 열어 `Angus Mail` 이 인식되는지 확인하고 활성화합니다.",
+    "AutoJs6 플러그인 센터를 열어 `3-Stamp Mail` 이 인식되는지 확인하고 활성화합니다.",
     "계정을 준비합니다: 제공업체의 웹 설정에서 IMAP 또는 POP3 와 SMTP 를 켜고 인증 코드 (QQ, 163, 126, Sina) 또는 앱 비밀번호 (Gmail, iCloud, Yahoo) 를 얻습니다. 로그인 비밀번호 자체는 보통 허용되지 않습니다. Gmail, Outlook.com, Microsoft 365 계정은 대신 플러그인 설정에서 브라우저로 Google 또는 Microsoft 계정에 로그인하거나 (인증 방식에서 \"Google / Microsoft 계정으로 로그인 (브라우저)\" 선택), 다른 곳에서 얻은 OAuth 2.0 액세스 토큰을 줄 수 있습니다.",
     "스크립트에서 `mail.connect(...)`를 호출하거나, 플러그인 설정 페이지 (플러그인의 런처 아이콘 또는 AutoJs6 개발자 옵션 > 메일 계정 설정) 에 계정을 저장한 뒤 별칭으로 연결합니다.",
     "스크립트를 상주시키지 않고 새 메일에 실행하려면: 플러그인의 감시 페이지 (설정 > 감시: 계정 별칭, 폴더, 모드, 필터) 에서 감시를 추가하고, 요청 시 알림을 허용한 뒤, AutoJs6 에서 작업을 만들고 (스크립트 길게 누르기 > 정시 작업 > 브로드캐스트로 실행 > 메일 도착 시) 감시를 선택합니다. 이 작업에는 메일 계약 버전 2 를 포함한 AutoJs6 빌드가 필요합니다."
@@ -83,7 +83,7 @@
   "p_security_permission": "플러그인은 공식 [Releases]({{ repo_url }}/releases) 페이지 또는 AutoJs6 플러그인 센터에서만 받으세요. 출처를 알 수 없는 패키지는 버전 번호가 같아 보여도 호스트 검증에 실패하거나 위험을 동반할 수 있습니다.",
   "h3_plugin_interface": "플러그인 인터페이스",
   "p_plugin_interface": "다음 정보는 AutoJs6 호스트와 플러그인 개발자를 위한 것입니다. 호스트는 이 식별자로 플러그인을 발견하고 호환성을 협상합니다",
-  "p_contract_service": "`AngusMailPluginService`는 호스트 mail-api 계약 `{{ plugin_aidl_interface }}`를 구현하고 `{{ plugin_service_action }}` (category `{{ plugin_service_category }}`)에 응답합니다. `AngusMailPluginInfoService`는 `{{ plugin_info_action }}`에 PluginInfo로 응답합니다. `WakeActivity`를 통해 호스트가 플러그인을 활성화할 수 있습니다.",
+  "p_contract_service": "`ThreeStampMailPluginService`는 호스트 mail-api 계약 `{{ plugin_aidl_interface }}`를 구현하고 `{{ plugin_service_action }}` (category `{{ plugin_service_category }}`)에 응답합니다. `ThreeStampMailPluginInfoService`는 `{{ plugin_info_action }}`에 PluginInfo로 응답합니다. `WakeActivity`를 통해 호스트가 플러그인을 활성화할 수 있습니다.",
   "h3_roadmap": "로드맵",
   "p_roadmap": "플러그인의 계획과 진행 상황은 ROADMAP.md에 체크 가능한 목록으로 관리되며, 단계별로 수락 기준과 증거 수준이 함께 기록됩니다. 체크되지 않은 항목은 현재 기능이 아니라 의도를 나타냅니다. Issues를 통한 논의를 환영합니다.",
   "text_link_roadmap": "ROADMAP.md 보기",
@@ -107,5 +107,6 @@
   "text_link_mail_docs": "메일 모듈 문서",
   "text_link_angus_mail": "Eclipse Angus Mail",
   "text_link_third_party_notices": "서드파티 고지",
-  "p_instruction_more": "연결 안내와 현재 진행 상황은 [프로젝트 README]({{ repo_url }})와 [ROADMAP.md]({{ roadmap_url }})를 참고하세요."
+  "p_instruction_more": "연결 안내와 현재 진행 상황은 [프로젝트 README]({{ repo_url }})와 [ROADMAP.md]({{ roadmap_url }})를 참고하세요.",
+  "p_acknowledgements": "[Eclipse Angus Mail]({{ angus_mail_url }}), Jakarta Mail/Activation, GreenMail 및 구현과 개발 규칙을 참고한 AutoJs6, OpenCC, 3-Stone AI, MCP Server, Pinyin4j 개발자에게 감사드립니다. [출처와 라이선스]({{ references_url }}). 이 프로젝트는 독립적이며 해당 개발자의 보증을 의미하지 않습니다. 이름과 권리는 각 권리자에게 있습니다. [권리 이의 제기 및 협조]({{ rights_url }})."
 }

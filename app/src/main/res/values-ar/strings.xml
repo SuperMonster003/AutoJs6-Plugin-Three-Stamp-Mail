@@ -227,7 +227,7 @@
     <string name="watches_notification_channel">المراقبة في الخلفية</string>
     <string name="watches_notification_channel_description">حالة المراقبات في الخلفية التي تبقي مجلدات البريد متصلة</string>
     <string name="watches_notification_text">%1$d من %2$d مراقبة متصلة</string>
-    <string name="watches_notification_title">Angus Mail يراقب البريد</string>
+    <string name="watches_notification_title">3-Stamp Mail يراقب البريد</string>
     <string name="watches_permission_granted">ممنوح: يعرض الإشعار الدائم حالة المراقبة</string>
     <string name="watches_permission_missing">غير ممنوح: تعمل الخدمة لكن Android لا يعرض إشعار الحالة; انقر للسماح</string>
     <string name="watches_permission_title">إذن الإشعارات</string>

@@ -64,7 +64,7 @@ def scrub(text):
     return text
 
 args = {
-    'class': 'io.github.supermonster003.autojs6.plugin.angus.mail.MailCoreDeviceTest#realAccountSendsAndListsWhenProvided',
+    'class': 'io.github.supermonster003.autojs6.plugin.three.stamp.mail.MailCoreDeviceTest#realAccountSendsAndListsWhenProvided',
     'mailAddress': profile['address'],
     'mailSecret': secret,
     'mailProvider': profile['provider'],

@@ -1,6 +1,7 @@
 <!--suppress HtmlDeprecatedAttribute, HttpUrlsUsage -->
 
 <div align="center">
+  <h1>3-Stamp Mail</h1>
   <p>
     <picture>
       <source srcset="{{ repo_url }}/blob/master/app/src/main/res/mipmap-night/ic_launcher.png?raw=true" media="(prefers-color-scheme: dark)" />
@@ -256,6 +257,8 @@ app/src/main/res/raw-*/plugin_instruction.md
 ******
 
 {{ p_license }}
+
+{{ p_acknowledgements }}
 
 ******
 

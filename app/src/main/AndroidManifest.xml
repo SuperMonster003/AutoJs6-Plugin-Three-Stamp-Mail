@@ -50,7 +50,8 @@
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="false"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/ic_launcher_system"
+        android:roundIcon="@mipmap/ic_launcher_system"
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
@@ -75,7 +76,7 @@
             android:name=".settings.AccountsActivity"
             android:exported="true"
             android:label="@string/accounts_title"
-            android:theme="@style/Theme.AngusMail" />
+            android:theme="@style/Theme.ThreeStampMail" />
 
         <!-- Stable launcher aliases leave the real Activity available to existing explicit intents. -->
         <activity-alias
@@ -122,7 +123,7 @@
             android:targetActivity=".settings.AccountsActivity"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_transparent"
+            android:icon="@mipmap/ic_launcher"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -135,7 +136,7 @@
             android:exported="false"
             android:label="@string/editor_title_add"
             android:parentActivityName=".settings.AccountsActivity"
-            android:theme="@style/Theme.AngusMail"
+            android:theme="@style/Theme.ThreeStampMail"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
@@ -143,21 +144,21 @@
             android:exported="false"
             android:label="@string/settings_title"
             android:parentActivityName=".settings.AccountsActivity"
-            android:theme="@style/Theme.AngusMail" />
+            android:theme="@style/Theme.ThreeStampMail" />
 
         <activity
             android:name=".AboutActivity"
             android:exported="false"
             android:label="@string/about_title"
             android:parentActivityName=".AppSettingsActivity"
-            android:theme="@style/Theme.AngusMail" />
+            android:theme="@style/Theme.ThreeStampMail" />
 
         <activity
             android:name=".ReleaseHistoryActivity"
             android:exported="false"
             android:label="@string/release_history_title"
             android:parentActivityName=".AppSettingsActivity"
-            android:theme="@style/Theme.AngusMail" />
+            android:theme="@style/Theme.ThreeStampMail" />
 
         <!-- Background watches (roadmap P8): the list and the editor, reached from the application settings. -->
         <activity
@@ -165,14 +166,14 @@
             android:exported="false"
             android:label="@string/watches_title"
             android:parentActivityName=".AppSettingsActivity"
-            android:theme="@style/Theme.AngusMail" />
+            android:theme="@style/Theme.ThreeStampMail" />
 
         <activity
             android:name=".trigger.WatchEditorActivity"
             android:exported="false"
             android:label="@string/watch_editor_title_add"
             android:parentActivityName=".trigger.WatchesActivity"
-            android:theme="@style/Theme.AngusMail"
+            android:theme="@style/Theme.ThreeStampMail"
             android:windowSoftInputMode="adjustResize" />
 
         <!--
@@ -190,7 +191,7 @@
             android:label="@string/oauth_title"
             android:launchMode="singleTop"
             android:parentActivityName=".settings.AccountEditorActivity"
-            android:theme="@style/Theme.AngusMail" />
+            android:theme="@style/Theme.ThreeStampMail" />
 
         <activity
             android:name=".oauth.OAuthRedirectActivity"
@@ -246,7 +247,7 @@
         </activity>
 
         <service
-            android:name=".AngusMailPluginInfoService"
+            android:name=".ThreeStampMailPluginInfoService"
             android:enabled="true"
             android:exported="true"
             android:permission="org.autojs.permission.PLUGIN">
@@ -256,11 +257,11 @@
             </intent-filter>
             <meta-data
                 android:name="requiresHostVersion"
-                android:value="5282" />
+                android:value="5316" />
         </service>
 
         <service
-            android:name=".AngusMailPluginService"
+            android:name=".ThreeStampMailPluginService"
             android:enabled="true"
             android:exported="true"
             android:permission="org.autojs.permission.PLUGIN">
@@ -270,7 +271,7 @@
             </intent-filter>
             <meta-data
                 android:name="requiresHostVersion"
-                android:value="5282" />
+                android:value="5316" />
         </service>
 
         <!--

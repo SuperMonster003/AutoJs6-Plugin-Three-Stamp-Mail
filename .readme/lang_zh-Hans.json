@@ -5,10 +5,10 @@
   "h3_languages_with_ascii": "语言",
   "p_languages_all_supported_for_readme": "当前 README.md 支持以下语言",
   "h3_introduction": "简介",
-  "p_introduction_what": "Angus Mail 为 AutoJs6 脚本提供全局对象 `mail`, 用于发送邮件, 列出和搜索邮箱, 读取正文, 下载附件, 管理标记与文件夹, 以及监听文件夹中的新邮件. 它基于 Jakarta Mail 的参考实现 [Eclipse Angus Mail]({{ angus_mail_url }}) {{ angus_mail_version }}, 通过 TLS 使用 IMAP, POP3 和 SMTP 协议.",
+  "p_introduction_what": "3-Stamp Mail 为 AutoJs6 脚本提供全局对象 `mail`, 用于发送邮件, 列出和搜索邮箱, 读取正文, 下载附件, 管理标记与文件夹, 以及监听文件夹中的新邮件. 它基于 Jakarta Mail 的参考实现 [Eclipse Angus Mail]({{ angus_mail_url }}) {{ angus_mail_version }}, 通过 TLS 使用 IMAP, POP3 和 SMTP 协议.",
   "p_introduction_how": "全部邮件流量都在插件进程内完成. AutoJs6 通过 Binder 服务发现插件, 交出脚本提供的账户 (或插件设置页中保存的别名), 并接收 JSON 结果与附件流; 宿主本身不含任何邮件代码. 除非你选择在插件中保存账户, 凭据只在会话生命周期内驻留内存.",
   "h3_status": "当前状态",
-  "p_status": "版本 {{ version_name }} 在 1.1.0 的后台守望 (路线图 P8) 之上新增 Google 与 Microsoft 账号的浏览器登录 (路线图 P9); P0 至 P8 各阶段的全部条目已随 1.0.0 至 1.1.0 发布, 证据见 [ROADMAP.md]({{ roadmap_url }}). 需要 AutoJs6 {{ required_host_version_name }} (build {{ required_host_version_code }}) 或更高版本; \"邮件到达时\" 任务需要携带邮件契约版本 2 的宿主构建; 完整的脚本 API 参考见 [AutoJs6 文档]({{ docs_mail_url }}).",
+  "p_status": "支持邮件操作, 保存账户, 后台守望与 Google/Microsoft 浏览器登录. 需要 AutoJs6 {{ required_host_version_name }} build {{ required_host_version_code }} 或更高版本. 脚本用法见 [mail API 文档]({{ docs_mail_url }}).",
   "h3_features": "功能",
   "p_features_intro": "插件提供以下能力",
   "features": [
@@ -26,7 +26,7 @@
   "h3_usage": "使用方法",
   "usage_steps": [
     "在安装了 AutoJs6 构建 {{ required_host_version_code }} ({{ required_host_version_name }}) 或更高版本的设备上, 从 [Releases]({{ repo_url }}/releases) 安装插件 APK.",
-    "打开 AutoJs6 插件中心, 确认 `Angus Mail` 已被识别并启用它.",
+    "打开 AutoJs6 插件中心, 确认 `3-Stamp Mail` 已被识别并启用它.",
     "准备账户: 在服务商的网页设置中开启 IMAP 或 POP3 与 SMTP, 并取得授权码 (QQ, 163, 126, Sina) 或应用专用密码 (Gmail, iCloud, Yahoo); 登录密码本身通常不被接受. Gmail, Outlook.com 与 Microsoft 365 账户也可以在插件设置页经浏览器以 Google 或 Microsoft 账号登录 (认证方式选择 \"使用 Google / Microsoft 账号登录 (浏览器)\"), 或提供在别处取得的 OAuth 2.0 访问令牌.",
     "在脚本中调用 `mail.connect(...)`, 或在插件设置页 (插件的启动器图标, 或 AutoJs6 开发者选项 > 邮件账户设置) 保存账户后以别名连接.",
     "要在新邮件到达时运行脚本而无需常驻脚本: 在插件的守望页面 (设置 > 守望: 账户别名, 文件夹, 模式, 过滤) 添加守望, 按提示允许通知, 然后在 AutoJs6 中创建任务 (长按脚本 > 定时任务 > 广播触发 > 邮件到达时) 并选择守望; 该任务需要携带邮件契约版本 2 的 AutoJs6 构建."
@@ -83,7 +83,7 @@
   "p_security_permission": "请只从官方 [Releases]({{ repo_url }}/releases) 页面或 AutoJs6 插件中心获取插件. 来源不明的安装包即使版本号相同, 也可能无法通过宿主校验或带来风险.",
   "h3_plugin_interface": "插件接口",
   "p_plugin_interface": "以下信息面向 AutoJs6 宿主与插件开发者; 宿主使用这些标识发现插件并协商兼容性",
-  "p_contract_service": "`AngusMailPluginService` 实现宿主 mail-api 契约 `{{ plugin_aidl_interface }}`, 响应 `{{ plugin_service_action }}` (category `{{ plugin_service_category }}`). `AngusMailPluginInfoService` 以 PluginInfo 响应 `{{ plugin_info_action }}`. `WakeActivity` 供宿主激活插件.",
+  "p_contract_service": "`ThreeStampMailPluginService` 实现宿主 mail-api 契约 `{{ plugin_aidl_interface }}`, 响应 `{{ plugin_service_action }}` (category `{{ plugin_service_category }}`). `ThreeStampMailPluginInfoService` 以 PluginInfo 响应 `{{ plugin_info_action }}`. `WakeActivity` 供宿主激活插件.",
   "h3_roadmap": "路线图",
   "p_roadmap": "插件的规划与进度以可勾选清单的形式维护在 ROADMAP.md 中, 按阶段组织并附有验收条件与证据等级. 未勾选条目表达的是意图而非当前能力; 欢迎通过 Issues 讨论.",
   "text_link_roadmap": "查看 ROADMAP.md",
@@ -107,5 +107,6 @@
   "text_link_mail_docs": "邮件模块文档",
   "text_link_angus_mail": "Eclipse Angus Mail",
   "text_link_third_party_notices": "第三方声明",
-  "p_instruction_more": "连接指南与当前进度请参阅 [项目 README]({{ repo_url }}) 与 [ROADMAP.md]({{ roadmap_url }})."
+  "p_instruction_more": "连接指南与当前进度请参阅 [项目 README]({{ repo_url }}) 与 [ROADMAP.md]({{ roadmap_url }}).",
+  "p_acknowledgements": "感谢 [Eclipse Angus Mail]({{ angus_mail_url }}), Jakarta Mail/Activation 和 GreenMail, 以及为实现和工程约定提供参考的 AutoJs6, OpenCC, 3-Stone AI, MCP Server 与 Pinyin4j. [来源与许可证]({{ references_url }}). 本项目独立开发, 不代表上述开发者的认可或背书, 相关名称和权利归原权利人所有. [权利异议与配合处理]({{ rights_url }})."
 }

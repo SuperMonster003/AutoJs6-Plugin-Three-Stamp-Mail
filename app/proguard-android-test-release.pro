@@ -4,7 +4,7 @@
 # shrunk against the application mapping and does not bundle its own Kotlin runtime, so the
 # application must also keep the Kotlin standard library classes the test code links against.
 # Never part of the regular release build.
--keep class io.github.supermonster003.autojs6.plugin.angus.mail.** { *; }
+-keep class io.github.supermonster003.autojs6.plugin.three.stamp.mail.** { *; }
 -keep class kotlin.** { *; }
 -dontwarn kotlin.**
 

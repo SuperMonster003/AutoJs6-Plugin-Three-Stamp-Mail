@@ -14,7 +14,7 @@ plugins {
     id("com.android.application")
 }
 
-val globalApplicationId = "io.github.supermonster003.autojs6.plugin.angus.mail"
+val globalApplicationId = "io.github.supermonster003.autojs6.plugin.three.stamp.mail"
 
 // ---------------------------------------------------------------------------
 // OAuth 2.0 client registrations (roadmap P9): public clients with PKCE, so only client ids and
@@ -141,7 +141,7 @@ android {
 
         resValue("string", "plugin_author", "SuperMonster003")
         resValue("string", "plugin_engine", "mail")
-        resValue("string", "plugin_id", "angus-mail")
+        resValue("string", "plugin_id", "three-stamp-mail")
         resValue("string", "plugin_variant", "default")
         resValue("string", "plugin_version_date", utils.getDateString("MMM d, yyyy", "GMT+08:00"))
 
@@ -272,7 +272,7 @@ tasks {
     }
 
     register<Copy>("appendDigestToReleasedFiles") {
-        description = "Appends CRC32 digest to the released Angus Mail APK file"
+        description = "Appends CRC32 digest to the released 3-Stamp Mail APK file"
         dependsOn("assembleRelease")
 
         val ext = utils.FILE_EXTENSION_APK

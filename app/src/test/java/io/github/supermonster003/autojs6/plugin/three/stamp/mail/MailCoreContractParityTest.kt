@@ -1,0 +1,77 @@
+package io.github.supermonster003.autojs6.plugin.three.stamp.mail
+
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.MailLimits
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.account.AuthMethod
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.account.MailProtocol
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.account.ProviderPresets
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.account.TlsMode
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.error.MailErrorCode
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.json.TriggerEventDocument
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.json.TriggerStatusDocument
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.json.WatchEventDocument
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.watch.WatchMode
+import org.autojs.plugin.mail.api.MailActions
+import org.autojs.plugin.mail.api.MailContract
+import org.autojs.plugin.mail.api.MailErrorCodes
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * `:mail-core` is a pure JVM module and cannot load the host contract AAR, so it mirrors the
+ * error codes, ceilings and enum ids it needs; this test keeps the mirrors identical to the
+ * contract (roadmap 4.2 "single source of truth").
+ */
+class MailCoreContractParityTest {
+
+    @Test
+    fun errorCodesMatchTheContract() {
+        assertEquals(MailErrorCodes.ALL, MailErrorCode.ALL)
+        assertEquals(MailErrorCodes.RETRYABLE_DEFAULTS, MailErrorCode.RETRYABLE_DEFAULTS)
+        MailErrorCodes.ALL.forEach { code ->
+            assertEquals(code, MailErrorCodes.isRetryableByDefault(code), MailErrorCode.isRetryableByDefault(code))
+        }
+    }
+
+    @Test
+    fun limitsMatchTheContractConstantsOfTheSameName() {
+        val contract = MailContract::class.java.declaredFields
+            .filter { java.lang.reflect.Modifier.isStatic(it.modifiers) && java.lang.reflect.Modifier.isPublic(it.modifiers) && it.name != "INSTANCE" }
+            .associate { it.name to it.get(null) }
+        val mirrored = MailLimits::class.java.declaredFields
+            .filter { java.lang.reflect.Modifier.isStatic(it.modifiers) && java.lang.reflect.Modifier.isPublic(it.modifiers) && it.name in contract }
+            .associate { it.name to it.get(null) }
+        assertTrue("MailLimits must mirror at least the timeouts and ceilings", mirrored.size >= 21)
+        mirrored.forEach { (name, value) -> assertEquals(name, contract.getValue(name), value) }
+    }
+
+    @Test
+    fun enumIdsMatchTheContractVocabulary() {
+        assertEquals(MailContract.PROTOCOLS.toList(), MailProtocol.entries.map { it.id })
+        assertEquals(MailContract.AUTH_MECHANISMS.toList(), AuthMethod.entries.map { it.id })
+        assertEquals(MailContract.TLS_MODES.toList(), TlsMode.entries.map { it.id })
+        assertEquals(MailContract.WATCH_MODES, WatchMode.entries.map { it.id }.toSet())
+        assertEquals(MailContract.EVENT_TYPES, WatchEventDocument.TYPES)
+        assertEquals(MailContract.WATCH_MODE_IDLE, WatchMode.IDLE.id)
+        assertEquals(MailContract.WATCH_MODE_POLL, WatchMode.POLL.id)
+        assertEquals(MailContract.TRIGGER_STATES, TriggerStatusDocument.STATES)
+        assertEquals(MailContract.TRIGGER_EVENT_MAIL, TriggerEventDocument.TYPE_MAIL)
+        assertEquals(MailContract.TRIGGER_STATE_STOPPED, TriggerStatusDocument.STATE_STOPPED)
+        assertEquals(MailContract.TRIGGER_STATE_CONNECTING, TriggerStatusDocument.STATE_CONNECTING)
+        assertEquals(MailContract.TRIGGER_STATE_CONNECTED, TriggerStatusDocument.STATE_CONNECTED)
+        assertEquals(MailContract.TRIGGER_STATE_FAILED, TriggerStatusDocument.STATE_FAILED)
+    }
+
+    @Test
+    fun capabilitiesDescribeTheMailCore() {
+        assertEquals(ProviderPresets.version, ThreeStampMailPlugin.PROVIDERS_VERSION)
+        assertEquals(MailActions.SERVICE_ACTION, ThreeStampMailPlugin.SERVICE_ACTION)
+        assertEquals(MailActions.SERVICE_CATEGORY, ThreeStampMailPlugin.SERVICE_CATEGORY)
+        assertEquals(MailActions.OPEN_SETTINGS, ThreeStampMailPlugin.SETTINGS_ACTION)
+        assertEquals(MailProtocol.entries.map { it.id }, ThreeStampMailPlugin.PROTOCOLS)
+        assertEquals(AuthMethod.entries.map { it.id }, ThreeStampMailPlugin.AUTH_MECHANISMS)
+        assertTrue(MailContract.FEATURE_IDLE in ThreeStampMailPlugin.FEATURES)
+        ThreeStampMailPlugin.FEATURES.forEach { assertTrue(it, it in MailContract.FEATURES) }
+        ProviderPresets.all.forEach { preset -> preset.auth.forEach { assertTrue(it in ThreeStampMailPlugin.AUTH_MECHANISMS) } }
+    }
+}

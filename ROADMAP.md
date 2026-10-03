@@ -1,6 +1,6 @@
-# AutoJs6 Angus Mail 插件 Roadmap
+# AutoJs6 3-Stamp Mail 插件 Roadmap
 
-本文是 `AutoJs6-Plugin-Angus-Mail` (为脚本提供发信 / 收信 / 搜索 / 附件 / 新邮件监听能力, 脚本侧全局对象 `mail`) 的可执行状态表.
+本文是 `AutoJs6-Plugin-Three-Stamp-Mail` (为脚本提供发信 / 收信 / 搜索 / 附件 / 新邮件监听能力, 脚本侧全局对象 `mail`) 的可执行状态表.
 以 2026-09-18 的宿主本地代码快照 (`AutoJs6 master@abf51bd51`, `VERSION_NAME=6.8.0`, `VERSION_BUILD=5281`),
 Eclipse Angus Mail `2.0.5` (Jakarta Mail API `2.1.x`), 平台版本插件 `1.8.2` 为起点, 每个条目均可独立 Check 并落地, 后续会话按阶段逐步推进.
 
@@ -1026,3 +1026,11 @@ mail.searchAsync({ subject: '发票', since: '2026-09-01' }).then(list => consol
 - [x] Auto 为新安装默认值; 包更新时修复混合组件状态并保留唯一显式旧选择, 包括可变快捷方式归属修复.
 - [x] 宿主外观读取迁至后台缓存, 有效字段变化才刷新, 活跃编辑不被异步回复打断.
 - [ ] 本轮最终构建, 升级, UI 与设备矩阵证据待验收汇总.
+
+
+### 2026-10-03: 3-Stamp Mail 2.0 改名与发布
+
+- [x] 维护者确认点分新包名 `io.github.supermonster003.autojs6.plugin.three.stamp.mail`, 显示名 `3-Stamp Mail`, 版本 2.0.0. 原 1.3.0 尚未发布的外观设置变更并入 2.0.0; 1.2.1 及更早的历史记录保留.
+- [x] 源码与组件身份, 插件 ID, 仓库链接, 文档和产物名同步. 保留邮件功能契约和 Eclipse Angus Mail 库名称; 宿主身份与接口 AAR 一并更新.
+- [x] README 与插件说明添加精简致谢, 来源及许可证详情保留在 THIRD_PARTY_NOTICES.md, 权利异议流程见 RIGHTS_AND_TAKEDOWN.md.
+- [x] 本地构建, JVM, API 24 完整 instrumentation 与 API 31 相关设备检查通过; OAuth 新注册已由维护者完成. 数量, 跳过项和真实账户验证边界见 `docs/dev/three-stamp-mail-2.0-validation.md`. 远端 CI 与发布结果以本轮交付链接为准.
