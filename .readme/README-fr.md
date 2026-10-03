@@ -242,6 +242,7 @@ _2026/10/03_
 - `Amélioration` L'application devient 3-Stamp Mail, avec un nouveau paquet, une nouvelle identité de plugin, un dépôt et des noms de fichiers de distribution actualisés
 - `Amélioration` Nouvelles images claires et sombres d'enveloppe dans l'application et le lanceur, avec les quatre choix d'icône conservés
 - `Amélioration` Paramètres de langue, de mode sombre, de couleur et d'icône harmonisés, avec surfaces neutres, contrôles thématiques et dialogues de confirmation. Prévisualisez les couleurs prédéfinies ou HEX/RGB avant de valider. Annuler conserve les paramètres enregistrés.
+- `Amélioration` Taille visuelle harmonisée des icônes du lanceur et du Centre de plugins, avec des fonds transparents et des motifs noirs, blancs ou gris neutres
 
 #### v1.2.1
 

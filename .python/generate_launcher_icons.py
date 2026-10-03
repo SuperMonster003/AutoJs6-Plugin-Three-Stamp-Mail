@@ -8,19 +8,16 @@ from __future__ import annotations
 
 import argparse
 import math
-import struct
-import zlib
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageOps
+import icon_geometry as geometry
 
 ROOT = Path(__file__).resolve().parents[1]
 RES = ROOT / "app/src/main/res"
 SOURCE = ROOT / ".python/icons/three-stamp-mail-ic-launcher-light.png"
 SIZE = 432
 SUPERSAMPLE = 4
-UI_GLYPH = 0.66
-ADAPTIVE_GLYPH = 0.42
 # Fractions of the scaled artwork width/height; the supplied envelope composition is centered.
 OPTICAL_X = 0.0
 OPTICAL_Y = 0.0
@@ -37,23 +34,15 @@ def source_alpha():
     return alpha.crop(bounds)
 
 
+# Optical geometry v1; ratios are derived, not tuned independently by surface.
+OPTICAL_SCALE = 1.0
+UI_GLYPH, ADAPTIVE_GLYPH = geometry.normalized_ratios(source_alpha(), OPTICAL_SCALE)
+
+
 def positioned_alpha(alpha, ratio):
-    size = SIZE * SUPERSAMPLE
-    width = round(size * ratio)
-    height = max(1, round(width * alpha.height / alpha.width))
-    x = round((size - width) / 2 + OPTICAL_X * width)
-    y = round((size - height) / 2 + OPTICAL_Y * height)
-    if x < 0 or y < 0 or x + width > size or y + height > size:
-        raise ValueError("Artwork would be clipped by the canvas")
-    canvas = Image.new("L", (size, size))
-    canvas.paste(alpha.resize((width, height), Image.Resampling.LANCZOS), (x, y))
-    final = canvas.resize((SIZE, SIZE), Image.Resampling.LANCZOS)
-    limit = SIZE * 33 / 108 if ratio == ADAPTIVE_GLYPH else SIZE / 2
-    for py in range(SIZE):
-        for px in range(SIZE):
-            if final.getpixel((px, py)) and math.hypot(px + 0.5 - SIZE / 2, py + 0.5 - SIZE / 2) > limit:
-                raise ValueError("Final antialiased artwork exceeds its safe circle")
-    return final
+    placed = geometry.positioned_alpha(alpha, ratio, OPTICAL_X, OPTICAL_Y)
+    geometry.validate_circle(placed, SIZE * (33 / 108 if ratio == ADAPTIVE_GLYPH else .5))
+    return placed
 
 
 def glyph(alpha, color):
@@ -66,6 +55,10 @@ def artwork(ratio, mode):
     path = SOURCE.with_name(f"three-stamp-mail-ic-launcher-{mode}.png")
     with Image.open(path) as original:
         original = original.convert("RGBA")
+        # Preserve the fold shading, while removing the source's slight RGB tint.
+        original_alpha = original.getchannel("A")
+        original = ImageOps.grayscale(original).convert("RGBA")
+        original.putalpha(original_alpha)
         source = source_alpha()
         original = original.crop(original.getchannel("A").getbbox())
         if original.getchannel("A").tobytes() != source.tobytes():
@@ -101,27 +94,7 @@ def adaptive(foreground, background):
 
 
 def encode_png(image):
-    """Use one row filter and the standard zlib encoder on Windows and Linux.
-
-    Pillow wheels bundle different PNG compression backends (zlib / zlib-ng).
-    Their optimized streams can differ even when every decoded pixel matches.
-    Keep byte-for-byte checks while encoding the generated RGBA pixels ourselves.
-    """
-    rgba = image.convert("RGBA")
-    pixels = rgba.tobytes()
-    stride = rgba.width * 4
-    rows = b"".join(b"\x00" + pixels[start:start + stride]
-                    for start in range(0, len(pixels), stride))
-    compressor = zlib.compressobj(level=9, strategy=zlib.Z_FIXED)
-    compressed = compressor.compress(rows) + compressor.flush()
-
-    def chunk(kind, data):
-        return (struct.pack(">I", len(data)) + kind + data
-                + struct.pack(">I", zlib.crc32(kind + data)))
-
-    header = struct.pack(">IIBBBBB", rgba.width, rgba.height, 8, 6, 0, 0, 0)
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header)
-            + chunk(b"IDAT", compressed) + chunk(b"IEND", b""))
+    return geometry.encode_png(image)
 
 
 def generated_files():
@@ -137,6 +110,8 @@ def generated_files():
         "mipmap/ic_launcher_system_light_foreground.png": artwork(ADAPTIVE_GLYPH, "light"),
         "mipmap/ic_launcher_monochrome.png": glyph(small, (0, 0, 0)),
     }
+    images["mipmap/ic_plugin_center.png"] = images["mipmap/ic_launcher.png"]
+    images["mipmap-night/ic_plugin_center.png"] = images["mipmap-night/ic_launcher.png"]
     outputs = {}
     for name, image in images.items():
         outputs[RES / name] = encode_png(image)
@@ -156,6 +131,7 @@ def generated_files():
     <color name="launcher_icon_background_light">#FAFAFA</color>
 </resources>
 '''
+    outputs[RES / "raw/keep_plugin_center_icon.xml"] = geometry.KEEP_RESOURCE
     return outputs
 
 

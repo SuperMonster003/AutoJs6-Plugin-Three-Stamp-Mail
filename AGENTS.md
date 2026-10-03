@@ -207,7 +207,7 @@ AutoJs6-Plugin-Three-Stamp-Mail/
 ### 11.1 启动器图标
 
 - `app/src/main/res/mipmap/ic_launcher.png` 与 `mipmap-night/` 变体, adaptive 图层由 `.python/generate_launcher_icons.py` 确定性生成; 修改图标时修改脚本并重新生成, 不手工改 PNG.
-- 图标原稿由维护者提供, 保存在 `.python/icons/three-stamp-mail-ic-launcher-light.png` 与 `-dark.png`, 各为 1092 x 1092 RGBA, alpha 一致. light / dark 指使用模式. 原稿字节保留, UI 比例 0.66, adaptive 比例 0.42, 光学偏移 0.0. 原稿包含表达信封折线的明暗细节, 只取 alpha 并涂成纯色会丢失这些线条, 因而保留两套原稿 RGB, 不把它们视为纯色轮廓图.
+- 图标原稿由维护者提供, 保存在 `.python/icons/three-stamp-mail-ic-launcher-light.png` 与 `-dark.png`, 各为 1092 x 1092 RGBA, alpha 一致. light / dark 指使用模式. 原稿字节保留, UI / adaptive 比例按 Optical geometry v1 派生, 光学偏移 0.0. 原稿包含表达信封折线的明暗细节, 只取 alpha 并涂成纯色会丢失这些线条, 因而保留两套原稿及其明暗细节, 生成 RGB 时去掉细微色偏, 统一为 R=G=B 中性灰阶.
 - 遵循同目录 `AUTOJS6_PLUGIN_BLACK_N_WHITE_ADAPTIVE_ICON_AGENTS.md` 的 UI / 系统资源分离, 安全圆与四种启动器模式规则. `ic_launcher` 始终是透明位图, 不设自适应覆盖; application 使用 `ic_launcher_system`, 四个 alias 默认 Auto. 系统背景固定为亮 #FAFAFA / 暗 #212121, 单色层来自原稿 alpha. UI 与桌面选择独立. 运行生成器与 `--check`, 验证最终非零 alpha 像素和包内资源.
 
 ### 11.2 3-Stamp Mail 2.0 安装身份
@@ -342,3 +342,12 @@ Release 前额外执行 `.\gradlew.bat :app:appendDigestToReleasedFiles`, 检查
 - Appearance dialogs keep draft changes local until OK. Use the shared neutral surfaces and HCT primary/onPrimary roles. Presets and a single HEX/RGB field preview the actual control colors; Cancel writes nothing.
 - New launcher installs default to Auto. Keep PackageManager as the sole mode store, normalize mixed upgrade states through the internal MY_PACKAGE_REPLACED receiver, preserve unique explicit choices, and migrate mutable shortcut ownership before disabling an alias.
 - Host appearance acquisition and IPC must run on a worker. Cache in process, discard stale generations, refresh only effective followed fields, and defer host-driven recreation after user interaction or while a dialog is open. Never rewrite local choices because the host is unavailable.
+
+## Optical icon standard (2026-10-03)
+
+- Follow `../AUTOJS6_PLUGIN_BLACK_N_WHITE_ADAPTIVE_ICON_AGENTS.md` for every standalone plugin, including the Plugin Center. `.python/icon_geometry.py` v1 is a self-contained copy of the common geometry algorithm; keep its implementation identical across the standalone plugins. Never read sibling checkouts during a build.
+- Derive size from the equal-weight combination of visible bounding-box area (alpha >= 16) and alpha-weighted ink area. Target visible size is 0.52 of the canvas, with only documented optical corrections in 0.94-1.06. The adaptive ratio is always the UI ratio multiplied by 72/108. This supersedes older hardcoded UI/adaptive widths in historical notes. Preserve aspect ratio, optical placement and final nonzero-alpha safety checks.
+- Current derived widths: UI 0.5981, adaptive 0.3988 (rounded documentation values, not generation constants). Optical scale=1.00 and zero offsets.
+- Generate `mipmap/ic_plugin_center.png` and its night counterpart from the same geometry as the transparent UI/launcher mode. They are transparent neutral artwork for installed and catalog entries, independent of the active launcher alias. Keep them through `raw/keep_plugin_center_icon.xml`. Existing separate brand assets retain their original purpose.
+- The default glyph colors are #272727 / #D8D8D8. Stamp Mail is the maintainer-approved grayscale exception: preserve the envelope folds, use neutral R=G=B values, and retain identical day/night alpha. Do not introduce a filled background into the Plugin Center assets.
+- Run the icon generator and its read-only `--check`, `.python/tests/test_icon_geometry.py`, existing icon regressions, and review the full set at 36/48/64 px in both themes and in launcher masks. `.github/workflows/icons.yml` verifies Windows/Linux reproducibility. Synthetic previews do not replace actual launcher verification.
