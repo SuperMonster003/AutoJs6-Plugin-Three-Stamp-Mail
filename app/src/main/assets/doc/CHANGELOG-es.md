@@ -12,6 +12,7 @@
 * `Aviso` Activa 3-Stamp Mail en el Centro de plugins. Si ambas aplicaciones están activadas, elige 3-Stamp Mail como plugin de correo preferido
 * `Función` Elige iconos de inicio adaptables claros, oscuros, automáticos (predeterminados) o transparentes en Ajustes. Los colores automáticos y la transparencia dependen del lanzador.
 * `Corrección` Las actualizaciones mantienen una sola entrada y conservan el icono elegido expresamente. La apariencia del anfitrión se lee en segundo plano sin interrumpir los cambios pendientes.
+* `Corrección` Android 7 mantiene una barra de navegación oscura en el modo claro para que los botones del sistema sigan siendo visibles
 * `Mejora` La aplicación pasa a llamarse 3-Stamp Mail, con un nuevo paquete, identidad de plugin, repositorio y nombres de archivos de distribución
 * `Mejora` Nuevas imágenes claras y oscuras de un sobre para la aplicación y el lanzador, conservando las cuatro opciones de icono
 * `Mejora` Ajustes uniformes de idioma, modo oscuro, color e icono, con fondos neutros, controles temáticos y confirmación. Previsualiza colores predefinidos o HEX/RGB antes de aplicarlos. Cancelar conserva los ajustes guardados.

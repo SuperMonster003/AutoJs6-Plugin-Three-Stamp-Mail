@@ -15,7 +15,8 @@
         "Elige iconos de inicio adaptables claros, oscuros, automáticos (predeterminados) o transparentes en Ajustes. Los colores automáticos y la transparencia dependen del lanzador."
       ],
       "fix": [
-        "Las actualizaciones mantienen una sola entrada y conservan el icono elegido expresamente. La apariencia del anfitrión se lee en segundo plano sin interrumpir los cambios pendientes."
+        "Las actualizaciones mantienen una sola entrada y conservan el icono elegido expresamente. La apariencia del anfitrión se lee en segundo plano sin interrumpir los cambios pendientes.",
+        "Android 7 mantiene una barra de navegación oscura en el modo claro para que los botones del sistema sigan siendo visibles"
       ],
       "improvement": [
         "La aplicación pasa a llamarse 3-Stamp Mail, con un nuevo paquete, identidad de plugin, repositorio y nombres de archivos de distribución",

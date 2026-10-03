@@ -238,6 +238,7 @@ _2026/10/03_
 - `Note` Activez 3-Stamp Mail dans le Centre de plugins. Si les deux applications sont activées, choisissez 3-Stamp Mail comme plugin de courrier prioritaire
 - `Fonctionnalité` Choisissez une icône de lanceur adaptative claire, sombre, automatique (par défaut) ou transparente dans les paramètres. Les couleurs automatiques et la transparence dépendent du lanceur.
 - `Correctif` Les mises à jour conservent une seule entrée de lanceur et un choix d'icône antérieur explicite. L'apparence de l'hôte est lue en arrière-plan sans interrompre une sélection en cours.
+- `Correctif` Android 7 conserve une barre de navigation sombre en mode clair pour que les boutons système restent lisibles
 - `Amélioration` L'application devient 3-Stamp Mail, avec un nouveau paquet, une nouvelle identité de plugin, un dépôt et des noms de fichiers de distribution actualisés
 - `Amélioration` Nouvelles images claires et sombres d'enveloppe dans l'application et le lanceur, avec les quatre choix d'icône conservés
 - `Amélioration` Paramètres de langue, de mode sombre, de couleur et d'icône harmonisés, avec surfaces neutres, contrôles thématiques et dialogues de confirmation. Prévisualisez les couleurs prédéfinies ou HEX/RGB avant de valider. Annuler conserve les paramètres enregistrés.
