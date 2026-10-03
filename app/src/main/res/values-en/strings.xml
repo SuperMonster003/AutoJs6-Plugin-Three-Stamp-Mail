@@ -227,7 +227,7 @@
     <string name="watches_notification_channel">Background watches</string>
     <string name="watches_notification_channel_description">Status of the background watches that keep mail folders connected</string>
     <string name="watches_notification_text">%1$d of %2$d watches connected</string>
-    <string name="watches_notification_title">Angus Mail is watching for mail</string>
+    <string name="watches_notification_title">3-Stamp Mail is watching for mail</string>
     <string name="watches_permission_granted">Granted: the persistent notification shows the watch status</string>
     <string name="watches_permission_missing">Not granted: the service still runs, but Android shows no status notification; tap to allow</string>
     <string name="watches_permission_title">Notification permission</string>

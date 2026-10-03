@@ -4,12 +4,16 @@
 
 ******
 
-# v1.3.0
+# v2.0.0
 
-###### 2026/09/30
+###### 2026/10/03
 
+* `Hint` The new package io.github.supermonster003.autojs6.plugin.three.stamp.mail installs separately from Angus Mail. Accounts, settings and watches are not migrated; configure them and sign in again. The old app can remain installed. Requires AutoJs6 6.8.0 build 5316 or later
+* `Hint` Enable 3-Stamp Mail in Plugin Center. If both old and new apps are enabled, select 3-Stamp Mail as the preferred mail plugin
 * `Feature` Choose adaptive light, adaptive dark, automatic (default) or transparent launcher icons in Settings. Automatic colors and transparency depend on launcher support.
 * `Fix` App updates keep one launcher entry and preserve an explicitly chosen earlier icon. Host appearance is read in the background without replacing an active settings draft.
+* `Improvement` The application is now 3-Stamp Mail, with a new package, plugin identity, repository and release filenames
+* `Improvement` New light/dark envelope artwork for in-app and launcher icons, retaining four launcher choices
 * `Improvement` Consistent language, dark mode, theme color and launcher settings with neutral surfaces, themed controls and confirmation dialogs. Preview preset or HEX/RGB colors before applying; Cancel leaves the saved settings unchanged.
 
 # v1.2.1

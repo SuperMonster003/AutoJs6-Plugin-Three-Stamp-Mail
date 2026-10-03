@@ -1,0 +1,231 @@
+package io.github.supermonster003.autojs6.plugin.three.stamp.mail
+
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.binder.RequestRouter
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.account.MailAccount
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.account.MailEndpoint
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.account.MailProtocol
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.account.MailSecret
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.account.TlsMode
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.error.MailErrorCode
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.error.MailException
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.message.AttachmentSource
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.session.MailSession
+import org.autojs.plugin.mail.api.MailContract
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
+import org.junit.Test
+import java.io.OutputStream
+
+/** Snapshot of the op table against `MailContract.OPS` (roadmap P2.5 acceptance, complete since P2.3). */
+class RequestRouterTest {
+
+    private val session = MailSession(
+        MailAccount("alice@example.org", imap = MailEndpoint("imap.example.org", 993, TlsMode.SSL), smtp = MailEndpoint("smtp.example.org", 465, TlsMode.SSL)),
+        MailSecret("not-a-real-secret"),
+    )
+    private val router = RequestRouter(session)
+
+    @Test
+    fun everyContractOpHasAHandler() {
+        assertEquals(MailContract.OPS.toSet(), RequestRouter.SUPPORTED_OPS)
+        assertTrue(RequestRouter.PENDING_OPS.toString(), RequestRouter.PENDING_OPS.isEmpty())
+        RequestRouter.SUPPORTED_OPS.forEach { assertTrue(it, MailContract.isKnownOp(it)) }
+        assertEquals(19, RequestRouter.SUPPORTED_OPS.size)
+    }
+
+    @Test
+    fun theProtocolTableNamesWhatPop3AccountsCannotDo() {
+        assertEquals(MailContract.OPS.toSet(), RequestRouter.PROTOCOLS.keys)
+        val imapOnly = RequestRouter.PROTOCOLS.filterValues { it == RequestRouter.IMAP_ONLY }.keys
+        assertEquals(
+            setOf(
+                MailContract.OP_FOLDERS_STATUS, MailContract.OP_FOLDERS_CREATE, MailContract.OP_FOLDERS_DELETE, MailContract.OP_FOLDERS_RENAME,
+                MailContract.OP_MESSAGES_SET_FLAGS, MailContract.OP_MESSAGES_MOVE, MailContract.OP_MESSAGES_COPY, MailContract.OP_MESSAGES_EXPUNGE,
+                MailContract.OP_MESSAGES_APPEND,
+            ),
+            imapOnly,
+        )
+        RequestRouter.PROTOCOLS.forEach { (op, protocols) ->
+            assertTrue(op, protocols == RequestRouter.IMAP_ONLY || protocols == RequestRouter.ANY_RECEIVE)
+            assertTrue("$op never lists SMTP as a receive protocol", MailProtocol.SMTP !in protocols)
+            assertEquals(op, protocols, RequestRouter.PROTOCOLS.getValue(op))
+            assertTrue(op, RequestRouter.supports(op, MailProtocol.IMAP))
+            assertEquals(op, op !in imapOnly, RequestRouter.supports(op, MailProtocol.POP3))
+        }
+        assertFalse(RequestRouter.supports("messages.purge", MailProtocol.IMAP))
+        assertFalse(RequestRouter.supports(null, MailProtocol.IMAP))
+        assertEquals(RequestRouter.HANDLERS.keys, RequestRouter.PROTOCOLS.keys)
+
+        // the protocol check comes before the argument parser: empty args still answer UNSUPPORTED_OPERATION, not INVALID_ARGUMENT
+        val pop3Session = MailSession(
+            MailAccount("alice@example.org", pop3 = MailEndpoint("pop.example.org", 995, TlsMode.SSL), smtp = MailEndpoint("smtp.example.org", 465, TlsMode.SSL), receive = MailProtocol.POP3),
+            MailSecret("not-a-real-secret"),
+        )
+        val pop3Router = RequestRouter(pop3Session)
+        imapOnly.forEach { op ->
+            val error = try {
+                pop3Router.execute(op, "{}")
+                throw AssertionError("$op must be refused for POP3 accounts")
+            } catch (e: MailException) {
+                e
+            }
+            assertEquals(op, MailErrorCode.UNSUPPORTED_OPERATION, error.code)
+            assertTrue(error.message, error.message.contains("receives over pop3"))
+        }
+        assertEquals(0, pop3Session.connectCount(MailProtocol.POP3))
+        pop3Session.close()
+    }
+
+    @Test
+    fun routingDistinguishesUnknownOps() {
+        MailContract.OPS.forEach { op -> assertNull(op, RequestRouter.errorCodeFor(router.route(op))) }
+        assertEquals(MailErrorCode.INVALID_ARGUMENT, RequestRouter.errorCodeFor(router.route("messages.purge")))
+        assertEquals(MailErrorCode.INVALID_ARGUMENT, RequestRouter.errorCodeFor(router.route(null)))
+        assertEquals(MailErrorCode.INVALID_ARGUMENT, RequestRouter.errorCodeFor(router.route("")))
+        assertEquals(MailErrorCode.UNSUPPORTED_OPERATION, RequestRouter.errorCodeFor(RequestRouter.Route.Unsupported))
+    }
+
+    @Test
+    fun executeReportsRoutingFailuresAsMailExceptions() {
+        assertEquals("true", router.execute(MailContract.OP_SESSION_CLOSE, "{}"))
+        assertEquals(MailErrorCode.INVALID_ARGUMENT, failure("messages.purge").code)
+        assertTrue(failure(null).message.contains("no op"))
+    }
+
+    @Test
+    fun descriptorsBelongToTheTransferOpsOnly() {
+        MailContract.OPS.forEach { op ->
+            assertEquals(op, op in MailContract.OPS_WITH_SOURCES || op in MailContract.OPS_WITH_SINK, RequestRouter.takesDescriptors(op))
+        }
+        assertTrue(RequestRouter.takesDescriptors(MailContract.OP_MAIL_SEND))
+        assertTrue(RequestRouter.takesDescriptors(MailContract.OP_MESSAGES_APPEND))
+        assertTrue(RequestRouter.takesDescriptors(MailContract.OP_ATTACHMENTS_DOWNLOAD))
+        assertTrue(RequestRouter.takesDescriptors(MailContract.OP_MESSAGES_RAW))
+        assertFalse(RequestRouter.takesDescriptors(MailContract.OP_SESSION_TEST))
+        assertFalse(RequestRouter.takesDescriptors(MailContract.OP_MESSAGES_GET))
+        assertFalse(RequestRouter.takesDescriptors(null))
+    }
+
+    @Test
+    fun descriptorRulesApplyAfterRoutingAndBeforeTheHandler() {
+        val untouched = FakeIo(count = 1)
+        val misplaced = failure(MailContract.OP_SESSION_TEST, "{}", untouched)
+        assertEquals(MailErrorCode.INVALID_ARGUMENT, misplaced.code)
+        assertTrue(misplaced.message, misplaced.message.contains("does not take descriptors"))
+        assertEquals(MailErrorCode.INVALID_ARGUMENT, failure("messages.purge", "{}", untouched).code)
+        val overLimit = failure(MailContract.OP_MAIL_SEND, "{}", FakeIo(count = MailContract.MAX_DESCRIPTORS + 1))
+        assertEquals(MailErrorCode.LIMIT_EXCEEDED, overLimit.code)
+        assertFalse(overLimit.retryable)
+        assertFalse("no descriptor was opened", untouched.touched)
+        val descriptorProblem = failure(MailContract.OP_MAIL_SEND, """{"message":{"to":"bob@example.org","subject":"s"}}""", FakeIo(count = 1, sourcesError = "descriptor 0 is not open"))
+        assertTrue(descriptorProblem.message, descriptorProblem.message.contains("descriptor 0"))
+    }
+
+    @Test
+    fun argumentsAreValidatedBeforeDescriptorsAndTheNetwork() {
+        val send = failure(MailContract.OP_MAIL_SEND, "{}")
+        assertEquals(MailErrorCode.INVALID_ARGUMENT, send.code)
+        assertTrue(send.message, send.message.contains("'message' is required"))
+        val unbound = failure(
+            MailContract.OP_MESSAGES_APPEND,
+            """{"folder":"Drafts","message":{"to":"bob@example.org","subject":"s","attachments":[{"descriptorIndex":0,"fileName":"a.txt"}]}}""",
+        )
+        assertTrue(unbound.message, unbound.message.contains("has no descriptor (0 supplied)"))
+
+        val neverOpened = FakeIo(count = 1)
+        assertTrue(failure(MailContract.OP_MESSAGES_RAW, "{}", neverOpened).message.contains("'uid' is required"))
+        assertTrue(failure(MailContract.OP_ATTACHMENTS_DOWNLOAD, """{"uid": 1, "partId": "x"}""", neverOpened).message.contains("not a part id"))
+        assertFalse("argument errors come before the sink is opened", neverOpened.touched)
+        assertTrue(failure(MailContract.OP_MESSAGES_RAW, """{"uid": 1}""").message.contains("single descriptor (0 supplied)"))
+
+        assertTrue(failure(MailContract.OP_MESSAGES_LIST, """{"limit": 0}""").message.contains("'limit'"))
+        assertEquals(MailErrorCode.LIMIT_EXCEEDED, failure(MailContract.OP_MESSAGES_LIST, """{"limit": 5000}""").code)
+        assertTrue(failure(MailContract.OP_MESSAGES_SEARCH, "{}").message.contains("'query' is required"))
+        assertTrue(failure(MailContract.OP_MESSAGES_GET, "{}").message.contains("'uid' is required"))
+        assertTrue(failure(MailContract.OP_MESSAGES_SET_FLAGS, """{"uids": 1, "flags": []}""").message.contains("at least one flag"))
+        assertTrue(failure(MailContract.OP_MESSAGES_MOVE, """{"uids": [1]}""").message.contains("'target' is required"))
+        assertTrue(failure(MailContract.OP_MESSAGES_COPY, """{"target": "Archive"}""").message.contains("at least one UID"))
+        assertTrue(failure(MailContract.OP_MESSAGES_DELETE, """{"uids": [0]}""").message.contains("not a valid IMAP UID"))
+        assertTrue(failure(MailContract.OP_MESSAGES_EXPUNGE, """{"path": "x"}""").message.contains("args.path"))
+        assertTrue(failure(MailContract.OP_FOLDERS_STATUS, "{}").message.contains("'folder' is required"))
+        assertTrue(failure(MailContract.OP_FOLDERS_CREATE, "{}").message.contains("'path' is required"))
+        assertTrue(failure(MailContract.OP_FOLDERS_DELETE, """{"path": " "}""").message.contains("blank"))
+        assertTrue(failure(MailContract.OP_FOLDERS_RENAME, """{"path": "A", "newPath": "A"}""").message.contains("equals"))
+        assertTrue(failure(MailContract.OP_FOLDERS_LIST, """{"status": "yes"}""").message.contains("must be a boolean"))
+        assertTrue(failure(MailContract.OP_FOLDERS_LIST, "[]").message.contains("JSON object"))
+        assertEquals(0, session.connectCount(MailProtocol.SMTP))
+        assertEquals(0, session.connectCount(MailProtocol.IMAP))
+    }
+
+    @Test
+    fun pop3AccountsGetTheDegradedSubsetWithoutConnecting() {
+        val pop3Session = MailSession(
+            MailAccount("alice@example.org", pop3 = MailEndpoint("pop.example.org", 995, TlsMode.SSL), smtp = MailEndpoint("smtp.example.org", 465, TlsMode.SSL), receive = MailProtocol.POP3),
+            MailSecret("not-a-real-secret"),
+        )
+        val pop3Router = RequestRouter(pop3Session)
+        fun pop3Failure(op: String, args: String = "{}"): MailException = try {
+            pop3Router.execute(op, args)
+            throw AssertionError("$op must fail")
+        } catch (e: MailException) {
+            e
+        }
+        // IMAP-only ops: UNSUPPORTED_OPERATION from the parser or the session, before any connection
+        listOf(
+            MailContract.OP_MESSAGES_SET_FLAGS to """{"uids": ["u1"], "flags": "seen"}""",
+            MailContract.OP_MESSAGES_MOVE to """{"uids": ["u1"], "target": "Archive"}""",
+            MailContract.OP_MESSAGES_COPY to """{"uids": ["u1"], "target": "Archive"}""",
+            MailContract.OP_MESSAGES_EXPUNGE to "{}",
+            MailContract.OP_FOLDERS_STATUS to """{"folder": "INBOX"}""",
+            MailContract.OP_FOLDERS_CREATE to """{"path": "Work"}""",
+            MailContract.OP_FOLDERS_DELETE to """{"path": "Work"}""",
+            MailContract.OP_FOLDERS_RENAME to """{"path": "Work", "newPath": "Done"}""",
+            MailContract.OP_MESSAGES_APPEND to """{"folder": "Drafts", "message": {"to": "bob@example.org", "subject": "s"}}""",
+        ).forEach { (op, args) ->
+            val error = pop3Failure(op, args)
+            assertEquals(op, MailErrorCode.UNSUPPORTED_OPERATION, error.code)
+            assertTrue(error.message, error.message.contains(op))
+        }
+        // the shared ops accept UIDL strings; what POP3 cannot do is refused before the network too
+        assertTrue(pop3Failure(MailContract.OP_MESSAGES_RAW, """{"uid": "u1"}""").message.contains("single descriptor (0 supplied)"))
+        assertEquals(MailErrorCode.FOLDER_NOT_FOUND, pop3Failure(MailContract.OP_MESSAGES_LIST, """{"folder": "Archive"}""").code)
+        assertEquals(MailErrorCode.FOLDER_NOT_FOUND, pop3Failure(MailContract.OP_MESSAGES_GET, """{"folder": "Sent", "uid": "u1"}""").code)
+        assertEquals(MailErrorCode.UNSUPPORTED_OPERATION, pop3Failure(MailContract.OP_MESSAGES_LIST, """{"unseenOnly": true}""").code)
+        assertEquals(MailErrorCode.UNSUPPORTED_OPERATION, pop3Failure(MailContract.OP_MESSAGES_SEARCH, """{"query": {"body": "x"}}""").code)
+        assertEquals(MailErrorCode.UNSUPPORTED_OPERATION, pop3Failure(MailContract.OP_MESSAGES_SEARCH, """{"query": {"uid": "1:*"}}""").code)
+        assertEquals(MailErrorCode.INVALID_ARGUMENT, pop3Failure(MailContract.OP_MESSAGES_DELETE, """{"uids": []}""").code)
+        assertEquals(0, pop3Session.connectCount(MailProtocol.POP3))
+        assertEquals(0, pop3Session.connectCount(MailProtocol.IMAP))
+        pop3Session.close()
+    }
+
+    private class FakeIo(val count: Int, private val sourcesError: String? = null) : RequestRouter.CallIo {
+        var touched = false
+        override val descriptorCount: Int get() = count
+        override fun sources(): List<AttachmentSource> {
+            touched = true
+            sourcesError?.let { throw MailException.invalidArgument(it) }
+            return emptyList()
+        }
+
+        override fun sink(): OutputStream {
+            touched = true
+            throw AssertionError("the sink must not be opened in this test")
+        }
+
+        override fun progress(transferred: Long, total: Long?) = Unit
+    }
+
+    private fun failure(op: String?, args: String = "{}", io: RequestRouter.CallIo = RequestRouter.CallIo.NONE): MailException {
+        try {
+            router.execute(op, args, io)
+        } catch (e: MailException) {
+            return e
+        }
+        fail("expected a MailException for $op")
+        throw AssertionError()
+    }
+}

@@ -1,6 +1,6 @@
 // "On mail arrived" task smoke for the plugin's background watches (mail roadmap P8 device matrix).
 //
-// AutoJs6 starts this script through its "On mail arrived" intent task whenever the Angus Mail
+// AutoJs6 starts this script through its "On mail arrived" intent task whenever the 3-Stamp Mail
 // plugin's background watch reports a new message (the plugin's MAIL_TRIGGER broadcast, mail
 // contract version 2). The event document arrives as `engines.myEngine().execArgv.mail`
 // (watch id, account alias, address, folder, the message envelope, receivedAt) and the wake-up

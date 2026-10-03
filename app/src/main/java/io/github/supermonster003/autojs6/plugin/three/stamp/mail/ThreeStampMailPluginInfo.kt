@@ -1,0 +1,84 @@
+package io.github.supermonster003.autojs6.plugin.three.stamp.mail
+
+import android.content.Context
+import android.os.Build
+import android.os.Bundle
+import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.account.MailAccountOptions
+import org.autojs.plugin.common.api.PluginCapabilityKeys
+import org.autojs.plugin.common.api.PluginInfo
+import org.autojs.plugin.mail.api.MailCapabilityKeys
+import org.autojs.plugin.mail.api.MailContract
+
+/** Collects the installed package version and the localized metadata of this plugin. */
+internal fun Context.threeStampMailPluginRuntimeInfo(): ThreeStampMailPluginRuntimeInfo {
+    val packageInfo = packageManager.getPackageInfo(packageName, 0)
+    val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        packageInfo.longVersionCode
+    } else {
+        @Suppress("DEPRECATION")
+        packageInfo.versionCode.toLong()
+    }
+    return ThreeStampMailPluginRuntimeInfo(
+        name = getString(R.string.app_name),
+        description = getString(R.string.plugin_description),
+        instruction = resources.openRawResource(R.raw.plugin_instruction)
+            .bufferedReader()
+            .use { it.readText() },
+        versionName = packageInfo.versionName.orEmpty(),
+        versionCode = versionCode,
+        versionDate = getString(R.string.plugin_version_date),
+    )
+}
+
+/**
+ * Values the app supplies for what an account document leaves out: the IMAP `ID` payload for
+ * providers that require it (163 / 126) names this plugin and its version, never the account.
+ * Shared by the Binder sessions and the connection test of the settings page.
+ */
+internal fun Context.threeStampMailAccountDefaults(): MailAccountOptions.Defaults {
+    val info = threeStampMailPluginRuntimeInfo()
+    return MailAccountOptions.Defaults(
+        clientId = mapOf(
+            "name" to "AutoJs6-Plugin-Three-Stamp-Mail",
+            "version" to info.versionName,
+            "vendor" to ThreeStampMailPlugin.AUTHOR,
+            "support-email" to ThreeStampMailPlugin.SUPPORT_EMAIL,
+        ),
+    )
+}
+
+/** Maps the pure-data view onto the host contract parcelable. */
+internal fun ThreeStampMailPluginRuntimeInfo.toPluginInfo(): PluginInfo {
+    val runtimeInfo = this
+    return PluginInfo().apply {
+        name = runtimeInfo.name
+        description = runtimeInfo.description
+        instruction = runtimeInfo.instruction
+        author = runtimeInfo.author
+        collaborators = null
+        versionName = runtimeInfo.versionName
+        versionCode = runtimeInfo.versionCode
+        versionDate = runtimeInfo.versionDate
+        id = runtimeInfo.id
+        engine = runtimeInfo.engine
+        variant = runtimeInfo.variant
+        supportedAbis = runtimeInfo.supportedAbis
+        capabilities = runtimeInfo.capabilitiesBundle()
+    }
+}
+
+/**
+ * The capabilities the host reads before it binds. Only the required host version is reported
+ * until the mail contract (`MailCapabilityKeys`, roadmap P1.1) is staged; P2.5 adds the contract
+ * version, the protocol set, the authentication mechanisms, and the feature set.
+ */
+internal fun ThreeStampMailPluginRuntimeInfo.capabilitiesBundle(): Bundle = Bundle().apply {
+    putLong(PluginCapabilityKeys.REQUIRES_HOST_VERSION, requiresHostVersion)
+    putInt(MailCapabilityKeys.CONTRACT_VERSION, MailContract.CONTRACT_VERSION)
+    putStringArray(MailCapabilityKeys.PROTOCOLS, ThreeStampMailPlugin.PROTOCOLS.toTypedArray())
+    putStringArray(MailCapabilityKeys.AUTH_MECHANISMS, ThreeStampMailPlugin.AUTH_MECHANISMS.toTypedArray())
+    putStringArray(MailCapabilityKeys.FEATURES, ThreeStampMailPlugin.FEATURES.toTypedArray())
+    putInt(MailCapabilityKeys.PROVIDERS_VERSION, ThreeStampMailPlugin.PROVIDERS_VERSION)
+    putInt(MailCapabilityKeys.SETTINGS_VERSION, ThreeStampMailPlugin.SETTINGS_VERSION)
+    putString(MailCapabilityKeys.LIBRARY_VERSION, ThreeStampMailPlugin.MAIL_LIBRARY_VERSION)
+}

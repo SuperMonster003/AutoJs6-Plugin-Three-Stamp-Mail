@@ -1,19 +1,20 @@
 <!--suppress HtmlDeprecatedAttribute, HttpUrlsUsage -->
 
 <div align="center">
+  <h1>3-Stamp Mail</h1>
   <p>
     <picture>
-      <source srcset="https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/app/src/main/res/mipmap-night/ic_launcher.png?raw=true" media="(prefers-color-scheme: dark)" />
-      <img src="https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/app/src/main/res/mipmap/ic_launcher.png?raw=true" alt="autojs6-plugin-angus-mail-ic-launcher" border="0" width="128" />
+      <source srcset="https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/app/src/main/res/mipmap-night/ic_launcher.png?raw=true" media="(prefers-color-scheme: dark)" />
+      <img src="https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/app/src/main/res/mipmap/ic_launcher.png?raw=true" alt="autojs6-plugin-three-stamp-mail-ic-launcher" border="0" width="128" />
     </picture>
   </p>
 
   <p>يرسل البريد ويستقبله ويبحث فيه ويراقبه من نصوص AutoJs6 البرمجية عبر IMAP و POP3 و SMTP</p>
 
   <p>
-    <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases"><img alt="GitHub release (latest by date)" src="https://img.shields.io/github/v/release/SuperMonster003/AutoJs6-Plugin-Angus-Mail?label=Release"/></a>
-    <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/issues"><img alt="GitHub closed issues" src="https://img.shields.io/github/issues/SuperMonster003/AutoJs6-Plugin-Angus-Mail?color=A24232&label=Issues"/></a>
-    <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/LICENSE"><img alt="GitHub License" src="https://img.shields.io/github/license/SuperMonster003/AutoJs6-Plugin-Angus-Mail?color=534BAE&label=License"/></a>
+    <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/releases"><img alt="GitHub release (latest by date)" src="https://img.shields.io/github/v/release/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail?label=Release"/></a>
+    <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/issues"><img alt="GitHub closed issues" src="https://img.shields.io/github/issues/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail?color=A24232&label=Issues"/></a>
+    <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/LICENSE"><img alt="GitHub License" src="https://img.shields.io/github/license/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail?color=534BAE&label=License"/></a>
   </p>
 </div>
 
@@ -25,15 +26,15 @@
 
 يدعم README.md الحالي اللغات التالية:
 
-- [简体中文 [zh-Hans]](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/.readme/README-zh-Hans.md)
-- [繁體中文 (香港) [zh-Hant-HK]](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/.readme/README-zh-Hant-HK.md)
-- [繁體中文 (台灣) [zh-Hant-TW]](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/.readme/README-zh-Hant-TW.md)
-- [English [en]](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/.readme/README-en.md)
-- [Français [fr]](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/.readme/README-fr.md)
-- [Español [es]](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/.readme/README-es.md)
-- [日本語 [ja]](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/.readme/README-ja.md)
-- [한국어 [ko]](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/.readme/README-ko.md)
-- [Русский [ru]](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/.readme/README-ru.md)
+- [简体中文 [zh-Hans]](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/.readme/README-zh-Hans.md)
+- [繁體中文 (香港) [zh-Hant-HK]](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/.readme/README-zh-Hant-HK.md)
+- [繁體中文 (台灣) [zh-Hant-TW]](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/.readme/README-zh-Hant-TW.md)
+- [English [en]](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/.readme/README-en.md)
+- [Français [fr]](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/.readme/README-fr.md)
+- [Español [es]](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/.readme/README-es.md)
+- [日本語 [ja]](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/.readme/README-ja.md)
+- [한국어 [ko]](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/.readme/README-ko.md)
+- [Русский [ru]](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/.readme/README-ru.md)
 - العربية [ar] # الحالي
 
 ******
@@ -42,7 +43,7 @@
 
 ******
 
-يوفر Angus Mail لنصوص AutoJs6 البرمجية كائنا عاما باسم `mail` لإرسال الرسائل, وسرد صناديق البريد والبحث فيها, وقراءة نصوص الرسائل, وتنزيل المرفقات, وإدارة العلامات والمجلدات, ومراقبة وصول بريد جديد إلى مجلد. يعتمد على [Eclipse Angus Mail](https://eclipse-ee4j.github.io/angus-mail/) 2.0.5, التنفيذ المرجعي لـ Jakarta Mail, ويتعامل مع IMAP و POP3 و SMTP عبر TLS.
+يوفر 3-Stamp Mail لنصوص AutoJs6 البرمجية كائنا عاما باسم `mail` لإرسال الرسائل, وسرد صناديق البريد والبحث فيها, وقراءة نصوص الرسائل, وتنزيل المرفقات, وإدارة العلامات والمجلدات, ومراقبة وصول بريد جديد إلى مجلد. يعتمد على [Eclipse Angus Mail](https://eclipse-ee4j.github.io/angus-mail/) 2.0.5, التنفيذ المرجعي لـ Jakarta Mail, ويتعامل مع IMAP و POP3 و SMTP عبر TLS.
 
 تبقى كل حركة البريد داخل عملية المكون الإضافي. يكتشف AutoJs6 المكون الإضافي عبر خدمة Binder الخاصة به, ويسلمه الحساب الذي يقدمه النص البرمجي (أو اسما مستعارا محفوظا في صفحة إعدادات المكون الإضافي), ويتلقى نتائج JSON وتدفقات المرفقات; ولا يحتوي المضيف نفسه على أي شيفرة بريد. تبقى بيانات الاعتماد في الذاكرة طوال مدة الجلسة فقط ما لم تختر حفظ حساب في المكون الإضافي.
 
@@ -52,7 +53,7 @@
 
 ******
 
-يضيف الإصدار 1.3.0 تسجيل الدخول عبر المتصفح لحسابات Google و Microsoft (خارطة الطريق P9) فوق المراقبة في الخلفية من 1.1.0 (خارطة الطريق P8); صدرت كل بنود المراحل P0 إلى P8 مع 1.0.0 إلى 1.1.0, والأدلة في [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md). يتطلب AutoJs6 6.8.0 (البناء 5282) أو أحدث; تحتاج مهمة "عند وصول بريد" إلى بناء المضيف الذي يحمل عقد البريد الإصدار 2; المرجع الكامل لواجهة برمجة السكربتات في [وثائق AutoJs6](https://docs.autojs6.com/#/mail).
+عمليات البريد والحسابات المحفوظة والمراقبة في الخلفية وتسجيل الدخول إلى Google/Microsoft عبر المتصفح. يتطلب AutoJs6 6.8.0 build 5316 أو أحدث. [وثائق mail API](https://docs.autojs6.com/#/mail).
 
 ******
 
@@ -79,8 +80,8 @@
 
 ******
 
-1. ثبت ملف APK للمكون الإضافي من [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) على جهاز مثبت عليه AutoJs6 بالبنية 5282 (6.8.0) أو أحدث.
-2. افتح مركز المكونات الإضافية في AutoJs6, وتأكد من التعرف على `Angus Mail` ثم فعله.
+1. ثبت ملف APK للمكون الإضافي من [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/releases) على جهاز مثبت عليه AutoJs6 بالبنية 5316 (6.8.0) أو أحدث.
+2. افتح مركز المكونات الإضافية في AutoJs6, وتأكد من التعرف على `3-Stamp Mail` ثم فعله.
 3. جهز الحساب: فعل IMAP أو POP3 و SMTP في إعدادات الويب لدى المزود واحصل على رمز تفويض (QQ, 163, 126, Sina) أو كلمة مرور تطبيق (Gmail, iCloud, Yahoo); كلمة مرور تسجيل الدخول نفسها لا تقبل عادة. يمكن بدلا من ذلك تسجيل الدخول إلى حسابات Gmail و Outlook.com و Microsoft 365 بحساب Google أو Microsoft في المتصفح من إعدادات الإضافة (اختر المصادقة "تسجيل الدخول بحساب Google / Microsoft (المتصفح)"), أو إعطاؤها رمز وصول OAuth 2.0 تم الحصول عليه في مكان آخر.
 4. استدع `mail.connect(...)` في نص برمجي, أو احفظ الحساب في صفحة إعدادات المكون الإضافي (أيقونته في المشغل, أو AutoJs6 > خيارات المطور > إعدادات حسابات البريد) واتصل بالاسم المستعار.
 5. لتشغيل سكربت عند وصول بريد دون إبقاء سكربت يعمل: أضف مراقبة في صفحة المراقبات في الإضافة (الإعدادات > المراقبات: الاسم المستعار للحساب, المجلد, الوضع, المرشحات), واسمح بالإشعار عند الطلب, ثم أنشئ مهمة في AutoJs6 (اضغط مطولا على السكربت > مهمة مجدولة > التشغيل عند بث > عند وصول بريد) واختر المراقبة; تحتاج المهمة إلى بنية AutoJs6 بإصدار عقد البريد 2.
@@ -189,7 +190,7 @@ mail.searchAsync({ subject: 'invoice', since: '2026-09-01' }).then(list => conso
 - إذن REQUEST_IGNORE_BATTERY_OPTIMIZATIONS يخدم زر الإرشاد في صفحة الإعدادات فقط: يعرض الزر ما إذا كان النظام قد يوقف الإضافة مؤقتا في الخلفية, ويفتح مربع حوار النظام عند الطلب; لا تطلب الإضافة ذلك من تلقاء نفسها, ولا تعتمد أي ميزة على هذا الاستثناء. قاست مصفوفة المراقبة في P5 فائدة هذا الاستثناء: بعد انطفاء الشاشة لفترة (Doze) يجمد Android شبكة تطبيقات الخلفية, فتفقد المراقبة اتصالها, وتنتهي مهلة إعادة اتصالها, ولا يبلغ عن البريد الجديد إلا بعد دقائق من استيقاظ الجهاز (نحو أربع دقائق على Android 9; وتعيد الإضافة الاتصال فورا عند انتهاء Doze); ومع الاستثناء تبقى المراقبة متصلة.
 - تخدم أربعة أذونات المراقبة في الخلفية في الإصدار 1.1.0 ولا شيء غيرها. يشغل FOREGROUND_SERVICE و FOREGROUND_SERVICE_SPECIAL_USE خدمة المراقبة (النوع `specialUse`, النوع الفرعي `mail_background_watch`, لأن مراقبة البريد اتصال مفتوح ينتظر دفع الخادم وليست مزامنة بيانات محدودة) مع إشعار واحد منخفض الأولوية; يطلب POST_NOTIFICATIONS في صفحة المراقبات فقط عند تفعيل مراقبة ليمكن عرض الإشعار على Android 13 وما بعده; يدعم RECEIVE_BOOT_COMPLETED مفتاح التشغيل عند الإقلاع في تلك الصفحة, وهو معطل افتراضيا ولا يفعل المستقبل إلا عند تشغيله. لا تبدأ الخدمة إلا من صفحة المراقبات أو من اشتراك المضيف, ولا تتصل إلا بالحسابات المحفوظة, وتبقي الأسرار داخل عملية الإضافة, ويحمل بث الإيقاظ إلى AutoJs6 ظرف الرسالة (دون متن أبدا) ولا يصل إلا إلى مستقبل خلف إذن التوقيع PLUGIN.
 
-احصل على المكون الإضافي فقط من صفحة [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/releases) الرسمية أو من مركز المكونات الإضافية في AutoJs6. قد تفشل الحزم من مصادر غير معروفة في التحقق من المضيف أو تحمل مخاطر حتى لو بدا رقم الإصدار متطابقا.
+احصل على المكون الإضافي فقط من صفحة [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/releases) الرسمية أو من مركز المكونات الإضافية في AutoJs6. قد تفشل الحزم من مصادر غير معروفة في التحقق من المضيف أو تحمل مخاطر حتى لو بدا رقم الإصدار متطابقا.
 
 ******
 
@@ -200,18 +201,18 @@ mail.searchAsync({ subject: 'invoice', since: '2026-09-01' }).then(list => conso
 المعلومات التالية موجهة لمطوري مضيف AutoJs6 والمكونات الإضافية; يستخدم المضيف هذه المعرفات لاكتشاف المكون الإضافي والتفاوض على التوافق:
 
 ```text
-application id: io.github.supermonster003.autojs6.plugin.angus.mail
-plugin id: angus-mail
+application id: io.github.supermonster003.autojs6.plugin.three.stamp.mail
+plugin id: three-stamp-mail
 engine: mail
 variant: default
 service action: org.autojs.plugin.MAIL
 service category: mail
 info action: org.autojs.plugin.INFO
 aidl interface: org.autojs.plugin.mail.api.IMailPlugin
-minimum host build: 5282 (6.8.0)
+minimum host build: 5316 (6.8.0)
 ```
 
-تنفذ `AngusMailPluginService` عقد المضيف mail-api `org.autojs.plugin.mail.api.IMailPlugin` وتستجيب لـ `org.autojs.plugin.MAIL` (الفئة `mail`). تستجيب `AngusMailPluginInfoService` لـ `org.autojs.plugin.INFO` بكائن PluginInfo. تتيح `WakeActivity` للمضيف تنشيط المكون الإضافي.
+تنفذ `ThreeStampMailPluginService` عقد المضيف mail-api `org.autojs.plugin.mail.api.IMailPlugin` وتستجيب لـ `org.autojs.plugin.MAIL` (الفئة `mail`). تستجيب `ThreeStampMailPluginInfoService` لـ `org.autojs.plugin.INFO` بكائن PluginInfo. تتيح `WakeActivity` للمضيف تنشيط المكون الإضافي.
 
 ******
 
@@ -221,7 +222,7 @@ minimum host build: 5282 (6.8.0)
 
 تدار خطط المكون الإضافي وتقدمه كقائمة قابلة للتحقق في ROADMAP.md, منظمة حسب المرحلة مع معايير القبول ومستويات الأدلة. تعبر البنود غير المحددة عن النية لا عن القدرات الحالية; والنقاش عبر Issues موضع ترحيب.
 
-- [عرض ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/ROADMAP.md)
+- [عرض ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/ROADMAP.md)
 
 ******
 
@@ -229,12 +230,16 @@ minimum host build: 5282 (6.8.0)
 
 ******
 
-#### v1.3.0
+#### v2.0.0
 
-_2026/09/30_
+_2026/10/03_
 
+- `تلميح` تثبت الحزمة الجديدة io.github.supermonster003.autojs6.plugin.three.stamp.mail بشكل منفصل عن Angus Mail. لا تنقل الحسابات والإعدادات والمراقبات تلقائيا; أعد إعدادها وسجل الدخول مجددا. يمكن إبقاء التطبيق القديم. يتطلب AutoJs6 6.8.0 build 5316 أو أحدث
+- `تلميح` فعّل 3-Stamp Mail في مركز الإضافات. إذا كان التطبيقان القديم والجديد مفعلين, فاختر 3-Stamp Mail كإضافة البريد المفضلة
 - `ميزة` اختر أيقونة تشغيل تكيفية فاتحة أو داكنة أو تلقائية (افتراضية) أو شفافة من الإعدادات. تعتمد الألوان التلقائية والشفافية على دعم المشغل.
 - `إصلاح` تحافظ التحديثات على مدخل تشغيل واحد وعلى الأيقونة التي اختيرت صراحة. تتم قراءة مظهر المضيف في الخلفية دون مقاطعة الإعدادات قيد التحرير.
+- `تحسين` تغيير اسم التطبيق إلى 3-Stamp Mail مع تحديث الحزمة وهوية الإضافة والمستودع وأسماء ملفات الإصدار
+- `تحسين` رسوم ظرف جديدة للوضعين الفاتح والداكن داخل التطبيق والمشغل مع الإبقاء على خيارات الأيقونة الأربعة
 - `تحسين` إعدادات موحدة للغة والوضع الداكن واللون والأيقونة مع خلفيات محايدة وعناصر تتبع السمة وحوارات تأكيد. عاين الألوان الجاهزة أو HEX/RGB قبل التطبيق. يحافظ الإلغاء على الإعدادات المحفوظة.
 
 #### v1.2.1
@@ -255,7 +260,7 @@ _2026/09/22_
 
 ##### لمزيد من سجل الإصدارات
 
-* [CHANGELOG.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/app/src/main/assets/doc/CHANGELOG-ar.md)
+* [CHANGELOG.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/app/src/main/assets/doc/CHANGELOG-ar.md)
 
 ******
 
@@ -323,7 +328,9 @@ app/src/main/res/raw-*/plugin_instruction.md
 
 ******
 
-كود المشروع مرخص بموجب [Mozilla Public License 2.0](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/LICENSE). المكونات الخارجية وتراخيصها مدرجة في [إشعارات الجهات الخارجية](https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/THIRD_PARTY_NOTICES.md).
+كود المشروع مرخص بموجب [Mozilla Public License 2.0](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/LICENSE). المكونات الخارجية وتراخيصها مدرجة في [إشعارات الجهات الخارجية](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/THIRD_PARTY_NOTICES.md).
+
+نشكر مطوري [Eclipse Angus Mail](https://eclipse-ee4j.github.io/angus-mail/) و Jakarta Mail/Activation و GreenMail, وكذلك AutoJs6 و OpenCC و 3-Stone AI و MCP Server و Pinyin4j على مراجع التنفيذ والتطوير. [المصادر والتراخيص](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/THIRD_PARTY_NOTICES.md#project-origins-and-acknowledgements). هذا مشروع مستقل ولا يعني اعتمادهم له; تبقى الأسماء والحقوق لأصحابها. [اعتراضات الحقوق والتعاون](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/RIGHTS_AND_TAKEDOWN.md).
 
 ******
 
@@ -335,4 +342,4 @@ app/src/main/res/raw-*/plugin_instruction.md
 - توثيق AutoJs6: https://docs.autojs6.com
 - توثيق وحدة البريد: https://docs.autojs6.com/#/mail
 - Eclipse Angus Mail: https://eclipse-ee4j.github.io/angus-mail/
-- إشعارات الجهات الخارجية: https://github.com/SuperMonster003/AutoJs6-Plugin-Angus-Mail/blob/master/THIRD_PARTY_NOTICES.md
+- إشعارات الجهات الخارجية: https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/THIRD_PARTY_NOTICES.md

@@ -5,10 +5,10 @@
   "h3_languages_with_ascii": "Idiomas",
   "p_languages_all_supported_for_readme": "El README.md actual admite los siguientes idiomas",
   "h3_introduction": "Introducción",
-  "p_introduction_what": "Angus Mail ofrece a los scripts de AutoJs6 un objeto global `mail` para enviar mensajes, listar y buscar en los buzones, leer cuerpos, descargar adjuntos, gestionar marcas y carpetas, y vigilar la llegada de correo nuevo a una carpeta. Se basa en [Eclipse Angus Mail]({{ angus_mail_url }}) {{ angus_mail_version }}, la implementacion de referencia de Jakarta Mail, y habla IMAP, POP3 y SMTP sobre TLS.",
+  "p_introduction_what": "3-Stamp Mail ofrece a los scripts de AutoJs6 un objeto global `mail` para enviar mensajes, listar y buscar en los buzones, leer cuerpos, descargar adjuntos, gestionar marcas y carpetas, y vigilar la llegada de correo nuevo a una carpeta. Se basa en [Eclipse Angus Mail]({{ angus_mail_url }}) {{ angus_mail_version }}, la implementacion de referencia de Jakarta Mail, y habla IMAP, POP3 y SMTP sobre TLS.",
   "p_introduction_how": "Todo el trafico de correo permanece dentro del proceso del plugin. AutoJs6 descubre el plugin a traves de su servicio Binder, le entrega la cuenta que indica el script (o un alias guardado en la pagina de ajustes del plugin) y recibe resultados JSON y flujos de adjuntos; el propio host no contiene codigo de correo. Las credenciales permanecen en memoria durante la sesion, salvo que decidas guardar una cuenta en el plugin.",
   "h3_status": "Estado",
-  "p_status": "La version {{ version_name }} anade el inicio de sesion en el navegador para cuentas de Google y Microsoft (hoja de ruta P9) sobre las vigilancias en segundo plano de 1.1.0 (hoja de ruta P8); todos los puntos de las fases P0 a P8 se publicaron con 1.0.0 a 1.1.0, con evidencias en [ROADMAP.md]({{ roadmap_url }}). Requiere AutoJs6 {{ required_host_version_name }} (build {{ required_host_version_code }}) o posterior; la tarea \"Al llegar correo\" necesita la compilacion del anfitrion con la version 2 del contrato de correo; la referencia completa de la API de scripts esta en la [documentacion de AutoJs6]({{ docs_mail_url }}).",
+  "p_status": "Operaciones de correo, cuentas guardadas, vigilancia en segundo plano e inicio de sesión de Google/Microsoft en el navegador. Requiere AutoJs6 {{ required_host_version_name }} build {{ required_host_version_code }} o posterior. [Documentación de la API mail]({{ docs_mail_url }}).",
   "h3_features": "Funciones",
   "p_features_intro": "El complemento ofrece las siguientes capacidades",
   "features": [
@@ -26,7 +26,7 @@
   "h3_usage": "Uso",
   "usage_steps": [
     "Instala el APK del plugin desde [Releases]({{ repo_url }}/releases) en un dispositivo con AutoJs6 build {{ required_host_version_code }} ({{ required_host_version_name }}) o posterior.",
-    "Abre el centro de plugins de AutoJs6, confirma que `Angus Mail` se reconoce y actívalo.",
+    "Abre el centro de plugins de AutoJs6, confirma que `3-Stamp Mail` se reconoce y actívalo.",
     "Prepara la cuenta: activa IMAP o POP3 y SMTP en la configuracion web del proveedor y obten un codigo de autorizacion (QQ, 163, 126, Sina) o una contrasena de aplicacion (Gmail, iCloud, Yahoo); la contrasena de inicio de sesion en si normalmente no se acepta. Las cuentas de Gmail, Outlook.com y Microsoft 365 pueden en su lugar iniciar sesion con la cuenta de Google o Microsoft en el navegador desde los ajustes del plugin (elige la autenticacion \"Iniciar sesion con Google / Microsoft (navegador)\"), o recibir un token de acceso OAuth 2.0 obtenido en otro sitio.",
     "Llama a `mail.connect(...)` en un script, o guarda la cuenta en la página de ajustes del plugin (su icono en el lanzador, o AutoJs6 > Opciones del desarrollador > Ajustes de cuentas de correo) y conéctate por alias.",
     "Para ejecutar un script al llegar correo sin mantener uno en marcha: añada una vigilancia en la página de vigilancias del plugin (ajustes > Vigilancias: alias de la cuenta, carpeta, modo, filtros), permita la notificación cuando se pida y cree después una tarea en AutoJs6 (pulsación larga sobre el script > tarea programada > ejecutar por difusión > Al llegar un correo) eligiendo la vigilancia; la tarea necesita una compilación de AutoJs6 con la versión 2 del contrato de correo."
@@ -83,7 +83,7 @@
   "p_security_permission": "Obtenga el plugin únicamente desde la página oficial de [Releases]({{ repo_url }}/releases) o el centro de plugins de AutoJs6. Los paquetes de origen desconocido pueden fallar la verificación del anfitrión o conllevar riesgos aunque el número de versión parezca idéntico.",
   "h3_plugin_interface": "Interfaz del plugin",
   "p_plugin_interface": "La siguiente información está dirigida a desarrolladores del anfitrión AutoJs6 y de plugins; el anfitrión usa estos identificadores para descubrir el plugin y negociar la compatibilidad",
-  "p_contract_service": "`AngusMailPluginService` implementa el contrato mail-api del host `{{ plugin_aidl_interface }}` y responde a `{{ plugin_service_action }}` (categoria `{{ plugin_service_category }}`). `AngusMailPluginInfoService` responde a `{{ plugin_info_action }}` con PluginInfo. `WakeActivity` permite al host activar el plugin.",
+  "p_contract_service": "`ThreeStampMailPluginService` implementa el contrato mail-api del host `{{ plugin_aidl_interface }}` y responde a `{{ plugin_service_action }}` (categoria `{{ plugin_service_category }}`). `ThreeStampMailPluginInfoService` responde a `{{ plugin_info_action }}` con PluginInfo. `WakeActivity` permite al host activar el plugin.",
   "h3_roadmap": "Hoja de ruta",
   "p_roadmap": "Los planes y el progreso del plugin se mantienen como una lista verificable en ROADMAP.md, organizada por fases con criterios de aceptación y niveles de evidencia. Los elementos sin marcar expresan intención y no capacidades actuales; la discusión mediante Issues es bienvenida.",
   "text_link_roadmap": "Ver ROADMAP.md",
@@ -107,5 +107,6 @@
   "text_link_mail_docs": "Documentación del módulo de correo",
   "text_link_angus_mail": "Eclipse Angus Mail",
   "text_link_third_party_notices": "Avisos de terceros",
-  "p_instruction_more": "Consulte el [README del proyecto]({{ repo_url }}) y [ROADMAP.md]({{ roadmap_url }}) para la guía de conexión y el progreso actual."
+  "p_instruction_more": "Consulte el [README del proyecto]({{ repo_url }}) y [ROADMAP.md]({{ roadmap_url }}) para la guía de conexión y el progreso actual.",
+  "p_acknowledgements": "Gracias a los desarrolladores de [Eclipse Angus Mail]({{ angus_mail_url }}), Jakarta Mail/Activation y GreenMail, y a AutoJs6, OpenCC, 3-Stone AI, MCP Server y Pinyin4j por las referencias de implementación y desarrollo. [Fuentes y licencias]({{ references_url }}). Este proyecto es independiente y no implica su respaldo; los nombres y derechos pertenecen a sus titulares. [Reclamaciones y cooperación]({{ rights_url }})."
 }

@@ -1,8 +1,8 @@
 -dontwarn kotlinx.parcelize.Parcelize
 
--keep class io.github.supermonster003.autojs6.plugin.angus.mail.AngusMailPluginInfoService { *; }
--keep class io.github.supermonster003.autojs6.plugin.angus.mail.AngusMailPluginService { *; }
--keep class io.github.supermonster003.autojs6.plugin.angus.mail.WakeActivity { *; }
+-keep class io.github.supermonster003.autojs6.plugin.three.stamp.mail.ThreeStampMailPluginInfoService { *; }
+-keep class io.github.supermonster003.autojs6.plugin.three.stamp.mail.ThreeStampMailPluginService { *; }
+-keep class io.github.supermonster003.autojs6.plugin.three.stamp.mail.WakeActivity { *; }
 
 -keep class org.autojs.plugin.common.api.** { *; }
 

@@ -5,10 +5,10 @@
   "h3_languages_with_ascii": "Languages",
   "p_languages_all_supported_for_readme": "The current README.md supports the following languages",
   "h3_introduction": "Introduction",
-  "p_introduction_what": "Angus Mail gives AutoJs6 scripts a global `mail` object for sending messages, listing and searching mailboxes, reading bodies, downloading attachments, managing flags and folders, and watching a folder for new mail. It is built on [Eclipse Angus Mail]({{ angus_mail_url }}) {{ angus_mail_version }}, the reference implementation of Jakarta Mail, and speaks IMAP, POP3, and SMTP over TLS.",
+  "p_introduction_what": "3-Stamp Mail gives AutoJs6 scripts a global `mail` object for sending messages, listing and searching mailboxes, reading bodies, downloading attachments, managing flags and folders, and watching a folder for new mail. It is built on [Eclipse Angus Mail]({{ angus_mail_url }}) {{ angus_mail_version }}, the reference implementation of Jakarta Mail, and speaks IMAP, POP3, and SMTP over TLS.",
   "p_introduction_how": "All mail traffic stays inside the plugin process. AutoJs6 discovers the plugin through its Binder service, hands over the account a script provides (or an alias saved on the plugin's settings page), and receives JSON results and attachment streams; the host itself contains no mail code. Credentials stay in memory for the lifetime of a session unless you choose to save an account in the plugin.",
   "h3_status": "Status",
-  "p_status": "Version {{ version_name }} adds the browser sign-in for Google and Microsoft accounts (roadmap P9) on top of the background watches of 1.1.0 (roadmap P8); every item of phases P0 to P8 shipped with 1.0.0 to 1.1.0, with evidence in [ROADMAP.md]({{ roadmap_url }}). Requires AutoJs6 {{ required_host_version_name }} (build {{ required_host_version_code }}) or later; the \"On mail arrived\" task needs the host build with mail contract version 2; the full script API reference is in the [AutoJs6 documentation]({{ docs_mail_url }}).",
+  "p_status": "Email operations, saved accounts, background watches and Google/Microsoft browser sign-in. Requires AutoJs6 {{ required_host_version_name }} build {{ required_host_version_code }} or later. See the [mail API documentation]({{ docs_mail_url }}).",
   "h3_features": "Features",
   "p_features_intro": "The plugin provides the following capabilities",
   "features": [
@@ -26,7 +26,7 @@
   "h3_usage": "Usage",
   "usage_steps": [
     "Install the plugin APK from [Releases]({{ repo_url }}/releases) on a device with AutoJs6 build {{ required_host_version_code }} ({{ required_host_version_name }}) or later.",
-    "Open the AutoJs6 plugin center, confirm that `Angus Mail` is recognized, and enable it.",
+    "Open the AutoJs6 plugin center, confirm that `3-Stamp Mail` is recognized, and enable it.",
     "Prepare the account: turn on IMAP or POP3 and SMTP in the provider's web settings and obtain an authorization code (QQ, 163, 126, Sina) or an app password (Gmail, iCloud, Yahoo); the login password itself is usually not accepted. Gmail, Outlook.com and Microsoft 365 accounts can instead be signed in with the Google or Microsoft account in the browser from the plugin settings (choose \"Sign in with Google / Microsoft (browser)\" as the authentication), or given an OAuth 2.0 access token obtained elsewhere.",
     "Call `mail.connect(...)` in a script, or save the account on the plugin's settings page (its launcher icon, or AutoJs6 developer options > Mail account settings) and connect by alias.",
     "To run a script on new mail without keeping one running: add a watch on the plugin's Watches page (settings > Watches: account alias, folder, mode, filters), allow the notification when asked, then create a task in AutoJs6 (long-press the script > timed task > run on broadcast > On mail arrived) and pick the watch; the task needs an AutoJs6 build with mail contract version 2."
@@ -83,7 +83,7 @@
   "p_security_permission": "Only obtain the plugin from the official [Releases]({{ repo_url }}/releases) page or the AutoJs6 plugin center. Packages from unknown sources may fail host verification or carry risks even when the version number looks identical.",
   "h3_plugin_interface": "Plugin Interface",
   "p_plugin_interface": "The following information targets AutoJs6 host and plugin developers; the host uses these identifiers to discover the plugin and negotiate compatibility",
-  "p_contract_service": "`AngusMailPluginService` implements the host mail-api contract `{{ plugin_aidl_interface }}` and answers `{{ plugin_service_action }}` (category `{{ plugin_service_category }}`). `AngusMailPluginInfoService` answers `{{ plugin_info_action }}` with PluginInfo. `WakeActivity` lets the host activate the plugin.",
+  "p_contract_service": "`ThreeStampMailPluginService` implements the host mail-api contract `{{ plugin_aidl_interface }}` and answers `{{ plugin_service_action }}` (category `{{ plugin_service_category }}`). `ThreeStampMailPluginInfoService` answers `{{ plugin_info_action }}` with PluginInfo. `WakeActivity` lets the host activate the plugin.",
   "h3_roadmap": "Roadmap",
   "p_roadmap": "The plugin's plans and progress are maintained as a checkable list in ROADMAP.md, organized by phase with acceptance criteria and evidence levels. Unchecked items express intent rather than current capabilities; discussion via Issues is welcome.",
   "text_link_roadmap": "View ROADMAP.md",
@@ -107,5 +107,6 @@
   "text_link_mail_docs": "Mail module documentation",
   "text_link_angus_mail": "Eclipse Angus Mail",
   "text_link_third_party_notices": "Third-party notices",
-  "p_instruction_more": "See the [project README]({{ repo_url }}) and [ROADMAP.md]({{ roadmap_url }}) for the connection guide and the current progress."
+  "p_instruction_more": "See the [project README]({{ repo_url }}) and [ROADMAP.md]({{ roadmap_url }}) for the connection guide and the current progress.",
+  "p_acknowledgements": "Thanks to [Eclipse Angus Mail]({{ angus_mail_url }}), Jakarta Mail/Activation and GreenMail, and to AutoJs6, OpenCC, 3-Stone AI, MCP Server and Pinyin4j for the implementation and engineering references. [Sources and licenses]({{ references_url }}). This independent project is not endorsed by those developers; names and rights remain with their owners. [Rights concerns and cooperation]({{ rights_url }})."
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.AngusMail" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.ThreeStampMail" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/mail_brand_primary</item>
         <item name="colorAccent">@color/mail_accent</item>
         <item name="colorSurface">@color/mail_surface</item>

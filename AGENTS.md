@@ -1,4 +1,4 @@
-# AutoJs6-Plugin-Angus-Mail AGENTS.md
+# AutoJs6-Plugin-Three-Stamp-Mail AGENTS.md
 
 本文件是本仓库的工程约定, 由 `AUTOJS6_PLUGIN_NEW_REPO_AGENTS.md` (AutoJs6 新插件仓库参考规范) 裁剪而来, 只保留对本仓库真实有效的条款. 路线图与阶段性决策见 `ROADMAP.md`; 本文件描述的是 "怎样改仓库", 路线图描述的是 "改什么".
 
@@ -11,24 +11,24 @@
 
 ## 2. 仓库身份
 
-下列值在 Gradle, Manifest, Kotlin 常量 (`AngusMailPlugin`), 资源, 文档 (`.readme/common.json`), 测试和宿主注册信息中 MUST 完全一致. 修改任一值时同步修改全部位置, 并运行 `ManifestContractTest` 与 `AngusMailPluginRuntimeInfoTest`.
+下列值在 Gradle, Manifest, Kotlin 常量 (`ThreeStampMailPlugin`), 资源, 文档 (`.readme/common.json`), 测试和宿主注册信息中 MUST 完全一致. 修改任一值时同步修改全部位置, 并运行 `ManifestContractTest` 与 `ThreeStampMailPluginRuntimeInfoTest`.
 
 | 项目 | 值 |
 |---|---|
-| 仓库与目录名 | `AutoJs6-Plugin-Angus-Mail` |
-| `rootProject.name` | `autojs6-plugin-angus-mail` |
-| 应用标题 (不可翻译) | `Angus Mail` |
-| `applicationId` / namespace | `io.github.supermonster003.autojs6.plugin.angus.mail` |
-| 插件 ID / engine / variant | `angus-mail` / `mail` / `default` |
+| 仓库与目录名 | `AutoJs6-Plugin-Three-Stamp-Mail` |
+| `rootProject.name` | `autojs6-plugin-three-stamp-mail` |
+| 应用标题 (不可翻译) | `3-Stamp Mail` |
+| `applicationId` / namespace | `io.github.supermonster003.autojs6.plugin.three.stamp.mail` |
+| 插件 ID / engine / variant | `three-stamp-mail` / `mail` / `default` |
 | 脚本全局对象 | `mail` (宿主侧, 路线图 D1 / P3) |
-| Binder 服务类 | `AngusMailPluginService` (默认进程) |
+| Binder 服务类 | `ThreeStampMailPluginService` (默认进程) |
 | 服务发现 action / category | `org.autojs.plugin.MAIL` / `mail` |
-| INFO 服务 | `AngusMailPluginInfoService`, action `org.autojs.plugin.INFO`, category `mail` |
+| INFO 服务 | `ThreeStampMailPluginInfoService`, action `org.autojs.plugin.INFO`, category `mail` |
 | 专用 API | `mail-api` (宿主 `plugin-api/mail-api`, AIDL 包 `org.autojs.plugin.mail.api`, Binder descriptor `org.autojs.plugin.mail.api.IMailPlugin`; 路线图 P1.1 落地后以 AAR 形式进入 `libs/`) |
-| 最低宿主 versionCode | `AngusMailPlugin.REQUIRED_HOST_VERSION` (5282, 交付 `mail-api` 契约模块与宿主客户端的 6.8.0 宿主构建; 路线图 P1.4 回填, 与 `MailIds.REQUIRED_HOST_VERSION_CODE` 一致) |
+| 最低宿主 versionCode | `ThreeStampMailPlugin.REQUIRED_HOST_VERSION` (5316, 含新邮件插件身份与设置入口的 6.8.0 宿主构建); `MailIds.REQUIRED_HOST_VERSION_CODE` 的通用协议下限仍为 5282, 避免使其他邮件实现失效 |
 | 邮件库 | Eclipse Angus Mail `org.eclipse.angus:jakarta.mail` 2.0.5 + `angus-activation` 2.0.3 + `jakarta.activation-api` 2.1.4 (路线图 D2) |
 | 平台版本插件 | `io.github.supermonster003.autojs6-platform-versions` 1.8.3 |
-| 发布文件名 | `autojs6-plugin-angus-mail-v{VERSION_NAME}-{CRC32}.apk` (单 APK) |
+| 发布文件名 | `autojs6-plugin-three-stamp-mail-v{VERSION_NAME}-{CRC32}.apk` (单 APK) |
 
 ## 3. 工作区与提交
 
@@ -75,7 +75,7 @@ sed -i "s/^VERSION_BUILD=.*/VERSION_BUILD=$next/" version.properties
 ## 4. 仓库结构
 
 ```text
-AutoJs6-Plugin-Angus-Mail/
+AutoJs6-Plugin-Three-Stamp-Mail/
 |-- .changelog/                 lang_*.json x 10 + template_changelog.md (文案源)
 |-- .github/workflows/          build.yml, markdown.yml
 |-- .python/                    generate_markdown.py (+ .bat), check_markdown.bat, generate_launcher_icons.py
@@ -126,7 +126,7 @@ AutoJs6-Plugin-Angus-Mail/
 
 - `sign.properties` 与 `app/sm003.jks` 从宿主复制到相同相对路径, MUST 保持被 Git 忽略 (`git check-ignore` 验证). 仓库中不得出现密码, token, 私钥或开发者绝对路径.
 - 保留 `org.autojs.build.signs`, `signingConfigs` 与 release 签名选择逻辑.
-- `appendDigestToReleasedFiles` 任务 MUST 保留该名称, 依赖 `assembleRelease`, 在签名缺失时失败, 校验实际 APK 集合恰为 `autojs6-plugin-angus-mail-v{VERSION_NAME}.apk`, 并追加 CRC32 生成 `autojs6-plugin-angus-mail-v{VERSION_NAME}-{CRC32}.apk` 到 `releases/` (不入库).
+- `appendDigestToReleasedFiles` 任务 MUST 保留该名称, 依赖 `assembleRelease`, 在签名缺失时失败, 校验实际 APK 集合恰为 `autojs6-plugin-three-stamp-mail-v{VERSION_NAME}.apk`, 并追加 CRC32 生成 `autojs6-plugin-three-stamp-mail-v{VERSION_NAME}-{CRC32}.apk` 到 `releases/` (不入库).
 - `-PandroidTestRelease` 把 `testBuildType` 切到 release, 用于在真机验证 R8 处理后的 Angus Mail 处理器仍可解析 (路线图 P0.2); 引入或升级运行时依赖后 SHOULD 跑一次. 该属性同时把 `app/proguard-android-test-release.pro` (保留测试直接引用的插件与 `:mail-core` 成员) 加入应用规则, 并以 `testProguardFiles` 为测试 APK 加载 `app/proguard-test-rules.pro`; 两者都不属于正式 release 构建, 正式规则只有 `proguard-rules.pro`.
 
 ### 5.4 不启用 ABI 拆分的理由
@@ -147,7 +147,7 @@ AutoJs6-Plugin-Angus-Mail/
 
 - Manifest MUST 声明 `org.autojs.permission.PLUGIN`, `<queries>` 宿主包名, `org.autojs.plugin.WAKE_ACTIVITY` 与 `org.autojs.plugin.info.AUTHOR` meta-data, `NATIVE_PAGE_ALIGNMENT=0`.
 - `WakeActivity` MUST 为 `exported=true`, `Theme.NoDisplay`, `excludeFromRecents`, `finishOnTaskLaunch`, 受 PLUGIN 权限保护, 响应 `org.autojs.plugin.action.WAKE` + DEFAULT category, 启动后立即结束, 不做任何副作用.
-- `AngusMailPluginInfoService` 与 `AngusMailPluginService` MUST `exported=true`, 受 PLUGIN 权限保护, 声明 `requiresHostVersion` meta-data (与 `AngusMailPlugin.REQUIRED_HOST_VERSION` 一致), 运行在默认进程.
+- `ThreeStampMailPluginInfoService` 与 `ThreeStampMailPluginService` MUST `exported=true`, 受 PLUGIN 权限保护, 声明 `requiresHostVersion` meta-data (与 `ThreeStampMailPlugin.REQUIRED_HOST_VERSION` 一致), 运行在默认进程.
 - 所有对外组件逐项审查 `android:exported`; 除契约入口外不得导出其他组件. 独立设置页 (P4) 若需被宿主打开, 使用 PLUGIN 权限保护的显式 action. 唯一例外是 P8 的 `trigger.BootReceiver` (`BOOT_COMPLETED` 要求 exported, Manifest 默认 `enabled=false`, 只由守望页面的开机自启开关经 `PackageManager.setComponentEnabledSetting` 打开); `trigger.MailWatchService` 不导出.
 - `android:usesCleartextTraffic` 保持默认 (false), Manifest 注释 MUST 保留该说明: 明文 IMAP / POP3 / SMTP 只在脚本显式 `tls: 'none'` 时由 socket 层决定, 与网络安全策略无关; 插件不发起任何 HTTP 请求, 唯一例外是路线图 P9 浏览器登录的令牌端点 (`oauth.HttpsFormPoster`, 只接受 `https`, 只向 `OAuthProviders` 表中的 Google / Microsoft 端点 POST 表单, 不跟随重定向, 响应体 64 KiB 上限).
 - P9 的两个 Activity: `oauth.OAuthSignInActivity` 不导出 (`singleTop`, 父页为账户编辑器), `oauth.OAuthRedirectActivity` MUST 导出且无权限 (浏览器投递重定向), `Theme.NoDisplay` + `excludeFromRecents`, 只响应两个 VIEW / DEFAULT / BROWSABLE filter (`${applicationId}://oauth2/microsoft` 与 `${oauthGoogleScheme}:/oauth2redirect`), 只把 URI 转发给登录页 (`CLEAR_TOP | SINGLE_TOP`) 后结束, 不做任何判断; `state` 校验在登录页完成, 不匹配的重定向被拒绝且不回显. 客户端 id 与租户来自根目录 Git 忽略的 `oauth-clients.properties` (`googleClientId` / `microsoftClientId` / `microsoftTenant`), 经 `resValue` 与 manifest 占位符 `oauthGoogleScheme` 注入, MUST NOT 写入源码或资源; 缺失时登录项禁用.
@@ -156,19 +156,19 @@ AutoJs6-Plugin-Angus-Mail/
 
 ## 7. PluginInfo 与能力协商
 
-- `AngusMailPluginRuntimeInfo` 是纯数据映射, `AngusMailPluginInfo.kt` 负责 Android 侧读取 (包版本, 本地化描述, `@raw/plugin_instruction`, 构建日期), 二者的分离 MUST 保持, 以便 JVM 测试覆盖映射.
+- `ThreeStampMailPluginRuntimeInfo` 是纯数据映射, `ThreeStampMailPluginInfo.kt` 负责 Android 侧读取 (包版本, 本地化描述, `@raw/plugin_instruction`, 构建日期), 二者的分离 MUST 保持, 以便 JVM 测试覆盖映射.
 - `name` 与不可翻译的 `app_name` 一致; `description` 来自当前 locale 的 `plugin_description`; `versionName` / `versionCode` 来自 `PackageInfo`; `versionDate` 来自 `plugin_version_date` (`MMM d, yyyy`, `GMT+08:00`); `id` / `engine` / `variant` 与第 2 节一致.
-- `capabilities` 包含 `PluginCapabilityKeys.REQUIRES_HOST_VERSION` (Long) 与 `MailCapabilityKeys` 的契约版本 (Int), 协议集合, 认证机制, 特性集合 (String 数组), 预设表版本 (Int) 与邮件库版本 (String), 由 `AngusMailPlugin` 的常量单点定义 (`capabilitiesBundle()`); 宿主先读取能力再调用新方法, 不通过捕获异常猜测协议版本.
+- `capabilities` 包含 `PluginCapabilityKeys.REQUIRES_HOST_VERSION` (Long) 与 `MailCapabilityKeys` 的契约版本 (Int), 协议集合, 认证机制, 特性集合 (String 数组), 预设表版本 (Int) 与邮件库版本 (String), 由 `ThreeStampMailPlugin` 的常量单点定义 (`capabilitiesBundle()`); 宿主先读取能力再调用新方法, 不通过捕获异常猜测协议版本.
 
 ## 8. Binder 与公共 API
 
-- 公共常量, op 名, key, capability key, 错误码, ID, action 和 category MUST 集中在宿主 `mail-api` 契约模块 (AAR) 与 `AngusMailPlugin` 中, 禁止散落字符串字面量.
+- 公共常量, op 名, key, capability key, 错误码, ID, action 和 category MUST 集中在宿主 `mail-api` 契约模块 (AAR) 与 `ThreeStampMailPlugin` 中, 禁止散落字符串字面量.
 - 请求 / 响应 / 事件为 `Bundle` 固定 key 下的 JSON 文档 (路线图 D14); 所有 Binder 输入 MUST 做边界校验 (长度, 大小, key, 枚举, 索引, 描述符数量), 上限常量集中定义并与路线图附录 B.5 一致.
 - 凭据只经 Binder 的专用 key 传递 (`KEY_SECRET_PASSWORD`, `KEY_SECRET_ACCESS_TOKEN`), MUST NOT 放进 JSON 文档, 日志, 异常消息或错误 `details`; `MailAccountOptions` 在账户 JSON 里遇到 `password` / `accessToken` 等字段直接拒绝, 所有离开插件进程的文本经 `Redactor` 脱敏.
 - 描述符是插件的副本 (路线图 B.3): 只有 `MailContract.OPS_WITH_SOURCES` / `OPS_WITH_SINK` 的 op 接受描述符, 其余 op 携带描述符 -> `INVALID_ARGUMENT`, 数量超过 `MAX_DESCRIPTORS` -> `LIMIT_EXCEEDED`; 校验在会话线程且在路由之后 (未知 / 未实现 op 的错误优先), 附件描述符 MUST 是可 seek 的文件 (`DescriptorSource` 每次 `open()` 都 `dup` + `lseek(0)`, 因为同一封邮件为 SMTP 与 IMAP `APPEND` 各序列化一次), 全部副本 MUST 在 `onResult` 前关闭, 无论成功与否.
 - 下载 op (`OPS_WITH_SINK`: `messages.raw`, `attachments.download`) 只接受恰好一个描述符, 即宿主给出的管道或文件写端 (路线图 P2.3): 参数校验先于打开写端, 插件在 `onResult` 前 flush 并关闭写端, 宿主读端因此在结果之前读到 EOF; 传输进度经 `onProgress` 以 `{id, transferred, total?}` 报告 (`MailContract.FIELD_TRANSFERRED` / `FIELD_TOTAL`, 每 1 MiB 或总量的 5% 一次, 不低于 64 KiB); 写端失败 (宿主关闭读端) 以 `SinkFailedException` 区别于服务器连接故障, 映射为 `IO_FAILED` 且不断开服务器连接, 也不重试. 路由层 `RequestRouter.CallIo` 把描述符与进度通道延迟到处理器真正需要时才打开.
 - 调用方校验 (路线图 P2.5, D35): `openSession` / `listSavedAccounts` 与每个 `IMailSession` 方法先过 `CallerGuard` (`binder/CallerPolicy` 是纯决策, `HostCallerGuard` 用 `Binder.getCallingUid` + `PackageManager` 取证): 调用 uid == 已安装宿主 uid 且宿主包在该 uid 下, 宿主 `versionCode` >= `REQUIRED_HOST_VERSION`, 宿主与插件 SHA-256 签名者集合非空且相等, 会话方法只接受打开会话的 uid; 不满足则抛 `SecurityException("Caller is not the installed same-signer AutoJs6 host: <reason>")` (文案与 MCP Server 插件一致); `getInfo` / `getCapabilities` / `listProviders` 对持有插件权限的调用方开放; 同进程 instrumentation 用 `CallerGuard.trusting()`. 规则改动 MUST 同步 `CallerPolicyTest` 与 MCP Server 插件.
-- 会话上限与队列 (`binder/Limits`, D35): 请求信封与响应信封按 UTF-8 字节 <= `MAX_ENVELOPE_BYTES` (请求超限在解析 op 前拒绝, 响应超限把结果换成 `LIMIT_EXCEEDED`), 错误消息截到 `MAX_ERROR_MESSAGE_BYTES`; 每会话一条工作线程顺序执行, 执行中的调用之后最多排队 `MAX_QUEUED_CALLS`, 再多 -> `LIMIT_EXCEEDED`; `MAX_CONCURRENT_CALLS` 只约束宿主. 拒绝 (超限, 队列满, 已关闭) 的应答由 `angus-mail-session-responder` 线程送出, 结果 MUST NOT 在 Binder 线程回调.
+- 会话上限与队列 (`binder/Limits`, D35): 请求信封与响应信封按 UTF-8 字节 <= `MAX_ENVELOPE_BYTES` (请求超限在解析 op 前拒绝, 响应超限把结果换成 `LIMIT_EXCEEDED`), 错误消息截到 `MAX_ERROR_MESSAGE_BYTES`; 每会话一条工作线程顺序执行, 执行中的调用之后最多排队 `MAX_QUEUED_CALLS`, 再多 -> `LIMIT_EXCEEDED`; `MAX_CONCURRENT_CALLS` 只约束宿主. 拒绝 (超限, 队列满, 已关闭) 的应答由 `three-stamp-mail-session-responder` 线程送出, 结果 MUST NOT 在 Binder 线程回调.
 - 取消与关闭语义 (D35): `cancel(id)` 对排队中的调用立即答 `CANCELLED` 并关闭其描述符副本; 对执行中的调用 `worker.interrupt()` + `MailSession.abort()` (关闭会话全部套接字, `SocketRegistry` 在 `abort` 与 `resume` 之间拒绝新套接字, 于是取消先于建连的竞态也能覆盖), 该调用之后的失败映射为 `CANCELLED`, 已成功完成的调用保留其结果; 未知或已完成的 id 忽略. `close()` 与宿主死亡都走 `shutdown(reason)`: 排队调用各答 `SESSION_CLOSED`, 执行中的调用被中止后答 `SESSION_CLOSED`, 工作线程退出时关闭 `MailSession` 并 `onStatus(closed, reason)`; 每个调用恰好应答一次. `getStatus` 除 `state` / `reason` / `lastError` / `connected` 外带 `queued` 与 `active` (执行中的 id). `RequestRouter.ENTRIES` 记录每个 op 支持的收信协议集, 不支持的协议在解析参数前答 `UNSUPPORTED_OPERATION`.
 - 已发布 AIDL 演进时保持旧 transaction 顺序, 末尾追加, 通过契约版本协商; op 表追加不改 AIDL; 破坏性重设计同步升级宿主与插件.
 - 不在 Binder 主路径执行无界网络访问或不可取消的长耗时初始化; 会话内操作在插件侧串行, 每个请求有 `requestId`, 超时与取消; 服务被回收, 首次绑定, 重复绑定和并发调用都应保持确定行为.
@@ -207,7 +207,16 @@ AutoJs6-Plugin-Angus-Mail/
 ### 11.1 启动器图标
 
 - `app/src/main/res/mipmap/ic_launcher.png` 与 `mipmap-night/` 变体, adaptive 图层由 `.python/generate_launcher_icons.py` 确定性生成; 修改图标时修改脚本并重新生成, 不手工改 PNG.
-- 图标语义为信封 (开口信封轮廓). `ic_launcher` 与应用内引用保留既有蓝色品牌外观, `.python/generate_brand_icons.py` 保留原几何与配色; `ic_launcher_system` / `_light` / `_auto` 与 `ic_launcher_transparent` 用于四个稳定启动器 alias, 默认暗色. 亮色前景 / 背景为 `#272727` / `#FAFAFA`, 暗色为 `#D8D8D8` / `#212121`; 自动配色与透明背景由启动器能力决定. 修改后运行生成器的 `--check` 与资源 / 选择器 instrumentation, 保留原 Activity 对显式 Intent 的兼容. Auto 必须使用独立 XML 资源 ID, 不使用会在 Manifest 解析时被展开的 values 别名.
+- 图标原稿由维护者提供, 保存在 `.python/icons/three-stamp-mail-ic-launcher-light.png` 与 `-dark.png`, 各为 1092 x 1092 RGBA, alpha 一致. light / dark 指使用模式. 原稿字节保留, UI 比例 0.66, adaptive 比例 0.42, 光学偏移 0.0. 原稿包含表达信封折线的明暗细节, 只取 alpha 并涂成纯色会丢失这些线条, 因而保留两套原稿 RGB, 不把它们视为纯色轮廓图.
+- 遵循同目录 `AUTOJS6_PLUGIN_BLACK_N_WHITE_ADAPTIVE_ICON_AGENTS.md` 的 UI / 系统资源分离, 安全圆与四种启动器模式规则. `ic_launcher` 始终是透明位图, 不设自适应覆盖; application 使用 `ic_launcher_system`, 四个 alias 默认 Auto. 系统背景固定为亮 #FAFAFA / 暗 #212121, 单色层来自原稿 alpha. UI 与桌面选择独立. 运行生成器与 `--check`, 验证最终非零 alpha 像素和包内资源.
+
+### 11.2 3-Stamp Mail 2.0 安装身份
+
+- 维护者于 2026-10-03 明确要求点分包名 `io.github.supermonster003.autojs6.plugin.three.stamp.mail`, 显示名 `3-Stamp Mail`, 版本 2.0.0. 改名按同目录 `AUTOJS6_PLUGIN_THREE_SERIES_RENAME_AGENTS.md` 执行.
+- 原 `io.github.supermonster003.autojs6.plugin.angus.mail` 与新包独立安装, 旧包可并存, 账户, 设置与守望不自动迁移. 不自动卸载旧包或清除其数据, 不新增旧身份兼容别名.
+- 保留功能契约 `mail` engine, `default` variant, `mail` INFO / MAIL category, `org.autojs.plugin.MAIL`, `MAIL_SETTINGS`, `org.autojs.plugin.mail.api` AIDL 包, descriptor 与 transaction 顺序. Eclipse Angus Mail 及其 `org.eclipse.angus` 包是第三方库, 不能改名. 历史 changelog / 阶段证据保留当时名称.
+- 宿主 `MailIds` 与插件内锁定 AAR 同步更新; 脚本 API 仍为 `mail`. 浏览器登录必须使用新包名对应的 Google Android 客户端和 Microsoft 重定向注册, 不复用未经确认的旧注册. 注册步骤见 `docs/dev/oauth-client-registration.md`.
+
 
 ## 12. README 与多语言生成
 
@@ -249,8 +258,8 @@ AutoJs6-Plugin-Angus-Mail/
 
 ### 15.2 `app` JVM 单元测试 (`app/src/test`)
 
-- `AngusMailPluginRuntimeInfoTest`: PluginInfo 纯数据映射, 身份常量, 与 `.readme/common.json` / `app/build.gradle.kts` 发布值一致.
-- `ManifestContractTest`: Manifest 与 `AngusMailPlugin` 常量一致 (权限集合精确, queries, Wake Activity, 两个服务的 action / category / 进程 / requiresHostVersion, 无 receiver / provider); P9 起再断言 `OAuthRedirectActivity` 只响应两个重定向 scheme 且登录页 `singleTop`.
+- `ThreeStampMailPluginRuntimeInfoTest`: PluginInfo 纯数据映射, 身份常量, 与 `.readme/common.json` / `app/build.gradle.kts` 发布值一致.
+- `ManifestContractTest`: Manifest 与 `ThreeStampMailPlugin` 常量一致 (权限集合精确, queries, Wake Activity, 两个服务的 action / category / 进程 / requiresHostVersion, 无 receiver / provider); P9 起再断言 `OAuthRedirectActivity` 只响应两个重定向 scheme 且登录页 `singleTop`.
 - `SecretAuditTest` (mail-core) 扫描 `mail-core` 与 `app` 的主源码: 禁止 `Log` / `println` / `printStackTrace` / Jakarta debug; 例外只有 `STATE_LOGGERS` 清单 (守望与 OAuth 的状态日志文件), 其中每一行日志的插值不得含 secret / password / token / verifier / code / address / subject / body / email 等词 (`SECRET_WORDS`); 新增日志行 MUST 只插值 id, 状态, 计数与时长.
 - `ApplicationTextPunctuationTest`: 打包与生成文本只使用 ASCII 标点.
 - `StringResourceParityTest`: 10 语言键集合一致, 按名排序, `plugin_description` 无句尾标点, `locales_config.xml` 与语言集合一致.
@@ -262,10 +271,10 @@ AutoJs6-Plugin-Angus-Mail/
 
 ### 15.3 Android instrumentation (`app/src/androidTest`)
 
-- `AngusMailPluginContractTest` MUST 覆盖: Wake Activity 契约, INFO 服务发现与真实 `getInfo()` 往返 (包版本, 本地化描述, ID / engine / variant, 显式空 `supportedAbis`, `REQUIRES_HOST_VERSION`), `AngusMailPluginService` 发现, 显式绑定与 Binder descriptor, `IMailSession.call` 的会话信封与描述符所有权 (非传输 op 携带描述符, 越界 `descriptorIndex`, 管道, 超过 `MAX_DESCRIPTORS`, 副本在 `onResult` 前关闭), 以及下载 op 的写端规则 (恰好一个写端, 写端在 `onResult` 前关闭使读端读到 EOF, 两个或零个描述符 -> `INVALID_ARGUMENT`, 参数错误同样释放写端, 收信 op 的参数错误经 Binder 返回).
+- `ThreeStampMailPluginContractTest` MUST 覆盖: Wake Activity 契约, INFO 服务发现与真实 `getInfo()` 往返 (包版本, 本地化描述, ID / engine / variant, 显式空 `supportedAbis`, `REQUIRES_HOST_VERSION`), `ThreeStampMailPluginService` 发现, 显式绑定与 Binder descriptor, `IMailSession.call` 的会话信封与描述符所有权 (非传输 op 携带描述符, 越界 `descriptorIndex`, 管道, 超过 `MAX_DESCRIPTORS`, 副本在 `onResult` 前关闭), 以及下载 op 的写端规则 (恰好一个写端, 写端在 `onResult` 前关闭使读端读到 EOF, 两个或零个描述符 -> `INVALID_ARGUMENT`, 参数错误同样释放写端, 收信 op 的参数错误经 Binder 返回).
 - `MailCoreDeviceTest` MUST 覆盖: Angus 处理器在 APK 内可解析, MIME 组装 / 解析在设备运行时往返; 账户往返只在经 instrumentation 参数 (`mailAddress`, `mailSecret`, `mailImapHost`, `mailSmtpHost` 等) 提供账户时执行, 否则 `Assume` 跳过; 账户往返在邮件到达的一侧 (对端账户, 或收件人是自己时的本账户) 执行 P2.3 的读操作 (`folders.list` 带计数, `folders.status`, `messages.list` 轮询投递, 按 Message-ID 搜索 (服务器索引滞后时轮询后改 `fallback: always`), `messages.get` 校验主题 / 正文 / 附件且 `peek` 不置已读, `attachments.download` 逐字节比对, `messages.raw` 可重新解析, `messages.setFlags` 增删, `mailCleanup=true` 时 `messages.delete` + expunge); `mailReceive=pop3` (或对端的 `mailPeerReceive=pop3`) 让到达的一侧走 P2.4 的 POP3 子集 (`INBOX` 单文件夹, 客户端搜索, `unseenOnly` / `setFlags` / `folders.status` 等断言 `UNSUPPORTED_OPERATION`, `messages.delete` 为 DELE). 无真实账户时 SHOULD 用开发机上的 GreenMail standalone (与 `:mail-core` 测试同版本, `adb reverse` 映射 3025 / 3143 端口, `mailTls=none`) 完成一次设备端往返 (命令见该测试的 KDoc); 真实服务商未验证时在路线图记录 "未执行真实服务商验证".
 - 真实测试账户放在仓库根 `mail-test-accounts.properties` (Git 忽略) 或命令行参数中, MUST NOT 写入源码, 测试资源, Gradle 脚本, CI 配置或提交信息; 测试输出与日志只打印地址域名与耗时, 不打印密码, 令牌或邮件正文. `.python/run_real_account.py <QQ_A|QQ_B|GMAIL_A|NETEASE_A|NETEASE_B> <serial> [--peer QQ_B] [--save-sent true|false] [--append Drafts] [--cleanup] [--receive pop3] [--debug] [--release]` 读取该文件 (NetEase 档案按地址域名选 `163` / `126` 预设, `yeah.net` 改用其自身主机) 并屏蔽输出中的全部密钥 (`report leak check: clean` 是每次运行的必要条件); 个人地址不得写入文档, 证据只记录服务商与域名.
-- `AngusMailPluginContractTest.mailServiceAnswersTheContractBinder` 对已安装的服务只做元数据与拒绝断言: instrumentation 运行在插件自身 uid 下, 不是宿主, 所以 `openSession` / `listSavedAccounts` MUST 抛以 `Caller is not the installed same-signer AutoJs6 host` 开头的 `SecurityException`; 会话信封与描述符用例改在 `mailBinderAnswersTheSessionEnvelope` 用同进程 `MailPluginBinder(context, CallerGuard.trusting())` 跑.
+- `ThreeStampMailPluginContractTest.mailServiceAnswersTheContractBinder` 对已安装的服务只做元数据与拒绝断言: instrumentation 运行在插件自身 uid 下, 不是宿主, 所以 `openSession` / `listSavedAccounts` MUST 抛以 `Caller is not the installed same-signer AutoJs6 host` 开头的 `SecurityException`; 会话信封与描述符用例改在 `mailBinderAnswersTheSessionEnvelope` 用同进程 `MailPluginBinder(context, CallerGuard.trusting())` 跑.
 - `MailSessionBinderTest` MUST 覆盖 (回环 `ServerSocket` 只 accept 不应答, 绑定到显式 `127.0.0.1`): 取消执行中的调用在数秒内答 `CANCELLED` (读超时远大于此), 取消后会话仍可用且 `lastError` 为 `CANCELLED`, 未知 / 已完成 id 被忽略; 第 `MAX_QUEUED_CALLS` + 1 个排队调用 `LIMIT_EXCEEDED` 且其描述符副本已关闭, 取消排队调用即时 `CANCELLED`, `close()` 让排队与执行中的调用各答一次 `SESSION_CLOSED` 再 `onStatus(closed, "closed")`, 关闭后的调用 `SESSION_CLOSED`; 超过 `MAX_ENVELOPE_BYTES` 的请求信封在解析前 `LIMIT_EXCEEDED`, 不建连, 描述符副本已关闭; 拒绝的应答不来自测试线程.
 - 路线图 P1.3 关闭时补充: 宿主 <-> 插件跨进程往返, 插件进程被杀后 `SESSION_CLOSED` 与自动重开, 绑定 / 解绑不泄漏.
 - 路线图 P9 (浏览器登录) 的设备用例: `OAuthDeviceTest` MUST 覆盖登录页在浏览器中打开 (Custom Tab, 只看顶层 Activity 与截图, 不输入任何凭据), 回调 Activity 对外来 `state` 的拒绝与匹配 `state` 的一次性交换 (以伪造的 code 到达真实令牌端点, 服务商拒绝即为通过, 失败文案不得含 code), 以及 `OAUTH2` 记录的 Keystore 往返 / 续期 / 拒绝标记 / 撤销 / 重新授权 (一次性目录与测试密钥别名, 或一次性别名); 登录页 / 回调 / 撤销记录三类用例对每个有客户端 id 的服务商各一个方法 (Microsoft: `opensTheProviderPageInTheBrowser` 等; Google: `opensTheGooglePageInTheBrowser`, `refusesAForeignStateAndExchangesTheMatchingOneAtGoogle`, `aRevokedGoogleRecordRefusesEverySessionUntilANewSignIn`, 后者让撤销器把伪造的令牌真实发到 Google 的撤销端点并等其状态行), 没有客户端 id 时以 assumption 跳过; `RealAccountOAuthDeviceTest` 只经 `am instrument` 运行 (`.python/run_oauth_device.py`), 令牌只以 base64 instrumentation 参数进入设备 (`oauthRefreshTokenB64` 等, 来自 `build/outlook-token.properties`, 与构建的客户端 id 同一注册), 日志只含别名 / 服务商 / 秒数; Google 没有 PC 侧刷新令牌 (Android 客户端不接受回环重定向), 驱动以 `--plugin-only` 只跑插件侧步骤, 或以 `--signed-in-alias <alias>` 接手维护者在设备上真实登录的记录 (无种入, 重新授权步骤跳过, 结束时删除记录除非 `--keep`); 真实记录 (种入或登录) 之后 MUST 先跑 `RealAccountOAuthDeviceTest#opensASessionOverTheSavedAlias` (插件进程内经 `MailPluginBinder` 打开别名, `session.test` 各端点 XOAUTH2 与 `messages.list`, 即宿主 `mail.connect(alias)` 所做的事; 手机以 `--skip-host` 保留宿主状态时这是唯一的会话证据), 再撤销; `--signed-in-alias` 模式下驱动先跑步骤 5a `RealAccountOAuthDeviceTest#renewsAStaleAccessTokenAtTheProvider` (把记录的 access token 置为过期, 以真实 refresh token 到服务商续期, 即刷新路径; 种入记录由 seed 覆盖); `revokesTheSignIn` 等待 `TokenRevoker.revoke` 返回的服务商侧请求 (`Future<Boolean>?`) 的结果, 有撤销端点的服务商 MUST 接受真实令牌 (不等待时被测进程会在后台请求完成前结束, 状态行缺失); Android 9 上被测进程偶尔在 `ADB-JDWP Connection` 线程于启动时崩溃 (无任何 `TestRunner` 行), 驱动对这种无输出的 "Process crashed" 最多启动 4 次; 宿主侧以 `docs/smoke/oauth-status.js` 与 `docs/smoke/saved-account.js` 经 `run_host_script_smoke.py --alias` 验证, 报告从宿主测试的日志行读取 (connected 运行结束时被测宿主被卸载). 证据写入 `docs/dev/p9-oauth2-evidence.md`.
@@ -300,7 +309,7 @@ Release 前额外执行 `.\gradlew.bat :app:appendDigestToReleasedFiles`, 检查
 - `android:allowBackup="false"` 与 `data_extraction_rules.xml` 全量排除保持不变.
 - 不记录邮件正文, 附件内容, 密码, 授权码, 令牌, 服务器原始响应到普通日志; 诊断只保留服务商, 协议, 耗时, 大小与错误分类.
 - 联网行为限定为脚本或预设指定服务器的 IMAP / POP3 / SMTP 连接; 超时, TLS 策略, 认证失败与证书错误的行为在 README 安全章节与错误码文档中明确.
-- 第三方代码与 AAR 必须记录来源, 版本, 校验值与许可证 (`THIRD_PARTY_NOTICES.md`); Angus Mail 按上游三选一许可声明, 引入或升级依赖时同一提交更新该文件.
+- 第三方代码与 AAR 必须记录来源, 版本, 校验值与许可证 (`THIRD_PARTY_NOTICES.md`); Angus Mail 按上游源码 LICENSE / NOTICE 的 EPL-2.0 及附条件的 GPL-2.0 + Classpath Exception 声明, 不将父 POM 的汇总 EDL 条目视为整个实现的额外许可. 引入或升级依赖时同一提交更新该文件.
 
 ## 19. 完成检查清单
 

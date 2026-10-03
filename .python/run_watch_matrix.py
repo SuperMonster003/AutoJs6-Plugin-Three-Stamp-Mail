@@ -48,7 +48,7 @@ from run_host_script_smoke import PROVIDERS, TOKEN_KINDS, read_accounts  # noqa:
 
 PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOST_PACKAGE = "org.autojs.autojs6"
-PLUGIN_PACKAGE = "io.github.supermonster003.autojs6.plugin.angus.mail"
+PLUGIN_PACKAGE = "io.github.supermonster003.autojs6.plugin.three.stamp.mail"
 PROGRESS = f"/sdcard/Android/data/{HOST_PACKAGE}/files/mail-smoke/watch-progress.json"
 REPORT = f"/sdcard/Android/data/{HOST_PACKAGE}/files/watch-%s-report.json"  # the script's copy outside the work directory the host test removes
 SMTP = {"qq": ("smtp.qq.com", 465), "163": ("smtp.163.com", 465), "126": ("smtp.126.com", 465), "sina": ("smtp.sina.com", 465)}

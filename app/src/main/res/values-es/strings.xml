@@ -227,7 +227,7 @@
     <string name="watches_notification_channel">Vigilancias en segundo plano</string>
     <string name="watches_notification_channel_description">Estado de las vigilancias en segundo plano que mantienen conectadas las carpetas</string>
     <string name="watches_notification_text">%1$d de %2$d vigilancias conectadas</string>
-    <string name="watches_notification_title">Angus Mail vigila el correo</string>
+    <string name="watches_notification_title">3-Stamp Mail vigila el correo</string>
     <string name="watches_permission_granted">Concedido: la notificacion permanente muestra el estado de las vigilancias</string>
     <string name="watches_permission_missing">No concedido: el servicio funciona, pero Android no muestra la notificacion de estado; toca para permitir</string>
     <string name="watches_permission_title">Permiso de notificaciones</string>

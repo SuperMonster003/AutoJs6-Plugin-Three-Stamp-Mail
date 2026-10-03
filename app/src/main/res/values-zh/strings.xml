@@ -227,7 +227,7 @@
     <string name="watches_notification_channel">后台守望</string>
     <string name="watches_notification_channel_description">保持邮件文件夹连接的后台守望的状态</string>
     <string name="watches_notification_text">%2$d 个守望中已连接 %1$d 个</string>
-    <string name="watches_notification_title">Angus Mail 正在守望邮件</string>
+    <string name="watches_notification_title">3-Stamp Mail 正在守望邮件</string>
     <string name="watches_permission_granted">已授予: 常驻通知显示守望状态</string>
     <string name="watches_permission_missing">未授予: 服务仍会运行, 但 Android 不显示状态通知; 点按以允许</string>
     <string name="watches_permission_title">通知权限</string>

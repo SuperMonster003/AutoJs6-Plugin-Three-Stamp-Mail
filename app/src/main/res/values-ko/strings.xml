@@ -227,7 +227,7 @@
     <string name="watches_notification_channel">백그라운드 감시</string>
     <string name="watches_notification_channel_description">메일 폴더 연결을 유지하는 백그라운드 감시의 상태</string>
     <string name="watches_notification_text">감시 %2$d개 중 %1$d개 연결됨</string>
-    <string name="watches_notification_title">Angus Mail 이 메일을 감시 중</string>
+    <string name="watches_notification_title">3-Stamp Mail 이 메일을 감시 중</string>
     <string name="watches_permission_granted">허용됨: 상시 알림에 감시 상태가 표시됩니다</string>
     <string name="watches_permission_missing">허용되지 않음: 서비스는 실행되지만 Android 가 상태 알림을 표시하지 않습니다; 탭하여 허용</string>
     <string name="watches_permission_title">알림 권한</string>

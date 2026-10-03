@@ -22,11 +22,11 @@ import subprocess
 import sys
 
 PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PACKAGE = "io.github.supermonster003.autojs6.plugin.angus.mail"
+PACKAGE = "io.github.supermonster003.autojs6.plugin.three.stamp.mail"
 TEST_PACKAGE = PACKAGE + ".test"
 TEST_CLASS = PACKAGE + ".RealAccountSettingsDeviceTest"
 RUNNER = "androidx.test.runner.AndroidJUnitRunner"
-PLUGIN_APK = (glob.glob(os.path.join(PLUGIN, "app", "build", "outputs", "apk", "debug", "autojs6-plugin-angus-mail-v*.apk")) or [os.path.join(PLUGIN, "app", "build", "outputs", "apk", "debug", "autojs6-plugin-angus-mail.apk")])[0]
+PLUGIN_APK = (glob.glob(os.path.join(PLUGIN, "app", "build", "outputs", "apk", "debug", "autojs6-plugin-three-stamp-mail-v*.apk")) or [os.path.join(PLUGIN, "app", "build", "outputs", "apk", "debug", "autojs6-plugin-three-stamp-mail.apk")])[0]
 TEST_APK = os.path.join(PLUGIN, "app", "build", "outputs", "apk", "androidTest", "debug", "app-debug-androidTest.apk")
 PROVIDERS = {"qq.com": "qq", "foxmail.com": "qq", "163.com": "163", "126.com": "126", "yeah.net": "163", "sina.com": "sina", "sina.cn": "sina"}
 SAFE = re.compile(r"^[A-Za-z0-9._\-/+=]+$")
@@ -87,7 +87,7 @@ def main():
     run = adb(serial, "shell", "am", "instrument", "-w", "-r", *arguments, f"{TEST_PACKAGE}/{RUNNER}")
     output = run.stdout + run.stderr
     logcat = adb(serial, "logcat", "-d", "-v", "brief").stdout
-    excerpt = "\n".join(line for line in logcat.splitlines() if re.search(r"RealAccountSettings|TestRunner|AndroidRuntime|AngusMail|MailPlugin|angus\.mail", line))
+    excerpt = "\n".join(line for line in logcat.splitlines() if re.search(r"RealAccountSettings|TestRunner|AndroidRuntime|ThreeStampMail|MailPlugin|three\.stamp\.mail", line))
     adb(serial, "uninstall", TEST_PACKAGE)
 
     log_dir = os.path.join(PLUGIN, "build", "p4")

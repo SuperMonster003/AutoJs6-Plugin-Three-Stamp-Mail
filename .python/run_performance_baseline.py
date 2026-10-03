@@ -26,7 +26,7 @@ import threading
 import time
 
 PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PLUGIN_PACKAGE = "io.github.supermonster003.autojs6.plugin.angus.mail"
+PLUGIN_PACKAGE = "io.github.supermonster003.autojs6.plugin.three.stamp.mail"
 OUT = os.path.join(PLUGIN, "build", "p6")
 JAVA = os.environ.get("PERF_JAVA") or os.path.join(os.environ.get("JAVA_HOME", "E:/.java/jdk-21.0.1"), "bin", "java.exe")
 SERVER_MAIN = PLUGIN_PACKAGE + ".core.perf.PerfMailServerKt"

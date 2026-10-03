@@ -5,10 +5,10 @@
   "h3_languages_with_ascii": "اللغات",
   "p_languages_all_supported_for_readme": "يدعم README.md الحالي اللغات التالية",
   "h3_introduction": "مقدمة",
-  "p_introduction_what": "يوفر Angus Mail لنصوص AutoJs6 البرمجية كائنا عاما باسم `mail` لإرسال الرسائل, وسرد صناديق البريد والبحث فيها, وقراءة نصوص الرسائل, وتنزيل المرفقات, وإدارة العلامات والمجلدات, ومراقبة وصول بريد جديد إلى مجلد. يعتمد على [Eclipse Angus Mail]({{ angus_mail_url }}) {{ angus_mail_version }}, التنفيذ المرجعي لـ Jakarta Mail, ويتعامل مع IMAP و POP3 و SMTP عبر TLS.",
+  "p_introduction_what": "يوفر 3-Stamp Mail لنصوص AutoJs6 البرمجية كائنا عاما باسم `mail` لإرسال الرسائل, وسرد صناديق البريد والبحث فيها, وقراءة نصوص الرسائل, وتنزيل المرفقات, وإدارة العلامات والمجلدات, ومراقبة وصول بريد جديد إلى مجلد. يعتمد على [Eclipse Angus Mail]({{ angus_mail_url }}) {{ angus_mail_version }}, التنفيذ المرجعي لـ Jakarta Mail, ويتعامل مع IMAP و POP3 و SMTP عبر TLS.",
   "p_introduction_how": "تبقى كل حركة البريد داخل عملية المكون الإضافي. يكتشف AutoJs6 المكون الإضافي عبر خدمة Binder الخاصة به, ويسلمه الحساب الذي يقدمه النص البرمجي (أو اسما مستعارا محفوظا في صفحة إعدادات المكون الإضافي), ويتلقى نتائج JSON وتدفقات المرفقات; ولا يحتوي المضيف نفسه على أي شيفرة بريد. تبقى بيانات الاعتماد في الذاكرة طوال مدة الجلسة فقط ما لم تختر حفظ حساب في المكون الإضافي.",
   "h3_status": "الحالة",
-  "p_status": "يضيف الإصدار {{ version_name }} تسجيل الدخول عبر المتصفح لحسابات Google و Microsoft (خارطة الطريق P9) فوق المراقبة في الخلفية من 1.1.0 (خارطة الطريق P8); صدرت كل بنود المراحل P0 إلى P8 مع 1.0.0 إلى 1.1.0, والأدلة في [ROADMAP.md]({{ roadmap_url }}). يتطلب AutoJs6 {{ required_host_version_name }} (البناء {{ required_host_version_code }}) أو أحدث; تحتاج مهمة \"عند وصول بريد\" إلى بناء المضيف الذي يحمل عقد البريد الإصدار 2; المرجع الكامل لواجهة برمجة السكربتات في [وثائق AutoJs6]({{ docs_mail_url }}).",
+  "p_status": "عمليات البريد والحسابات المحفوظة والمراقبة في الخلفية وتسجيل الدخول إلى Google/Microsoft عبر المتصفح. يتطلب AutoJs6 {{ required_host_version_name }} build {{ required_host_version_code }} أو أحدث. [وثائق mail API]({{ docs_mail_url }}).",
   "h3_features": "الميزات",
   "p_features_intro": "توفر الإضافة القدرات التالية",
   "features": [
@@ -26,7 +26,7 @@
   "h3_usage": "الاستخدام",
   "usage_steps": [
     "ثبت ملف APK للمكون الإضافي من [Releases]({{ repo_url }}/releases) على جهاز مثبت عليه AutoJs6 بالبنية {{ required_host_version_code }} ({{ required_host_version_name }}) أو أحدث.",
-    "افتح مركز المكونات الإضافية في AutoJs6, وتأكد من التعرف على `Angus Mail` ثم فعله.",
+    "افتح مركز المكونات الإضافية في AutoJs6, وتأكد من التعرف على `3-Stamp Mail` ثم فعله.",
     "جهز الحساب: فعل IMAP أو POP3 و SMTP في إعدادات الويب لدى المزود واحصل على رمز تفويض (QQ, 163, 126, Sina) أو كلمة مرور تطبيق (Gmail, iCloud, Yahoo); كلمة مرور تسجيل الدخول نفسها لا تقبل عادة. يمكن بدلا من ذلك تسجيل الدخول إلى حسابات Gmail و Outlook.com و Microsoft 365 بحساب Google أو Microsoft في المتصفح من إعدادات الإضافة (اختر المصادقة \"تسجيل الدخول بحساب Google / Microsoft (المتصفح)\"), أو إعطاؤها رمز وصول OAuth 2.0 تم الحصول عليه في مكان آخر.",
     "استدع `mail.connect(...)` في نص برمجي, أو احفظ الحساب في صفحة إعدادات المكون الإضافي (أيقونته في المشغل, أو AutoJs6 > خيارات المطور > إعدادات حسابات البريد) واتصل بالاسم المستعار.",
     "لتشغيل سكربت عند وصول بريد دون إبقاء سكربت يعمل: أضف مراقبة في صفحة المراقبات في الإضافة (الإعدادات > المراقبات: الاسم المستعار للحساب, المجلد, الوضع, المرشحات), واسمح بالإشعار عند الطلب, ثم أنشئ مهمة في AutoJs6 (اضغط مطولا على السكربت > مهمة مجدولة > التشغيل عند بث > عند وصول بريد) واختر المراقبة; تحتاج المهمة إلى بنية AutoJs6 بإصدار عقد البريد 2."
@@ -83,7 +83,7 @@
   "p_security_permission": "احصل على المكون الإضافي فقط من صفحة [Releases]({{ repo_url }}/releases) الرسمية أو من مركز المكونات الإضافية في AutoJs6. قد تفشل الحزم من مصادر غير معروفة في التحقق من المضيف أو تحمل مخاطر حتى لو بدا رقم الإصدار متطابقا.",
   "h3_plugin_interface": "واجهة المكون الإضافي",
   "p_plugin_interface": "المعلومات التالية موجهة لمطوري مضيف AutoJs6 والمكونات الإضافية; يستخدم المضيف هذه المعرفات لاكتشاف المكون الإضافي والتفاوض على التوافق",
-  "p_contract_service": "تنفذ `AngusMailPluginService` عقد المضيف mail-api `{{ plugin_aidl_interface }}` وتستجيب لـ `{{ plugin_service_action }}` (الفئة `{{ plugin_service_category }}`). تستجيب `AngusMailPluginInfoService` لـ `{{ plugin_info_action }}` بكائن PluginInfo. تتيح `WakeActivity` للمضيف تنشيط المكون الإضافي.",
+  "p_contract_service": "تنفذ `ThreeStampMailPluginService` عقد المضيف mail-api `{{ plugin_aidl_interface }}` وتستجيب لـ `{{ plugin_service_action }}` (الفئة `{{ plugin_service_category }}`). تستجيب `ThreeStampMailPluginInfoService` لـ `{{ plugin_info_action }}` بكائن PluginInfo. تتيح `WakeActivity` للمضيف تنشيط المكون الإضافي.",
   "h3_roadmap": "خارطة الطريق",
   "p_roadmap": "تدار خطط المكون الإضافي وتقدمه كقائمة قابلة للتحقق في ROADMAP.md, منظمة حسب المرحلة مع معايير القبول ومستويات الأدلة. تعبر البنود غير المحددة عن النية لا عن القدرات الحالية; والنقاش عبر Issues موضع ترحيب.",
   "text_link_roadmap": "عرض ROADMAP.md",
@@ -107,5 +107,6 @@
   "text_link_mail_docs": "توثيق وحدة البريد",
   "text_link_angus_mail": "Eclipse Angus Mail",
   "text_link_third_party_notices": "إشعارات الجهات الخارجية",
-  "p_instruction_more": "راجع [README المشروع]({{ repo_url }}) و [ROADMAP.md]({{ roadmap_url }}) للاطلاع على دليل الاتصال والتقدم الحالي."
+  "p_instruction_more": "راجع [README المشروع]({{ repo_url }}) و [ROADMAP.md]({{ roadmap_url }}) للاطلاع على دليل الاتصال والتقدم الحالي.",
+  "p_acknowledgements": "نشكر مطوري [Eclipse Angus Mail]({{ angus_mail_url }}) و Jakarta Mail/Activation و GreenMail, وكذلك AutoJs6 و OpenCC و 3-Stone AI و MCP Server و Pinyin4j على مراجع التنفيذ والتطوير. [المصادر والتراخيص]({{ references_url }}). هذا مشروع مستقل ولا يعني اعتمادهم له; تبقى الأسماء والحقوق لأصحابها. [اعتراضات الحقوق والتعاون]({{ rights_url }})."
 }
