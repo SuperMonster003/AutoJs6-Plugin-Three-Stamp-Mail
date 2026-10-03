@@ -15,7 +15,8 @@
         "Choose adaptive light, adaptive dark, automatic (default) or transparent launcher icons in Settings. Automatic colors and transparency depend on launcher support."
       ],
       "fix": [
-        "App updates keep one launcher entry and preserve an explicitly chosen earlier icon. Host appearance is read in the background without replacing an active settings draft."
+        "App updates keep one launcher entry and preserve an explicitly chosen earlier icon. Host appearance is read in the background without replacing an active settings draft.",
+        "Android 7 retains a dark navigation bar in light mode so the system navigation buttons stay readable"
       ],
       "improvement": [
         "The application is now 3-Stamp Mail, with a new package, plugin identity, repository and release filenames",

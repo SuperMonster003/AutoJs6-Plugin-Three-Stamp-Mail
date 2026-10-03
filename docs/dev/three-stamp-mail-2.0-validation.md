@@ -1,6 +1,6 @@
 # 3-Stamp Mail 2.0 validation
 
-Validated on 2026-10-03. Version 2.0.0, build 74; package
+Validated on 2026-10-03. Version 2.0.0, build 75; package
 `io.github.supermonster003.autojs6.plugin.three.stamp.mail`, plugin id `three-stamp-mail`.
 The generic `mail` engine, `default` variant, discovery categories and Binder protocol remain
 unchanged. New installations require AutoJs6 6.8.0 build 5316. Old installations and their data
@@ -25,8 +25,10 @@ are separate; when both plugins are enabled, Plugin Center's existing mail prior
 
 ## Devices and OAuth
 
-- API 24 x86 emulator: complete instrumentation run reported 55 tests, with 41 passed and
+- API 24 x86 emulator: the complete build-74 instrumentation run reported 55 tests, with 41 passed and
   14 assumption skips (real-account, optional performance or explicitly requested setup cases).
+  Build 75 then passed all 11 targeted appearance, icon and metadata regression cases; a new light-mode
+  screenshot confirmed readable white navigation buttons on the dark Android 7 system bar.
 - Sony XQ-AT72, API 31 arm64-v8a: 22 relevant tests passed and one real-account case skipped.
   A remaining old display-name expectation in the metadata test was corrected and that test
   rerun successfully. Coverage includes discovery, Binder metadata, transparent UI resources,
@@ -56,3 +58,6 @@ The signed release APK contains no native libraries. Its certificate SHA-256 is
 The local APK receipt and the published checksum file record its exact size, SHA-256 and CRC32.
 The release tag, CI runs and index admission bind the final published commit; GitHub results are
 reported with the release handoff instead of being inferred from these local checks.
+
+The final light/dark screenshots also exposed the Android 7 light-navigation contrast issue.
+Build 75 keeps that system bar dark on API 24/25, where dark navigation buttons are unavailable.

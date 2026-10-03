@@ -238,6 +238,7 @@ _2026/10/03_
 - `Hint` Enable 3-Stamp Mail in Plugin Center. If both old and new apps are enabled, select 3-Stamp Mail as the preferred mail plugin
 - `Feature` Choose adaptive light, adaptive dark, automatic (default) or transparent launcher icons in Settings. Automatic colors and transparency depend on launcher support.
 - `Fix` App updates keep one launcher entry and preserve an explicitly chosen earlier icon. Host appearance is read in the background without replacing an active settings draft.
+- `Fix` Android 7 retains a dark navigation bar in light mode so the system navigation buttons stay readable
 - `Improvement` The application is now 3-Stamp Mail, with a new package, plugin identity, repository and release filenames
 - `Improvement` New light/dark envelope artwork for in-app and launcher icons, retaining four launcher choices
 - `Improvement` Consistent language, dark mode, theme color and launcher settings with neutral surfaces, themed controls and confirmation dialogs. Preview preset or HEX/RGB colors before applying; Cancel leaves the saved settings unchanged.

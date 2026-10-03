@@ -582,9 +582,15 @@ abstract class ConfiguredActivity : AppCompatActivity() {
     @Suppress("DEPRECATION")
     private fun applyWindowAppearance() {
         window.statusBarColor = appPalette.windowBackground
-        window.navigationBarColor = appPalette.windowBackground
+        // Android 7 cannot draw dark navigation buttons; keep an opaque dark surface for them.
+        val navigationBackground = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            0xff121212.toInt()
+        } else {
+            appPalette.windowBackground
+        }
+        window.navigationBarColor = navigationBackground
         val lightStatusBackground = AppColorPolicy.luminance(appPalette.windowBackground) >= 0.179
-        val lightNavigationBackground = AppColorPolicy.luminance(appPalette.windowBackground) >= 0.179
+        val lightNavigationBackground = AppColorPolicy.luminance(navigationBackground) >= 0.179
         val decorView = window.decorView
         decorView.post {
             if (isFinishing || isDestroyed) return@post
