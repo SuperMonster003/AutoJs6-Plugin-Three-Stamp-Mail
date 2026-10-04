@@ -4,6 +4,12 @@
 
 ******
 
+# v2.0.1
+
+###### 2026/10/04
+
+* `Mejora` Los iconos del centro de plugins usan los tamaños, posiciones, imágenes claras y oscuras y fondos circulares ajustados en Icon Studio, conservando fuentes y parámetros reproducibles
+
 # v2.0.0
 
 ###### 2026/10/03

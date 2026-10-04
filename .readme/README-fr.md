@@ -230,6 +230,12 @@ Les plans et l'avancement du plugin sont tenus sous forme de liste cochable dans
 
 ******
 
+#### v2.0.1
+
+_2026/10/04_
+
+- `Amélioration` Les icônes du centre de plugins utilisent les tailles, positions, images claires et sombres et fonds circulaires réglés dans Icon Studio, avec les sources et paramètres permettant de les reproduire
+
 #### v2.0.0
 
 _2026/10/03_
@@ -250,15 +256,6 @@ _2026/09/22_
 
 - `Correctif` L'événement `closed` d'une surveillance à la fermeture de la session porte toujours la raison `closed` : le thread de travail de la session pouvait arrêter certaines surveillances en premier avec `session-closed` (vu une fois dans la suite connected sur l'émulateur API 24).
 - `Amélioration` La version publiée porte aussi l'identifiant de client Google OAuth 2.0 du mainteneur (le client Android enregistré le 2026-09-22) : le préréglage Gmail propose "Se connecter avec Google (navigateur)". Le projet Google est en phase de test : seuls ses utilisateurs de test peuvent se connecter et leurs jetons de rafraîchissement expirent après 7 jours (le plugin affiche ensuite "se reconnecter") ; les autres comptes Google voient la page de refus d'accès de Google, et les chemins par jeton et par mot de passe d'application restent inchangés.
-
-#### v1.2.0
-
-_2026/09/22_
-
-- `Note` La connexion par le navigateur n'est proposee que par les versions qui portent un identifiant de client OAuth 2.0 pour le fournisseur (les enregistrements du mainteneur, lus a la compilation depuis `oauth-clients.properties`, ignore par Git); une version sans eux conserve les chemins par jeton et par mot de passe d'application et le dit dans le dialogue d'authentification. Le client Google doit passer la verification des portees sensibles du projet Google Cloud avant que la connexion fonctionne pour n'importe quel compte; d'ici la, Google la limite aux utilisateurs de test du projet.
-- `Fonctionnalité` Connexion par le navigateur pour les comptes Google et Microsoft (feuille de route courriel P9) : l'editeur de compte propose "Se connecter avec Google (navigateur)" pour le preset Gmail et "Se connecter avec Microsoft (navigateur)" pour les presets Outlook.com et Microsoft 365; la connexion ouvre la page du fournisseur dans un Custom Tab (n'importe quel navigateur en secours) avec une requete de code d'autorisation OAuth 2.0 portant PKCE (`S256`) et un `state` aleatoire, la redirection (`<applicationId>://oauth2/microsoft`, ou le schema de l'identifiant client Google inverse) atterrit sur `OAuthRedirectActivity`, qui la remet a l'ecran de connexion en attente; l'ecran refuse toute redirection dont le `state` ne correspond pas, echange le code au point de terminaison de jetons en HTTPS (`HttpsFormPoster`, le seul client HTTP du plugin) et preremplit l'adresse depuis le jeton d'identite
-- `Fonctionnalité` Stockage et renouvellement des jetons : les jetons d'une connexion par le navigateur forment un enregistrement chiffre du nouveau type `OAUTH2` dans le magasin de comptes (jamais un champ Binder, jamais dans `mail.accounts.list()`), le document du compte porte un objet `oauth` (`provider`, `authorizedAt`, `expiresAt`, `needsReauth`) que `mail.accounts.list()` rapporte; chaque session d'un tel alias (scripts, test de connexion, surveillances en arriere-plan) prend son jeton d'acces dans `AccountSecrets`, qui le renouvelle par le jeton de rafraichissement quand il reste moins de cinq minutes, en serie par compte; un rafraichissement refuse (`invalid_grant`) marque l'enregistrement `needsReauth`, fait echouer la session avec `AUTH_FAILED` ("sign in again") et la page des comptes affiche "reconnexion requise" a cote du compte
-- `Fonctionnalité` Actions de la page des comptes "Se reconnecter" (une nouvelle connexion par le navigateur stockee sur le meme enregistrement) et "Revoquer la connexion" (les jetons de l'enregistrement sont aussitot remplaces par un marqueur revoque, Google est prie de revoquer le jeton de rafraichissement, et le compte cesse de fonctionner jusqu'a une nouvelle connexion); l'`authHint` des presets `gmail`, `outlook` et `office365` nomme d'abord la connexion par le navigateur (`providers.json` version 4); 35 nouvelles chaines en 11 langues; tests JVM pour PKCE, la requete d'autorisation et l'analyse de la redirection, le client de jetons sur un transport scenarise, le document de jetons, la table des fournisseurs, les clients et URI de redirection de la version, `AccountSecrets` (renouvellement, marquage du refus, enregistrements revoques, effacement) et l'objet `oauth` dans les options de compte, le formulaire et le document des comptes
 
 ##### Pour plus d'historique des versions
 

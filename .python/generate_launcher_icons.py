@@ -166,5 +166,11 @@ def main():
     print(f"Generated {len(outputs)} icon resources")
 
 
+# AutoJs6 Icon Studio: committed recipe entry point
+from pathlib import Path as _IconStudioPath
+if __name__ == "__main__" and (_IconStudioPath(__file__).resolve().parents[1] / ".icons/recipe.json").is_file():
+    from icon_studio_runtime import main as icon_studio_main
+    raise SystemExit(icon_studio_main(_IconStudioPath(__file__).resolve().parents[1]))
+
 if __name__ == "__main__":
     main()
