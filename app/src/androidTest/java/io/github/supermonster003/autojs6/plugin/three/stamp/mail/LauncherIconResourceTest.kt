@@ -83,7 +83,7 @@ class LauncherIconResourceTest {
     }
 
     @Test fun applicationAndAutoKeepIndependentSystemIcons() {
-        assertEquals(R.mipmap.ic_launcher_system, context.applicationInfo.icon)
+        assertEquals(R.mipmap.ic_icon_studio_application, context.applicationInfo.icon)
         val auto = context.packageManager.getActivityInfo(LauncherIconMode.AUTO.component(context), android.content.pm.PackageManager.MATCH_DISABLED_COMPONENTS)
         assertEquals("Auto must retain its own ID so the launcher resolves the current configuration", R.mipmap.ic_launcher_system_auto, auto.icon)
     }

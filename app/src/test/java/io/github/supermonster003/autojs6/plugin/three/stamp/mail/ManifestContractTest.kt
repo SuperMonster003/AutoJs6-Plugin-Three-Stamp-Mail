@@ -51,7 +51,7 @@ class ManifestContractTest {
         assertEquals("false", application.androidAttribute("fullBackupContent"))
         assertEquals("@xml/data_extraction_rules", application.androidAttribute("dataExtractionRules"))
         assertEquals("@string/app_name", application.androidAttribute("label"))
-        assertEquals("@mipmap/ic_launcher_system", application.androidAttribute("icon"))
+        assertEquals("@mipmap/ic_icon_studio_application", application.androidAttribute("icon"))
         assertEquals("@xml/locales_config", application.androidAttribute("localeConfig"))
         assertEquals("true", application.androidAttribute("supportsRtl"))
         assertNull("mail sessions choose TLS at the socket layer; keep the platform default", application.androidAttributeOrNull("usesCleartextTraffic"))
