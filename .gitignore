@@ -61,3 +61,7 @@ build-logic/*/build/
 
 # OAuth 2.0 client registrations of a build (roadmap P9); never committed
 oauth-clients.properties
+
+# Local agent instruction files stay out of the repository.
+AGENTS.md
+CLAUDE.md
