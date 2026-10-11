@@ -22,6 +22,8 @@ class ApplicationTextPunctuationTest {
         ).filter { Files.exists(it) }
         val violations = mutableListOf<String>()
         sourceRoots.forEach { sourceRoot ->
+            // AGENTS.md is a local, git-ignored file since 2026-10-10: check it when present, skip it on CI.
+            if (!Files.exists(sourceRoot)) return@forEach
             Files.walk(sourceRoot).use { paths ->
                 paths.forEach { path: Path ->
                     if (!Files.isRegularFile(path) || !path.isApplicationText()) return@forEach
