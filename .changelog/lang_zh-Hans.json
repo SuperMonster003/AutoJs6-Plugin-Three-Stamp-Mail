@@ -6,7 +6,10 @@
   "changelog_label_dependency": "依赖",
   "$data": {
     "v2.0.1": {
-      "released_date": "2026/10/05",
+      "released_date": "2026/10/16",
+      "fix": [
+        "阿拉伯语界面中, 3-Stamp Mail 不再被倒序显示成 Stamp Mail-3"
+      ],
       "improvement": [
         "插件中心图标采用统一工作台调整后的尺寸, 位置, 亮暗图稿与圆形底色, 保留可重建原稿和参数",
         "Android 系统应用信息图标与图标工作台共用图稿和亮暗底色, 保留插件中心透明图稿及现有启动器选项"

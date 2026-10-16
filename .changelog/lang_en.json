@@ -6,7 +6,10 @@
   "changelog_label_dependency": "Dependency",
   "$data": {
     "v2.0.1": {
-      "released_date": "2026/10/05",
+      "released_date": "2026/10/16",
+      "fix": [
+        "In the Arabic interface, 3-Stamp Mail no longer appears reversed as Stamp Mail-3"
+      ],
       "improvement": [
         "Plugin Center icons use the sizes, positions, light and dark artwork, and circular backgrounds adjusted in Icon Studio, retaining reproducible sources and parameters",
         "Android App info icons share Icon Studio artwork and light/dark backgrounds while preserving transparent Plugin Center artwork and existing launcher choices"
