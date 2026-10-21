@@ -74,7 +74,7 @@
   "h3_security": "權限與安全",
   "p_security_intro": "外掛遵循明確的邊界:",
   "security_points": [
-    "Binder 入口受 `org.autojs.permission.PLUGIN` 簽名權限保護, 只有 AutoJs6 能夠存取; 插件不匯出其他元件.",
+    "原有宿主 Binder 入口仍由 org.autojs.permission.PLUGIN 簽章權限保護. 獨立的一般權限 org.autojs.plugin.mail.permission.RUNTIME 入口允許獨立簽章應用程式使用自行提供的帳戶憑證, 並驗證工作階段和監聽控制代碼的建立者 UID. 已儲存帳戶及背景守望仍只向原有宿主入口開放.",
     "INTERNET 權限用於與指令碼指定的伺服器建立 IMAP, POP3 與 SMTP 連接; 對經瀏覽器登入的帳戶, 另外只向 Google (`oauth2.googleapis.com`) 與 Microsoft (`login.microsoftonline.com`) 的權杖端點發起 HTTPS 請求: 交換授權碼, 續期即將過期的存取權杖, 以及應用戶要求撤銷 Google 權杖. 外掛不發起其他任何請求, 也不收集資料.",
     "密碼與權杖從腳本到插件經 Binder 的專用欄位傳遞, 不會出現在日誌, JSON 文件, 錯誤訊息或當機報告中, 且只在工作階段生命週期內駐留記憶體. 設定頁儲存的帳戶由 Android Keystore 金鑰加密, 並排除在備份之外. 瀏覽器登入的權杖以同樣方式儲存: 重新整理權杖不離開本機, 只有存取權杖交給郵件會話, AutoJs6 與指令碼都無法讀取; \"撤銷登入\" 會立即捨棄它們.",
     "連線預設使用 TLS (按服務商要求選擇 SSL 或 STARTTLS); 明文連線與自簽憑證必須為每個帳戶明確宣告.",

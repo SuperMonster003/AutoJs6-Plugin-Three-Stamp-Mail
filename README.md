@@ -184,7 +184,7 @@ mail.searchAsync({ subject: 'invoice', since: '2026-09-01' }).then(list => conso
 
 插件遵循明确的边界:
 
-- Binder 入口受 `org.autojs.permission.PLUGIN` 签名权限保护, 只有 AutoJs6 能够访问; 插件不导出其他组件.
+- 原有宿主 Binder 入口仍由 org.autojs.permission.PLUGIN 签名权限保护. 独立的普通权限 org.autojs.plugin.mail.permission.RUNTIME 入口允许独立签名应用使用自行提供的账户凭据, 并校验会话和监听句柄的创建者 UID. 已保存账户及后台守望仍只向原有宿主入口开放.
 - INTERNET 权限用于与脚本指定的服务器建立 IMAP, POP3 与 SMTP 连接; 对经浏览器登录的账户, 另外只向 Google (`oauth2.googleapis.com`) 与 Microsoft (`login.microsoftonline.com`) 的令牌端点发起 HTTPS 请求: 交换授权码, 续期即将过期的访问令牌, 以及应用户要求撤销 Google 令牌. 插件不发起其他任何请求, 也不收集数据.
 - 密码与令牌从脚本到插件经 Binder 的专用字段传递, 不会出现在日志, JSON 文档, 错误消息或崩溃报告中, 且只在会话生命周期内驻留内存. 设置页保存的账户由 Android Keystore 密钥加密, 并排除在备份之外. 浏览器登录的令牌以同样方式保存: 刷新令牌不离开本机, 只有访问令牌交给邮件会话, AutoJs6 与脚本都无法读取; "撤销登录" 会立即丢弃它们.
 - 连接默认使用 TLS (按服务商要求选择 SSL 或 STARTTLS); 明文连接与自签名证书必须为每个账户显式声明.

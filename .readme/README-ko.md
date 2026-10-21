@@ -184,7 +184,7 @@ mail.searchAsync({ subject: 'invoice', since: '2026-09-01' }).then(list => conso
 
 플러그인은 명확한 경계를 따릅니다:
 
-- Binder 진입점은 서명 권한 `org.autojs.permission.PLUGIN`으로 보호되어 AutoJs6만 접근할 수 있으며, 플러그인은 다른 구성 요소를 내보내지 않습니다.
+- 기존 호스트 Binder 진입점은 org.autojs.permission.PLUGIN 서명 권한으로 보호됩니다. 일반 권한 org.autojs.plugin.mail.permission.RUNTIME의 별도 진입점은 독립 서명 앱의 자체 계정 자격 증명을 받고 세션 및 감시 핸들의 생성자 UID를 확인합니다. 저장된 계정과 백그라운드 감시는 기존 호스트 진입점에서만 접근할 수 있습니다.
 - INTERNET 권한은 스크립트가 지정한 서버로의 IMAP, POP3, SMTP 연결과, 브라우저로 로그인한 계정의 경우 Google (`oauth2.googleapis.com`) 및 Microsoft (`login.microsoftonline.com`) 의 토큰 엔드포인트로의 HTTPS 요청에만 쓰입니다: 인증 코드 교환, 만료가 임박한 액세스 토큰 갱신, 요청 시 Google 토큰 취소입니다. 플러그인은 다른 요청을 하지 않으며 데이터를 수집하지 않습니다.
 - 비밀번호와 토큰은 스크립트에서 플러그인으로 Binder 전용 필드를 통해 전달되며, 로그, JSON 문서, 오류 메시지, 충돌 보고서에 나타나지 않고 세션이 유지되는 동안만 메모리에 머뭅니다. 설정 페이지에 저장한 계정은 Android Keystore 키로 암호화되며 백업에서 제외됩니다. 브라우저 로그인의 토큰도 같은 방식으로 저장됩니다: 새로 고침 토큰은 기기를 떠나지 않고, 메일 세션에는 액세스 토큰만 전달되며, AutoJs6 도 스크립트도 읽을 수 없습니다. "로그인 취소" 는 즉시 폐기합니다.
 - 연결은 기본적으로 TLS를 사용합니다 (제공자 요구에 따라 SSL 또는 STARTTLS). 평문 연결과 자체 서명 인증서는 계정마다 명시적으로 요청해야 합니다.
