@@ -4,6 +4,12 @@
 
 ******
 
+# v2.1.0
+
+###### 2026/10/21
+
+* `Función` Las aplicaciones con firma independiente usan sus propias credenciales explícitas, las cuentas guardadas y la vigilancia en segundo plano conservan la protección de firma del host
+
 # v2.0.1
 
 ###### 2026/10/16

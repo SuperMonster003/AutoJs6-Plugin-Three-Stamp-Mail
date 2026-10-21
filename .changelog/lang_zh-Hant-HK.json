@@ -5,6 +5,12 @@
   "changelog_label_improvement": "優化",
   "changelog_label_dependency": "依賴",
   "$data": {
+    "v2.1.0": {
+      "released_date": "2026/10/21",
+      "feature": [
+        "獨立簽署應用程式可使用自身明確提供的憑證連線郵件服務, 已儲存帳戶與背景守望保留宿主簽署保護"
+      ]
+    },
     "v2.0.1": {
       "released_date": "2026/10/16",
       "fix": [

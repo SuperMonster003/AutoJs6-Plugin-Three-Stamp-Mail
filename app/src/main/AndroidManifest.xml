@@ -3,6 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="org.autojs.permission.PLUGIN" />
+    <permission
+        android:name="org.autojs.plugin.mail.permission.RUNTIME"
+        android:protectionLevel="normal" />
 
     <!--
         Outbound IMAP / POP3 / SMTP connections to the mail servers a script names (roadmap D13 / D24).
@@ -245,6 +248,19 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".ThreeStampMailPackagedService"
+            android:exported="true"
+            android:permission="org.autojs.plugin.mail.permission.RUNTIME">
+            <meta-data
+                android:name="requiresHostVersion"
+                android:value="5316" />
+            <intent-filter>
+                <action android:name="org.autojs.plugin.MAIL_PACKAGED" />
+                <category android:name="mail" />
+            </intent-filter>
+        </service>
 
         <service
             android:name=".ThreeStampMailPluginInfoService"

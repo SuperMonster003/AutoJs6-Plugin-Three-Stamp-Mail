@@ -5,6 +5,12 @@
   "changelog_label_improvement": "优化",
   "changelog_label_dependency": "依赖",
   "$data": {
+    "v2.1.0": {
+      "released_date": "2026/10/21",
+      "feature": [
+        "独立签名应用可使用自身显式凭据连接邮件服务, 已保存账户与后台守望保留宿主签名保护"
+      ]
+    },
     "v2.0.1": {
       "released_date": "2026/10/16",
       "fix": [

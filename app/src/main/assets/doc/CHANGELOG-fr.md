@@ -4,6 +4,12 @@
 
 ******
 
+# v2.1.0
+
+###### 2026/10/21
+
+* `Fonctionnalité` Les applications signées indépendamment utilisent leurs propres identifiants explicites, les comptes enregistrés et la surveillance en arrière-plan restent protégés par la signature hôte
+
 # v2.0.1
 
 ###### 2026/10/16

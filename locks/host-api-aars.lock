@@ -1,6 +1,6 @@
-# AutoJs6 6.8.0 build 5316, host commit 5b5841bfbf60c0000b525ca69dd906ade642e5ee; release AARs staged together.
+# Both release AARs built from AutoJs6 8be99cba4fa2dfc888d76eaa0e8ebb13b9ece751, 6.8.0/build 5697.
 format=1
 common-plugin-api.file=common-plugin-api.aar
-common-plugin-api.sha256=ee7eb7879a53506c4cca5e2d19d3058e28df2168fb33351a52302a3b9e532e15
+common-plugin-api.sha256=9eaba785db6128f9a0ded272ab976f37835e9fa17a49cc250a6a75ddf76cf769
 mail-api.file=mail-api.aar
-mail-api.sha256=c7c629d2e0fe0b430c2c4b659414766abe134fd6350d0b885aa5c13c70732923
+mail-api.sha256=7869448a34c7fd0a30243f4dd65734feaf574f94b7642674b242e6a285f1a999

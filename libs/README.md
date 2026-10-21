@@ -17,3 +17,5 @@ Both artifacts are release builds of the host modules; `mail-api.aar` depends on
 commit. When the host contract changes, restage both and extend the lock file in the same commit.
 
 Do not commit locally assembled debug AARs or rename debug outputs to bypass this policy.
+
+Current pair: AutoJs6 6.8.0/build 5697, commit `8be99cba4fa2dfc888d76eaa0e8ebb13b9ece751`. Both release artifacts are built together. The mail contract adds the separate packaged service action and normal permission; existing Binder transaction order is unchanged.

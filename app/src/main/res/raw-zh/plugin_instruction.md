@@ -11,6 +11,7 @@
 3. 准备账户: 在服务商的网页设置中开启 IMAP 或 POP3 与 SMTP, 并取得授权码 (QQ, 163, 126, Sina) 或应用专用密码 (Gmail, iCloud, Yahoo); 登录密码本身通常不被接受. Gmail, Outlook.com 与 Microsoft 365 账户也可以在插件设置页经浏览器以 Google 或 Microsoft 账号登录 (认证方式选择 "使用 Google / Microsoft 账号登录 (浏览器)"), 或提供在别处取得的 OAuth 2.0 访问令牌.
 4. 在脚本中调用 `mail.connect(...)`, 或在插件设置页 (插件的启动器图标, 或 AutoJs6 开发者选项 > 邮件账户设置) 保存账户后以别名连接.
 5. 要在新邮件到达时运行脚本而无需常驻脚本: 在插件的守望页面 (设置 > 守望: 账户别名, 文件夹, 模式, 过滤) 添加守望, 按提示允许通知, 然后在 AutoJs6 中创建任务 (长按脚本 > 定时任务 > 广播触发 > 邮件到达时) 并选择守望; 该任务需要携带邮件契约版本 2 的 AutoJs6 构建.
+6. Node.js 与 Worker 使用 mail/autojs6:mail, Bun 使用 host.mail 并单独授权 mail.control, 调用返回 Promise. 独立签名打包应用通过 org.autojs.plugin.mail.permission.RUNTIME 入口使用自行提供的账户凭据. 已保存账户的别名访问, 账户枚举和后台守望仍仅限同签名 AutoJs6 宿主.
 
 连接指南与当前进度请参阅 [项目 README](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail) 与 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/ROADMAP.md).
 

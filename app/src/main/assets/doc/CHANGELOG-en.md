@@ -4,6 +4,12 @@
 
 ******
 
+# v2.1.0
+
+###### 2026/10/21
+
+* `Feature` Independently signed applications can connect with their own explicit credentials; saved accounts and background watches retain host signature protection
+
 # v2.0.1
 
 ###### 2026/10/16

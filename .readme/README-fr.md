@@ -85,6 +85,7 @@ Le plugin fournit les capacités suivantes:
 3. Preparez le compte : activez IMAP ou POP3 et SMTP dans les reglages web du fournisseur et obtenez un code d'autorisation (QQ, 163, 126, Sina) ou un mot de passe d'application (Gmail, iCloud, Yahoo); le mot de passe de connexion lui-meme n'est generalement pas accepte. Les comptes Gmail, Outlook.com et Microsoft 365 peuvent a la place se connecter avec le compte Google ou Microsoft dans le navigateur depuis les reglages du plugin (choisissez l'authentification "Se connecter avec Google / Microsoft (navigateur)"), ou recevoir un jeton d'acces OAuth 2.0 obtenu ailleurs.
 4. Appelez `mail.connect(...)` dans un script, ou enregistrez le compte dans la page de paramètres du plugin (son icône dans le lanceur, ou AutoJs6 > Options du développeur > Paramètres des comptes de courrier) et connectez-vous par alias.
 5. Pour lancer un script à l'arrivée d'un courriel sans en garder un en marche : ajoutez une surveillance sur la page des surveillances du plugin (réglages > Surveillances : alias du compte, dossier, mode, filtres), autorisez la notification quand elle est demandée, puis créez une tâche dans AutoJs6 (appui long sur le script > tâche planifiée > exécuter sur diffusion > À l'arrivée d'un courriel) et choisissez la surveillance ; la tâche demande une build d'AutoJs6 avec la version 2 du contrat mail.
+6. Node.js et les Workers utilisent mail/autojs6:mail; Bun utilise host.mail avec une autorisation mail.control distincte. Les appels renvoient des Promises. Les applications empaquetées avec une signature indépendante utilisent org.autojs.plugin.mail.permission.RUNTIME et fournissent leurs propres identifiants de compte. Les alias enregistrés, la liste des comptes et les surveillances en arrière-plan restent réservés à l'hôte AutoJs6 de même signature.
 
 ******
 
@@ -230,6 +231,12 @@ Les plans et l'avancement du plugin sont tenus sous forme de liste cochable dans
 
 ******
 
+#### v2.1.0
+
+_2026/10/21_
+
+- `Fonctionnalité` Les applications signées indépendamment utilisent leurs propres identifiants explicites, les comptes enregistrés et la surveillance en arrière-plan restent protégés par la signature hôte
+
 #### v2.0.1
 
 _2026/10/16_
@@ -251,13 +258,6 @@ _2026/10/03_
 - `Amélioration` Nouvelles images claires et sombres d'enveloppe dans l'application et le lanceur, avec les quatre choix d'icône conservés
 - `Amélioration` Paramètres de langue, de mode sombre, de couleur et d'icône harmonisés, avec surfaces neutres, contrôles thématiques et dialogues de confirmation. Prévisualisez les couleurs prédéfinies ou HEX/RGB avant de valider. Annuler conserve les paramètres enregistrés.
 - `Amélioration` Taille visuelle harmonisée des icônes du lanceur et du Centre de plugins, avec des fonds transparents et des motifs noirs, blancs ou gris neutres
-
-#### v1.2.1
-
-_2026/09/22_
-
-- `Correctif` L'événement `closed` d'une surveillance à la fermeture de la session porte toujours la raison `closed` : le thread de travail de la session pouvait arrêter certaines surveillances en premier avec `session-closed` (vu une fois dans la suite connected sur l'émulateur API 24).
-- `Amélioration` La version publiée porte aussi l'identifiant de client Google OAuth 2.0 du mainteneur (le client Android enregistré le 2026-09-22) : le préréglage Gmail propose "Se connecter avec Google (navigateur)". Le projet Google est en phase de test : seuls ses utilisateurs de test peuvent se connecter et leurs jetons de rafraîchissement expirent après 7 jours (le plugin affiche ensuite "se reconnecter") ; les autres comptes Google voient la page de refus d'accès de Google, et les chemins par jeton et par mot de passe d'application restent inchangés.
 
 ##### Pour plus d'historique des versions
 

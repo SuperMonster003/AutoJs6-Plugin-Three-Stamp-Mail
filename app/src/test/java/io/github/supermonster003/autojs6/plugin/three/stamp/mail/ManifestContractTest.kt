@@ -183,9 +183,20 @@ class ManifestContractTest {
     @Test
     fun `info service and mail service match the identity constants`() {
         val services = manifest.child("application").children("service").associateBy { it.androidAttribute("name") }
-        assertEquals(setOf(".ThreeStampMailPluginInfoService", ".ThreeStampMailPluginService", ".trigger.MailWatchService"), services.keys)
+        assertEquals(setOf(".ThreeStampMailPluginInfoService", ".ThreeStampMailPluginService", ".ThreeStampMailPackagedService", ".trigger.MailWatchService"), services.keys)
         assertDiscoveryContract(services.getValue(".ThreeStampMailPluginInfoService"), ThreeStampMailPlugin.INFO_ACTION)
         assertDiscoveryContract(services.getValue(".ThreeStampMailPluginService"), ThreeStampMailPlugin.SERVICE_ACTION)
+        val packaged = services.getValue(".ThreeStampMailPackagedService")
+        assertEquals("true", packaged.androidAttribute("exported"))
+        assertEquals(org.autojs.plugin.mail.api.MailActions.PACKAGED_PERMISSION, packaged.androidAttribute("permission"))
+        assertEquals(listOf(org.autojs.plugin.mail.api.MailActions.PACKAGED_SERVICE_ACTION),
+            packaged.child("intent-filter").children("action").map { it.androidAttribute("name") })
+        assertEquals(listOf("mail"), packaged.child("intent-filter").children("category").map { it.androidAttribute("name") })
+        val runtimePermission = manifest.children("permission").single()
+        assertEquals(org.autojs.plugin.mail.api.MailActions.PACKAGED_PERMISSION, runtimePermission.androidAttribute("name"))
+        assertEquals("normal", runtimePermission.androidAttribute("protectionLevel"))
+        assertEquals(ThreeStampMailPlugin.REQUIRED_HOST_VERSION.toString(),
+            packaged.children("meta-data").single { it.androidAttribute("name") == "requiresHostVersion" }.androidAttribute("value"))
     }
 
     @Test

@@ -27,15 +27,15 @@ remain with their owners; attribution does not itself grant additional rights. S
 ## AutoJs6 common plugin API
 
 - Component: `common-plugin-api.aar` (Binder contract shared by AutoJs6 and its plugins: `PluginInfo`, `IPluginInfoProvider`, `PluginActions`, `PluginCapabilityKeys`)
-- Source: <https://github.com/SuperMonster003/AutoJs6> (`plugin-api/common-plugin-api`), host build 5316 (6.8.0), commit `5b5841bfbf60c0000b525ca69dd906ade642e5ee`, release build
-- SHA-256: `ee7eb7879a53506c4cca5e2d19d3058e28df2168fb33351a52302a3b9e532e15` (pinned in `locks/host-api-aars.lock`)
+- Source: <https://github.com/SuperMonster003/AutoJs6> (`plugin-api/common-plugin-api`), host build 5697 (6.8.0), commit `8be99cba4fa2dfc888d76eaa0e8ebb13b9ece751`, release build
+- SHA-256: `9eaba785db6128f9a0ded272ab976f37835e9fa17a49cc250a6a75ddf76cf769` (pinned in `locks/host-api-aars.lock`)
 - License: Mozilla Public License 2.0
 
 ## AutoJs6 mail plugin API
 
 - Component: `mail-api.aar` (mail Binder contract of AutoJs6: `IMailPlugin`, `IMailSession`, `IMailCallCallback`, `IMailWatch`, `IMailWatchCallback`, `IMailSessionCallback`, `MailContract`, `MailActions`, `MailIds`, `MailCapabilityKeys`, `MailErrorCodes`)
-- Source: <https://github.com/SuperMonster003/AutoJs6> (`plugin-api/mail-api`), host build 5316 (6.8.0), commit `5b5841bfbf60c0000b525ca69dd906ade642e5ee`, release build
-- SHA-256: `c7c629d2e0fe0b430c2c4b659414766abe134fd6350d0b885aa5c13c70732923` (pinned in `locks/host-api-aars.lock`)
+- Source: <https://github.com/SuperMonster003/AutoJs6> (`plugin-api/mail-api`), host build 5697 (6.8.0), commit `8be99cba4fa2dfc888d76eaa0e8ebb13b9ece751`, release build
+- SHA-256: `7869448a34c7fd0a30243f4dd65734feaf574f94b7642674b242e6a285f1a999` (pinned in `locks/host-api-aars.lock`)
 - License: Mozilla Public License 2.0
 
 Both host AARs must come from the same host commit; restage and re-lock them together when the contract changes.

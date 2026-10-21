@@ -31,6 +31,7 @@ import org.autojs.plugin.mail.api.IMailSessionCallback
 import org.autojs.plugin.mail.api.IMailTrigger
 import org.autojs.plugin.mail.api.IMailTriggerCallback
 import org.autojs.plugin.mail.api.MailContract
+import org.autojs.plugin.mail.api.MailCapabilityKeys
 
 /**
  * `IMailPlugin` implementation (roadmap P1.3 / P2.5 / P4.3). The metadata methods (`getInfo`,
@@ -51,14 +52,23 @@ internal class MailPluginBinder(
     private val accounts: AccountStore = AccountStores.of(context),
     private val secrets: AccountSecrets = AccountSecrets.of(context, accounts),
     private val keeper: () -> WatchKeeper = { WatchKeeper.of(context) },
+    private val allowStoredAccounts: Boolean = true,
 ) : IMailPlugin.Stub() {
 
-    override fun getInfo(): PluginInfo = context.threeStampMailPluginRuntimeInfo().toPluginInfo()
+    override fun getInfo(): PluginInfo = context.threeStampMailPluginRuntimeInfo().toPluginInfo().apply {
+        capabilities = this@MailPluginBinder.getCapabilities()
+    }
 
-    override fun getCapabilities(): Bundle = context.threeStampMailPluginRuntimeInfo().capabilitiesBundle()
+    override fun getCapabilities(): Bundle = context.threeStampMailPluginRuntimeInfo().capabilitiesBundle().apply {
+        if (!allowStoredAccounts) {
+            putStringArray(MailCapabilityKeys.FEATURES, getStringArray(MailCapabilityKeys.FEATURES).orEmpty()
+                .filterNot { it == MailContract.FEATURE_SAVED_ACCOUNTS || it == MailContract.FEATURE_BACKGROUND_WATCH }.toTypedArray())
+        }
+    }
 
     override fun openSession(account: Bundle?, callback: IMailSessionCallback?): IMailSession? {
         val ownerUid = guard.enforceHost()
+        if (account?.containsKey(MailContract.KEY_ACCOUNT_ALIAS) == true) requireStoredAccounts()
         MailBundles.validateAccount(account)?.let { validation ->
             callback?.let { MailBundles.notifyClosed(it, validation) }
             return null
@@ -98,11 +108,13 @@ internal class MailPluginBinder(
     override fun listProviders(): Bundle = MailBundles.json(MailContract.KEY_PROVIDERS_JSON, ProviderPresets.toJson())
 
     override fun listSavedAccounts(): Bundle {
+        requireStoredAccounts()
         guard.enforceHost()
         return MailBundles.json(MailContract.KEY_ACCOUNTS_JSON, SavedAccountsDocument.render(accounts.list()))
     }
 
     override fun openTrigger(options: Bundle?, callback: IMailTriggerCallback?): IMailTrigger? {
+        requireStoredAccounts()
         val ownerUid = guard.enforceHost()
         callback ?: return null
         val parsed = try {
@@ -142,11 +154,16 @@ internal class MailPluginBinder(
     }
 
     override fun listTriggers(): Bundle {
+        requireStoredAccounts()
         guard.enforceHost()
         return MailBundles.json(MailContract.KEY_TRIGGERS_JSON, keeper().list().toJson())
     }
 
     private fun defaults(): MailAccountOptions.Defaults = context.threeStampMailAccountDefaults()
+
+    private fun requireStoredAccounts() {
+        if (!allowStoredAccounts) throw SecurityException("Saved mail accounts and background watches require the signed host")
+    }
 
     companion object {
         /** `reason` of the `stopped` status a refused `openTrigger` reports. */

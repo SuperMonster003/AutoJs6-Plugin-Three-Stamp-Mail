@@ -11,6 +11,7 @@
 3. 準備帳戶: 在服務商的網頁設定中開啟 IMAP 或 POP3 與 SMTP, 並取得授權碼 (QQ, 163, 126, Sina) 或應用程式專用密碼 (Gmail, iCloud, Yahoo); 登入密碼本身通常不被接受. Gmail, Outlook.com 與 Microsoft 365 帳戶也可以在外掛設定頁經瀏覽器以 Google 或 Microsoft 帳號登入 (驗證方式選擇 "使用 Google / Microsoft 帳號登入 (瀏覽器)"), 或提供在別處取得的 OAuth 2.0 存取權杖.
 4. 在腳本中呼叫 `mail.connect(...)`, 或在插件設定頁 (插件的啟動器圖示, 或 AutoJs6 開發者選項 > 電郵帳戶設定) 儲存帳戶後以別名連線.
 5. 要在新郵件到達時運行腳本而無需常駐腳本: 在插件的守望頁面 (設定 > 守望: 帳戶別名, 資料夾, 模式, 過濾) 新增守望, 按提示允許通知, 然後在 AutoJs6 中建立任務 (長按腳本 > 定時任務 > 廣播觸發 > 郵件到達時) 並選擇守望; 該任務需要攜帶郵件契約版本 2 的 AutoJs6 構建.
+6. Node.js 與 Worker 使用 mail/autojs6:mail, Bun 使用 host.mail 並單獨授權 mail.control, 呼叫傳回 Promise. 獨立簽章打包應用程式透過 org.autojs.plugin.mail.permission.RUNTIME 入口使用自行提供的帳戶憑證. 已儲存帳戶的別名存取, 帳戶列舉和背景守望仍僅限同簽章 AutoJs6 宿主.
 
 連接指南與目前進度請參閱 [專案 README](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail) 與 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/ROADMAP.md).
 

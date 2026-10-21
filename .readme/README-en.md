@@ -85,6 +85,7 @@ The plugin provides the following capabilities:
 3. Prepare the account: turn on IMAP or POP3 and SMTP in the provider's web settings and obtain an authorization code (QQ, 163, 126, Sina) or an app password (Gmail, iCloud, Yahoo); the login password itself is usually not accepted. Gmail, Outlook.com and Microsoft 365 accounts can instead be signed in with the Google or Microsoft account in the browser from the plugin settings (choose "Sign in with Google / Microsoft (browser)" as the authentication), or given an OAuth 2.0 access token obtained elsewhere.
 4. Call `mail.connect(...)` in a script, or save the account on the plugin's settings page (its launcher icon, or AutoJs6 developer options > Mail account settings) and connect by alias.
 5. To run a script on new mail without keeping one running: add a watch on the plugin's Watches page (settings > Watches: account alias, folder, mode, filters), allow the notification when asked, then create a task in AutoJs6 (long-press the script > timed task > run on broadcast > On mail arrived) and pick the watch; the task needs an AutoJs6 build with mail contract version 2.
+6. Node.js and Workers use mail/autojs6:mail; Bun uses host.mail with the separate mail.control grant. Calls return Promises. Independently signed packaged apps use org.autojs.plugin.mail.permission.RUNTIME and must supply their own inline account credentials. Saved account aliases, account enumeration and background watches stay restricted to the signed AutoJs6 host.
 
 ******
 
@@ -230,6 +231,12 @@ The plugin's plans and progress are maintained as a checkable list in ROADMAP.md
 
 ******
 
+#### v2.1.0
+
+_2026/10/21_
+
+- `Feature` Independently signed applications can connect with their own explicit credentials; saved accounts and background watches retain host signature protection
+
 #### v2.0.1
 
 _2026/10/16_
@@ -251,13 +258,6 @@ _2026/10/03_
 - `Improvement` New light/dark envelope artwork for in-app and launcher icons, retaining four launcher choices
 - `Improvement` Consistent language, dark mode, theme color and launcher settings with neutral surfaces, themed controls and confirmation dialogs. Preview preset or HEX/RGB colors before applying; Cancel leaves the saved settings unchanged.
 - `Improvement` Consistent visual sizing for launcher and Plugin Center icons, with transparent backgrounds and neutral black, white or grayscale artwork
-
-#### v1.2.1
-
-_2026/09/22_
-
-- `Fix` The `closed` event of a watch on a session close always names the reason `closed`: the session's worker thread could stop some of the watches first with `session-closed` (seen once in the connected suite on the API 24 emulator).
-- `Improvement` The release build carries the maintainer's Google OAuth 2.0 client id as well (the Android client registered on 2026-09-22), so the Gmail preset offers "Sign in with Google (browser)". The Google project is in Testing: only its test users can sign in and their refresh tokens expire after 7 days (the plugin then shows "sign in again"); other Google accounts get Google's access-denied page, and the token and app-password paths stay as before.
 
 ##### For more release history
 

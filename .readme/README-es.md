@@ -85,6 +85,7 @@ El complemento ofrece las siguientes capacidades:
 3. Prepara la cuenta: activa IMAP o POP3 y SMTP en la configuracion web del proveedor y obten un codigo de autorizacion (QQ, 163, 126, Sina) o una contrasena de aplicacion (Gmail, iCloud, Yahoo); la contrasena de inicio de sesion en si normalmente no se acepta. Las cuentas de Gmail, Outlook.com y Microsoft 365 pueden en su lugar iniciar sesion con la cuenta de Google o Microsoft en el navegador desde los ajustes del plugin (elige la autenticacion "Iniciar sesion con Google / Microsoft (navegador)"), o recibir un token de acceso OAuth 2.0 obtenido en otro sitio.
 4. Llama a `mail.connect(...)` en un script, o guarda la cuenta en la página de ajustes del plugin (su icono en el lanzador, o AutoJs6 > Opciones del desarrollador > Ajustes de cuentas de correo) y conéctate por alias.
 5. Para ejecutar un script al llegar correo sin mantener uno en marcha: añada una vigilancia en la página de vigilancias del plugin (ajustes > Vigilancias: alias de la cuenta, carpeta, modo, filtros), permita la notificación cuando se pida y cree después una tarea en AutoJs6 (pulsación larga sobre el script > tarea programada > ejecutar por difusión > Al llegar un correo) eligiendo la vigilancia; la tarea necesita una compilación de AutoJs6 con la versión 2 del contrato de correo.
+6. Node.js y Workers usan mail/autojs6:mail; Bun usa host.mail con el permiso independiente mail.control. Las llamadas devuelven Promises. Las aplicaciones empaquetadas con firma independiente usan org.autojs.plugin.mail.permission.RUNTIME y proporcionan sus propias credenciales. Los alias guardados, la lista de cuentas y la vigilancia en segundo plano siguen limitados al host AutoJs6 con la misma firma.
 
 ******
 
@@ -230,6 +231,12 @@ Los planes y el progreso del plugin se mantienen como una lista verificable en R
 
 ******
 
+#### v2.1.0
+
+_2026/10/21_
+
+- `Función` Las aplicaciones con firma independiente usan sus propias credenciales explícitas, las cuentas guardadas y la vigilancia en segundo plano conservan la protección de firma del host
+
 #### v2.0.1
 
 _2026/10/16_
@@ -251,13 +258,6 @@ _2026/10/03_
 - `Mejora` Nuevas imágenes claras y oscuras de un sobre para la aplicación y el lanzador, conservando las cuatro opciones de icono
 - `Mejora` Ajustes uniformes de idioma, modo oscuro, color e icono, con fondos neutros, controles temáticos y confirmación. Previsualiza colores predefinidos o HEX/RGB antes de aplicarlos. Cancelar conserva los ajustes guardados.
 - `Mejora` Tamaño visual uniforme de los iconos del lanzador y del Centro de complementos, con fondos transparentes y diseños en blanco, negro o grises neutros
-
-#### v1.2.1
-
-_2026/09/22_
-
-- `Corrección` El evento `closed` de una vigilancia al cerrar la sesión siempre indica el motivo `closed`: el hilo de trabajo de la sesión podía detener antes algunas vigilancias con `session-closed` (visto una vez en la suite connected del emulador API 24).
-- `Mejora` La compilación publicada lleva también el id de cliente Google OAuth 2.0 del mantenedor (el cliente Android registrado el 2026-09-22): el preajuste de Gmail ofrece "Iniciar sesión con Google (navegador)". El proyecto de Google está en fase de prueba: solo sus usuarios de prueba pueden iniciar sesión y sus tokens de actualización caducan a los 7 días (el plugin muestra después "iniciar sesión de nuevo"); las demás cuentas de Google ven la página de acceso denegado de Google, y las vías por token y por contraseña de aplicación siguen igual.
 
 ##### Para más historial de versiones
 
