@@ -1034,3 +1034,10 @@ mail.searchAsync({ subject: '发票', since: '2026-09-01' }).then(list => consol
 - [x] 源码与组件身份, 插件 ID, 仓库链接, 文档和产物名同步. 保留邮件功能契约和 Eclipse Angus Mail 库名称; 宿主身份与接口 AAR 一并更新.
 - [x] README 与插件说明添加精简致谢, 来源及许可证详情保留在 THIRD_PARTY_NOTICES.md, 权利异议流程见 RIGHTS_AND_TAKEDOWN.md.
 - [x] 本地构建, JVM, API 24 完整 instrumentation 与 API 31 相关设备检查通过; OAuth 新注册已由维护者完成. 数量, 跳过项和真实账户验证边界见 `docs/dev/three-stamp-mail-2.0-validation.md`. 远端 CI 与发布结果以本轮交付链接为准.
+
+
+## Runtime Mail acceptance (2026-10-21)
+
+Portable mail is accepted with host/Runtime Kit build 5702, Node 1.27.0/build 278, Bun 0.16.0/build 278 and 3-Stamp Mail 2.1.0/build 162. The 57 registered names, message/attachment helpers, watch events and token callbacks are covered across main threads and CJS/ESM/nested Workers. Independently signed apps use their own inline credentials; saved accounts/background watches retain the signed-host boundary.
+
+Redmi/API 33 and Xiaomi/API 35 each pass 96 consolidated device checks, including real generated Bun and Node/Worker apps on first start and after force-stop. Eight final launches yield twelve program results; unchanged component APK evidence is reused without duplicate counts. All mail uses isolated loopback synthetic accounts. Both devices are restored; Xiaomi preserves its fresh build 5679 takeover state. Host acceptance report: `AutoJs6/docs/dev/runtime-mail-2026-10-21.md`. Native engine versions/compatibility matrices are unchanged. No push, tag or release was performed.
