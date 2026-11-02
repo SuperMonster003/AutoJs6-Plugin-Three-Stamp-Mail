@@ -5,6 +5,7 @@ import io.github.supermonster003.autojs6.plugin.three.stamp.mail.core.account.Se
 import io.github.supermonster003.autojs6.plugin.three.stamp.mail.store.AccountStores
 import org.json.JSONObject
 import org.junit.Assert.*
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 
 /** Seeds only a unique synthetic loopback alias; never edits an existing account. */
@@ -12,6 +13,7 @@ class RuntimeMailAccountFixtureTest {
     @Test fun seedSyntheticAccount() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val args = InstrumentationRegistry.getArguments()
+        assumeTrue("Only a run that passes the fixture ports seeds the account", args.containsKey("imapPort") && args.containsKey("smtpPort"))
         val store = AccountStores.of(context)
         val alias = "runtime-mail-fixture"
         assertFalse("Existing alias must not be replaced", store.has(alias))
