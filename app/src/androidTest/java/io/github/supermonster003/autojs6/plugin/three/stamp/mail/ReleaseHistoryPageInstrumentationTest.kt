@@ -96,9 +96,16 @@ class ReleaseHistoryPageInstrumentationTest {
         return versions
     }
 
-    /** Scrolls the list to a version header first: on a small screen the second release can sit below the fold. */
-    private fun clickHeader(version: String) {
+    /**
+     * Scrolls the list to a version header. A release below the fold is not composed at all, so its tags stay missing
+     * until it is scrolled into view (on the Nexus 5 profile of CI the expanded newest release fills the screen).
+     */
+    private fun scrollTo(version: String) {
         compose.onNodeWithTag("$TAG.list").performScrollToNode(hasTestTag("$TAG.entry.$version"))
+    }
+
+    private fun clickHeader(version: String) {
+        scrollTo(version)
         compose.onNodeWithTag("$TAG.entry.$version").performClick()
     }
 
@@ -114,6 +121,7 @@ class ReleaseHistoryPageInstrumentationTest {
             val (newest, second) = versions
             assertTrue(exists("$TAG.body.$newest"))
             assertFalse(exists("$TAG.counts.$newest"))
+            scrollTo(second)
             assertFalse(exists("$TAG.body.$second"))
             assertTrue(exists("$TAG.counts.$second"))
 
@@ -124,7 +132,9 @@ class ReleaseHistoryPageInstrumentationTest {
 
             scenario.recreate()
             compose.waitUntil(TIMEOUT) { exists("$TAG.list") }
+            scrollTo(second)
             assertTrue(exists("$TAG.body.$second"))
+            scrollTo(newest)
             assertFalse(exists("$TAG.body.$newest"))
 
             compose.onNodeWithTag("$TAG.toggleAll")
