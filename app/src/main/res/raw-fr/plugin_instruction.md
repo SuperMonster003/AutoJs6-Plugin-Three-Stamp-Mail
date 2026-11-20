@@ -1,19 +1,60 @@
-# AutoJs6 3-Stamp Mail
+3-Stamp Mail fournit aux scripts AutoJs6 l'objet global `mail`, qui envoie des courriels, recherche et lit les messages, télécharge les pièces jointes, gère les indicateurs et les dossiers et surveille l'arrivée de nouveaux courriels via IMAP, POP3 et SMTP. Les comptes peuvent être enregistrés dans le plugin, et les scripts s'y connectent par alias.
 
-3-Stamp Mail offre aux scripts AutoJs6 un objet global `mail` pour envoyer des messages, lister et rechercher dans les boites, lire les corps de message, telecharger les pieces jointes, gerer les indicateurs et les dossiers, et surveiller l'arrivee de nouveaux courriers dans un dossier. Il repose sur [Eclipse Angus Mail](https://eclipse-ee4j.github.io/angus-mail/) 2.0.5, l'implementation de reference de Jakarta Mail, et parle IMAP, POP3 et SMTP sur TLS.
+### Prise en main
 
-Opérations de courrier, comptes enregistrés, surveillance en arrière-plan et connexion Google/Microsoft dans le navigateur. Nécessite AutoJs6 6.8.0 build 5316 ou ultérieur. [Documentation de l'API mail](https://docs.autojs6.com/#/mail).
+1. Activez IMAP ou POP3 et SMTP dans les réglages web de votre fournisseur, puis obtenez un code d'autorisation (QQ, 163, 126, Sina) ou un mot de passe d'application (Gmail, iCloud, Yahoo); le mot de passe de connexion lui-même est rarement accepté.
+2. Ouvrez 3-Stamp Mail depuis le lanceur, appuyez sur "Ajouter un compte" sur la page "Comptes enregistrés", choisissez un "Fournisseur", saisissez l'adresse, un "Alias" et le code d'autorisation, puis enregistrez.
+3. Appuyez sur le bouton de menu à côté du compte et choisissez "Tester la connexion" pour vérifier que les serveurs répondent.
+4. Connectez-vous au compte dans un script AutoJs6 avec `mail.connect('alias')`, comme ci-dessous.
 
-### Utilisation
+### Fonctionnalités principales
 
-1. Installez l'APK du plugin depuis [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/releases) sur un appareil disposant d'AutoJs6 build 5316 (6.8.0) ou plus récent.
-2. Ouvrez le centre de plugins AutoJs6, vérifiez que `3-Stamp Mail` est reconnu et activez-le.
-3. Preparez le compte : activez IMAP ou POP3 et SMTP dans les reglages web du fournisseur et obtenez un code d'autorisation (QQ, 163, 126, Sina) ou un mot de passe d'application (Gmail, iCloud, Yahoo); le mot de passe de connexion lui-meme n'est generalement pas accepte. Les comptes Gmail, Outlook.com et Microsoft 365 peuvent a la place se connecter avec le compte Google ou Microsoft dans le navigateur depuis les reglages du plugin (choisissez l'authentification "Se connecter avec Google / Microsoft (navigateur)"), ou recevoir un jeton d'acces OAuth 2.0 obtenu ailleurs.
-4. Appelez `mail.connect(...)` dans un script, ou enregistrez le compte dans la page de paramètres du plugin (son icône dans le lanceur, ou AutoJs6 > Options du développeur > Paramètres des comptes de courrier) et connectez-vous par alias.
-5. Pour lancer un script à l'arrivée d'un courriel sans en garder un en marche : ajoutez une surveillance sur la page des surveillances du plugin (réglages > Surveillances : alias du compte, dossier, mode, filtres), autorisez la notification quand elle est demandée, puis créez une tâche dans AutoJs6 (appui long sur le script > tâche planifiée > exécuter sur diffusion > À l'arrivée d'un courriel) et choisissez la surveillance ; la tâche demande une build d'AutoJs6 avec la version 2 du contrat mail.
-6. Node.js et les Workers utilisent mail/autojs6:mail; Bun utilise host.mail avec une autorisation mail.control distincte. Les appels renvoient des Promises. Les applications empaquetées avec une signature indépendante utilisent org.autojs.plugin.mail.permission.RUNTIME et fournissent leurs propres identifiants de compte. Les alias enregistrés, la liste des comptes et les surveillances en arrière-plan restent réservés à l'hôte AutoJs6 de même signature.
+- **Envoi et gestion**: envoyez des courriels avec pièces jointes, recherchez par objet, date et autres critères, lisez le contenu, téléchargez les pièces jointes, marquez les messages comme lus et gérez les dossiers.
+- **Connexion par le navigateur**: pour les comptes Gmail, Outlook.com et Microsoft 365, réglez "Authentification" sur "Se connecter avec Google (navigateur)" ou "Se connecter avec Microsoft (navigateur)", connectez-vous dans le navigateur puis enregistrez; aucun code d'autorisation n'est nécessaire.
+- **Veilles en arrière-plan**: dans "Paramètres" > "Veilles en arrière-plan", appuyez sur "Ajouter une veille" et choisissez un compte et un dossier; le plugin le garde connecté même sans script en cours. Ensuite, dans AutoJs6, appuyez longuement sur un script, choisissez "Tâche planifiée" puis, sous "Tâche de diffusion", "À l'arrivée d'un courriel (surveillance en arrière-plan du plugin de messagerie)"; le script s'exécute alors à chaque nouveau courriel.
+- **Sécurité des comptes**: les mots de passe et les jetons sont chiffrés dans le plugin; les scripts se connectent par alias et ne les voient jamais.
 
-Consultez le [README du projet](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail) et [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/ROADMAP.md) pour le guide de connexion et l'avancement actuel.
+### Utilisation dans les scripts
 
+Utilisez directement l'objet global `mail` dans les scripts AutoJs6, sans import. L'exemple se connecte à un compte enregistré par son alias, envoie un courriel, lit les messages non lus et surveille la boîte de réception:
 
-Merci aux développeurs de [Eclipse Angus Mail](https://eclipse-ee4j.github.io/angus-mail/), Jakarta Mail/Activation et GreenMail, ainsi que de AutoJs6, OpenCC, 3-Stone AI, MCP Server et Pinyin4j pour les références de conception et de développement. [Sources et licences](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/THIRD_PARTY_NOTICES.md#project-origins-and-acknowledgements). Ce projet indépendant ne revendique pas leur approbation; les noms et droits restent à leurs titulaires. [Réclamations et coopération](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/RIGHTS_AND_TAKEDOWN.md).
+```js
+let client = mail.connect('work');
+
+client.send({ to: 'you@example.com', subject: 'Report', text: 'See the attachment', attachments: ['/sdcard/report.xlsx'] });
+
+client.fetch({ unseenOnly: true, limit: 10 }).forEach(m => {
+    console.log(m.subject);
+    client.markRead(m);
+});
+
+let watch = client.watch('INBOX', { fetchBody: true });
+watch.on('message', m => console.log(m.subject, m.text));
+```
+
+- Vous pouvez aussi passer directement les informations du compte sans l'enregistrer, par exemple `mail.connect({ provider: 'qq', address: 'me@qq.com', password: 'authorization-code' })`. Chaque méthode réseau a aussi une forme Async qui renvoie une Promise.
+- Les scripts Node.js le chargent avec `require('autojs6:mail')`, et les scripts Bun utilisent `host.mail`, qui demande l'autorisation distincte `mail.control`; tous les appels renvoient des Promise.
+- Un script lancé par une veille lit le courriel arrivé dans `engines.myEngine().execArgv.mail`.
+
+### Prérequis
+
+- Android 7.0 ou ultérieur, AutoJs6 6.8.0 ou ultérieur, et ce plugin activé dans le "Centre des plugins".
+- Lancer des scripts à l'arrivée d'un courriel demande une version d'AutoJs6 qui prend en charge les veilles; la page "Veilles en arrière-plan" l'indique quand ce n'est pas le cas.
+- L'autorisation réseau sert uniquement à se connecter aux serveurs de messagerie que vous configurez et, pour la connexion par le navigateur, à obtenir et renouveler les jetons auprès de Google ou de Microsoft.
+- Les applications empaquetées signées séparément ne peuvent utiliser que les informations de compte fournies par le script; les comptes enregistrés et les veilles sont réservés à AutoJs6.
+
+### Questions fréquentes
+
+**La connexion échoue avec une erreur d'authentification**
+
+La plupart des fournisseurs refusent le mot de passe de connexion. Vérifiez qu'IMAP ou POP3 et SMTP sont activés dans les réglages web du fournisseur, utilisez un code d'autorisation ou un mot de passe d'application, puis vérifiez avec "Tester la connexion".
+
+**La surveillance s'arrête quand l'écran s'éteint**
+
+Android gèle le réseau des applications en arrière-plan quelque temps après l'extinction de l'écran. Demandez une exemption pour le plugin dans "Paramètres" > "Optimisation de la batterie" pour rester connecté; cette étape est facultative.
+
+**Un script signale que le plugin est absent**
+
+Vérifiez que ce plugin est installé et activé dans le "Centre des plugins" d'AutoJs6, puis relancez le script; inutile de redémarrer AutoJs6.
+
+Consultez [la documentation AutoJs6 > Mail](https://docs.autojs6.com/#/mail) pour toutes les méthodes et options, et la [page du projet](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail) pour la configuration des fournisseurs et plus encore.

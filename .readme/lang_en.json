@@ -108,6 +108,50 @@
   "text_link_mail_docs": "Mail module documentation",
   "text_link_angus_mail": "Eclipse Angus Mail",
   "text_link_third_party_notices": "Third-party notices",
-  "p_instruction_more": "See the [project README]({{ repo_url }}) and [ROADMAP.md]({{ roadmap_url }}) for the connection guide and the current progress.",
-  "p_acknowledgements": "Thanks to [Eclipse Angus Mail]({{ angus_mail_url }}), Jakarta Mail/Activation and GreenMail, and to AutoJs6, OpenCC, 3-Stone AI, MCP Server and Pinyin4j for the implementation and engineering references. [Sources and licenses]({{ references_url }}). This independent project is not endorsed by those developers; names and rights remain with their owners. [Rights concerns and cooperation]({{ rights_url }})."
+  "p_acknowledgements": "Thanks to [Eclipse Angus Mail]({{ angus_mail_url }}), Jakarta Mail/Activation and GreenMail, and to AutoJs6, OpenCC, 3-Stone AI, MCP Server and Pinyin4j for the implementation and engineering references. [Sources and licenses]({{ references_url }}). This independent project is not endorsed by those developers; names and rights remain with their owners. [Rights concerns and cooperation]({{ rights_url }}).",
+  "instruction_p_what": "3-Stamp Mail gives AutoJs6 scripts a global `mail` object that sends mail, searches and reads messages, downloads attachments, manages flags and folders, and watches for new mail over IMAP, POP3 and SMTP. Accounts can be saved in the plugin, and scripts connect to them by alias.",
+  "instruction_h3_start": "Getting started",
+  "instruction_start_steps": [
+    "Turn on IMAP or POP3 and SMTP in your provider's web settings and get an authorization code (QQ, 163, 126, Sina) or an app password (Gmail, iCloud, Yahoo); the login password itself is usually not accepted.",
+    "Open 3-Stamp Mail from the launcher, tap \"Add account\" on the \"Saved accounts\" page, pick a \"Provider\", fill in the email address, an \"Alias\" and the authorization code, then save.",
+    "Tap the menu button next to the account and choose \"Test connection\" to make sure the servers can be reached.",
+    "Connect to the account in an AutoJs6 script with `mail.connect('alias')`, as shown below."
+  ],
+  "instruction_h3_features": "Main features",
+  "instruction_features": [
+    "**Send and manage mail**: send messages with attachments, search by subject, date and more, read bodies, download attachments, mark messages as read and manage folders.",
+    "**Browser sign-in**: for Gmail, Outlook.com and Microsoft 365 accounts, set \"Authentication\" to \"Sign in with Google (browser)\" or \"Sign in with Microsoft (browser)\", sign in in the browser and save; no authorization code is needed.",
+    "**Background watches**: in \"Settings\" > \"Background watches\", tap \"Add watch\" and pick an account and a folder, and the plugin keeps it connected while no script is running. Then long-press a script in AutoJs6, choose \"Timed task\", and under \"Broadcast task\" pick \"On mail arrived (mail plugin background watch)\"; the script then runs for every new message.",
+    "**Account safety**: passwords and tokens are stored encrypted in the plugin; scripts connect by alias and never see them."
+  ],
+  "instruction_h3_script": "Using it in scripts",
+  "instruction_p_script": "Use the global `mail` object directly in AutoJs6 scripts; no import is needed. The example connects to a saved account by alias, sends a message, reads unread mail and watches the inbox:",
+  "instruction_script_notes": [
+    "You can also pass the account details directly instead of saving the account, for example `mail.connect({ provider: 'qq', address: 'me@qq.com', password: 'authorization-code' })`. Every network method also has an Async form that returns a Promise.",
+    "Node.js scripts load it with `require('autojs6:mail')`, and Bun scripts use `host.mail`, which needs the separate `mail.control` grant; all calls return Promises.",
+    "A script run by a background watch reads the arrived message from `engines.myEngine().execArgv.mail`."
+  ],
+  "instruction_h3_requirements": "Requirements",
+  "instruction_requirements": [
+    "Android {{ min_android_version }} or later, AutoJs6 {{ required_host_version_name }} or later, and this plugin enabled in \"Plugin center\".",
+    "Running scripts on new mail needs an AutoJs6 version that supports background watches; the \"Background watches\" page says so when yours does not.",
+    "The network permission is only used to connect to the mail servers you set up and, for browser sign-in, to get and renew tokens from Google or Microsoft.",
+    "Independently signed packaged apps can only use account details passed in by the script; saved accounts and background watches are available to AutoJs6 only."
+  ],
+  "instruction_h3_faq": "FAQ",
+  "instruction_faq": [
+    {
+      "q": "Connecting fails with an authentication error",
+      "a": "Most providers do not accept the login password. Make sure IMAP or POP3 and SMTP are turned on in the provider's web settings, use an authorization code or app password instead, and check with \"Test connection\"."
+    },
+    {
+      "q": "Watching stops after the screen turns off",
+      "a": "Android freezes the network of background apps a while after the screen turns off. Request an exemption for the plugin in \"Settings\" > \"Battery optimization\" to stay connected; this step is optional."
+    },
+    {
+      "q": "A script reports that the plugin is missing",
+      "a": "Make sure this plugin is installed and enabled in AutoJs6's \"Plugin center\", then run the script again; there is no need to restart AutoJs6."
+    }
+  ],
+  "instruction_p_more": "See [AutoJs6 docs > Mail]({{ docs_mail_url }}) for all methods and options, and the [project home page]({{ repo_url }}) for provider setup and more."
 }

@@ -231,6 +231,17 @@ The plugin's plans and progress are maintained as a checkable list in ROADMAP.md
 
 ******
 
+#### v2.1.1
+
+_2026/11/20_
+
+- `Fix` Names inside release history entries no longer show stray backticks
+- `Fix` Added the missing accents to some French and Spanish interface text
+- `Improvement` The Version history page is now the Release history page and expands and collapses by version: a collapsed version shows its date and the number of entries per category, an expanded one names each category once; all versions can be expanded or collapsed at once, the newest one opens expanded and the subtitle shows the plugin name
+- `Improvement` Rewrote the instructions shown in Plugin center in five parts: getting started, main features, using it in scripts, requirements and FAQ
+- `Dependency` Added Jetpack Compose BOM 2026.09.00 (release history page)
+- `Dependency` Upgraded shared build plugins version 1.9.0 -> 1.9.7
+
 #### v2.1.0
 
 _2026/10/21_
@@ -244,20 +255,6 @@ _2026/10/16_
 - `Fix` In the Arabic interface, 3-Stamp Mail no longer appears reversed as Stamp Mail-3
 - `Improvement` Plugin Center icons use the sizes, positions, light and dark artwork, and circular backgrounds adjusted in Icon Studio, retaining reproducible sources and parameters
 - `Improvement` Android App info icons share Icon Studio artwork and light/dark backgrounds while preserving transparent Plugin Center artwork and existing launcher choices
-
-#### v2.0.0
-
-_2026/10/03_
-
-- `Hint` The new package io.github.supermonster003.autojs6.plugin.three.stamp.mail installs separately from Angus Mail. Accounts, settings and watches are not migrated; configure them and sign in again. The old app can remain installed. Requires AutoJs6 6.8.0 build 5316 or later
-- `Hint` Enable 3-Stamp Mail in Plugin Center. If both old and new apps are enabled, select 3-Stamp Mail as the preferred mail plugin
-- `Feature` Choose adaptive light, adaptive dark, automatic (default) or transparent launcher icons in Settings. Automatic colors and transparency depend on launcher support.
-- `Fix` App updates keep one launcher entry and preserve an explicitly chosen earlier icon. Host appearance is read in the background without replacing an active settings draft.
-- `Fix` Android 7 retains a dark navigation bar in light mode so the system navigation buttons stay readable
-- `Improvement` The application is now 3-Stamp Mail, with a new package, plugin identity, repository and release filenames
-- `Improvement` New light/dark envelope artwork for in-app and launcher icons, retaining four launcher choices
-- `Improvement` Consistent language, dark mode, theme color and launcher settings with neutral surfaces, themed controls and confirmation dialogs. Preview preset or HEX/RGB colors before applying; Cancel leaves the saved settings unchanged.
-- `Improvement` Consistent visual sizing for launcher and Plugin Center icons, with transparent backgrounds and neutral black, white or grayscale artwork
 
 ##### For more release history
 

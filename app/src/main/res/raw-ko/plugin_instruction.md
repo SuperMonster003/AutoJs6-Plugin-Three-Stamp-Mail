@@ -1,19 +1,60 @@
-# AutoJs6 3-Stamp Mail
+3-Stamp Mail은 AutoJs6 스크립트에 전역 객체 `mail`을 제공하여 IMAP, POP3, SMTP로 메일 보내기, 메일 검색과 읽기, 첨부 파일 다운로드, 플래그와 폴더 관리, 새 메일 감시를 할 수 있게 합니다. 계정은 플러그인에 저장할 수 있고, 스크립트는 별칭으로 연결합니다.
 
-3-Stamp Mail은 AutoJs6 스크립트에 전역 객체 `mail`을 제공하여 메일 보내기, 메일함 나열과 검색, 본문 읽기, 첨부 파일 다운로드, 플래그와 폴더 관리, 폴더의 새 메일 감시를 지원합니다. Jakarta Mail의 참조 구현인 [Eclipse Angus Mail](https://eclipse-ee4j.github.io/angus-mail/) 2.0.5을 기반으로 하며 TLS 위에서 IMAP, POP3, SMTP를 사용합니다.
+### 시작하기
 
-메일 작업, 계정 저장, 백그라운드 감시 및 Google/Microsoft 브라우저 로그인을 지원합니다. AutoJs6 6.8.0 build 5316 이상이 필요합니다. [mail API 문서](https://docs.autojs6.com/#/mail).
+1. 메일 서비스의 웹 설정에서 IMAP 또는 POP3와 SMTP를 켜고, 인증 코드 (QQ, 163, 126, Sina) 또는 앱 비밀번호 (Gmail, iCloud, Yahoo)를 받으세요. 로그인 비밀번호 자체는 대개 허용되지 않습니다.
+2. 런처에서 3-Stamp Mail을 열고 "저장된 계정" 페이지에서 "계정 추가"를 탭한 뒤, "제공자"를 고르고 메일 주소, "별칭", 인증 코드를 입력하여 저장하세요.
+3. 계정 오른쪽의 메뉴 버튼을 탭하고 "연결 테스트"를 선택하여 서버에 연결되는지 확인하세요.
+4. AutoJs6 스크립트에서 `mail.connect('alias')`로 계정에 연결하세요. 사용법은 아래와 같습니다.
 
-### 사용 방법
+### 주요 기능
 
-1. AutoJs6 빌드 5316 (6.8.0) 이상이 설치된 기기에 [Releases](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/releases) 에서 플러그인 APK 를 설치합니다.
-2. AutoJs6 플러그인 센터를 열어 `3-Stamp Mail` 이 인식되는지 확인하고 활성화합니다.
-3. 계정을 준비합니다: 제공업체의 웹 설정에서 IMAP 또는 POP3 와 SMTP 를 켜고 인증 코드 (QQ, 163, 126, Sina) 또는 앱 비밀번호 (Gmail, iCloud, Yahoo) 를 얻습니다. 로그인 비밀번호 자체는 보통 허용되지 않습니다. Gmail, Outlook.com, Microsoft 365 계정은 대신 플러그인 설정에서 브라우저로 Google 또는 Microsoft 계정에 로그인하거나 (인증 방식에서 "Google / Microsoft 계정으로 로그인 (브라우저)" 선택), 다른 곳에서 얻은 OAuth 2.0 액세스 토큰을 줄 수 있습니다.
-4. 스크립트에서 `mail.connect(...)`를 호출하거나, 플러그인 설정 페이지 (플러그인의 런처 아이콘 또는 AutoJs6 개발자 옵션 > 메일 계정 설정) 에 계정을 저장한 뒤 별칭으로 연결합니다.
-5. 스크립트를 상주시키지 않고 새 메일에 실행하려면: 플러그인의 감시 페이지 (설정 > 감시: 계정 별칭, 폴더, 모드, 필터) 에서 감시를 추가하고, 요청 시 알림을 허용한 뒤, AutoJs6 에서 작업을 만들고 (스크립트 길게 누르기 > 정시 작업 > 브로드캐스트로 실행 > 메일 도착 시) 감시를 선택합니다. 이 작업에는 메일 계약 버전 2 를 포함한 AutoJs6 빌드가 필요합니다.
-6. Node.js 및 Worker는 mail/autojs6:mail을, Bun은 별도 mail.control 권한으로 host.mail을 사용하며 호출은 Promise를 반환합니다. 독립 서명 패키지 앱은 org.autojs.plugin.mail.permission.RUNTIME을 통해 자체 계정 자격 증명을 전달해야 합니다. 저장된 계정 별칭, 계정 목록 및 백그라운드 감시는 동일 서명의 AutoJs6 호스트로 제한됩니다.
+- **메일 보내기와 관리**: 첨부 파일이 있는 메일을 보내고, 제목, 날짜 등으로 메일을 검색하고, 본문을 읽고, 첨부 파일을 다운로드하고, 읽음으로 표시하고, 폴더를 관리할 수 있습니다.
+- **브라우저 로그인**: Gmail, Outlook.com, Microsoft 365 계정은 "인증 방식"을 "Google 계정으로 로그인 (브라우저)" 또는 "Microsoft 계정으로 로그인 (브라우저)"으로 설정하고 브라우저에서 로그인한 뒤 저장하면 되며, 인증 코드는 필요 없습니다.
+- **백그라운드 감시**: "설정" > "백그라운드 감시"에서 "감시 추가"를 탭하고 계정과 폴더를 고르면, 실행 중인 스크립트가 없어도 플러그인이 연결을 유지합니다. 이어서 AutoJs6에서 스크립트를 길게 누르고 "예약 작업"을 선택한 뒤 "브로드캐스트 수신 작업"에서 "메일 도착 시 (메일 플러그인 백그라운드 감시)"를 고르면, 새 메일이 올 때마다 그 스크립트가 실행됩니다.
+- **계정 보안**: 비밀번호와 토큰은 플러그인에 암호화되어 저장되며, 별칭으로 연결하는 스크립트는 이를 읽을 수 없습니다.
 
-연결 안내와 현재 진행 상황은 [프로젝트 README](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail)와 [ROADMAP.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/ROADMAP.md)를 참고하세요.
+### 스크립트에서 사용하기
 
+AutoJs6 스크립트에서는 전역 객체 `mail`을 가져오기 없이 바로 사용합니다. 아래 예는 저장된 계정에 별칭으로 연결하여 메일을 보내고, 읽지 않은 메일을 읽고, 받은편지함을 감시합니다:
 
-[Eclipse Angus Mail](https://eclipse-ee4j.github.io/angus-mail/), Jakarta Mail/Activation, GreenMail 및 구현과 개발 규칙을 참고한 AutoJs6, OpenCC, 3-Stone AI, MCP Server, Pinyin4j 개발자에게 감사드립니다. [출처와 라이선스](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/THIRD_PARTY_NOTICES.md#project-origins-and-acknowledgements). 이 프로젝트는 독립적이며 해당 개발자의 보증을 의미하지 않습니다. 이름과 권리는 각 권리자에게 있습니다. [권리 이의 제기 및 협조](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail/blob/master/RIGHTS_AND_TAKEDOWN.md).
+```js
+let client = mail.connect('work');
+
+client.send({ to: 'you@example.com', subject: 'Report', text: 'See the attachment', attachments: ['/sdcard/report.xlsx'] });
+
+client.fetch({ unseenOnly: true, limit: 10 }).forEach(m => {
+    console.log(m.subject);
+    client.markRead(m);
+});
+
+let watch = client.watch('INBOX', { fetchBody: true });
+watch.on('message', m => console.log(m.subject, m.text));
+```
+
+- 계정을 저장하지 않고 계정 정보를 직접 넘길 수도 있습니다. 예: `mail.connect({ provider: 'qq', address: 'me@qq.com', password: 'authorization-code' })`. 네트워크를 쓰는 메서드마다 Promise를 반환하는 Async 버전이 있습니다.
+- Node.js 스크립트는 `require('autojs6:mail')`로 불러오고, Bun 스크립트는 `host.mail`을 사용하며 `mail.control` 권한을 따로 받아야 합니다. 모든 호출은 Promise를 반환합니다.
+- 백그라운드 감시로 실행된 스크립트는 도착한 메일을 `engines.myEngine().execArgv.mail`에서 읽습니다.
+
+### 요구 사항
+
+- Android 7.0 이상, AutoJs6 6.8.0 이상이 필요하며, 이 플러그인이 "플러그인 센터"에서 활성화되어 있어야 합니다.
+- 새 메일이 올 때 스크립트를 실행하려면 백그라운드 감시를 지원하는 AutoJs6가 필요합니다. 지원하지 않으면 "백그라운드 감시" 페이지에 안내가 표시됩니다.
+- 네트워크 권한은 설정한 메일 서버에 연결하고, 브라우저 로그인 시 Google 또는 Microsoft에서 토큰을 받고 갱신하는 데에만 사용됩니다.
+- 별도로 서명한 패키징 앱은 스크립트가 넘긴 계정 정보만 사용할 수 있습니다. 저장된 계정과 백그라운드 감시는 AutoJs6 전용입니다.
+
+### 자주 묻는 질문
+
+**연결할 때 인증 오류가 납니다**
+
+대부분의 메일 서비스는 로그인 비밀번호를 허용하지 않습니다. 서비스의 웹 설정에서 IMAP 또는 POP3와 SMTP가 켜져 있는지 확인하고, 인증 코드나 앱 비밀번호를 사용한 뒤 "연결 테스트"로 확인하세요.
+
+**화면이 꺼지면 감시가 멈춥니다**
+
+Android는 화면이 꺼지고 얼마 지나면 백그라운드 앱의 네트워크를 멈춥니다. "설정" > "배터리 최적화"에서 플러그인 제외를 요청하면 연결을 유지할 수 있으며, 이 단계는 선택 사항입니다.
+
+**스크립트에서 플러그인이 없다고 나옵니다**
+
+이 플러그인이 설치되어 있고 AutoJs6의 "플러그인 센터"에서 활성화되어 있는지 확인한 뒤 스크립트를 다시 실행하세요. AutoJs6를 다시 시작할 필요는 없습니다.
+
+모든 메서드와 옵션은 [AutoJs6 문서 > Mail](https://docs.autojs6.com/#/mail)을, 메일 서비스별 설정 방법 등은 [프로젝트 페이지](https://github.com/SuperMonster003/AutoJs6-Plugin-Three-Stamp-Mail)를 참고하세요.

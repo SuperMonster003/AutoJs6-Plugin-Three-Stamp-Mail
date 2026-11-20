@@ -4,6 +4,17 @@
 
 ******
 
+# v2.1.1
+
+###### 2026/11/20
+
+* `Correctif` Les noms dans les entrées de l'historique des versions ne sont plus entourés d'accents graves superflus
+* `Correctif` Ajout des accents manquants dans certains textes de l'interface en français et en espagnol
+* `Amélioration` La page Historique des versions se développe et se réduit par version: une version réduite affiche sa date et le nombre d'entrées par catégorie, une version développée ne nomme chaque catégorie qu'une fois; toutes les versions peuvent être développées ou réduites d'un coup, la plus récente s'ouvre développée et le sous-titre affiche le nom du plugin
+* `Amélioration` Réécriture des instructions affichées dans le Centre des plugins en cinq parties: prise en main, fonctionnalités principales, utilisation dans les scripts, prérequis et questions fréquentes
+* `Dépendance` Ajout de Jetpack Compose BOM 2026.09.00 (page Historique des versions)
+* `Dépendance` Mise à niveau des plugins de compilation partagés version 1.9.0 -> 1.9.7
+
 # v2.1.0
 
 ###### 2026/10/21

@@ -108,6 +108,50 @@
   "text_link_mail_docs": "郵件模組文件",
   "text_link_angus_mail": "Eclipse Angus Mail",
   "text_link_third_party_notices": "第三方聲明",
-  "p_instruction_more": "連線指南與目前進度請參閱 [專案 README]({{ repo_url }}) 與 [ROADMAP.md]({{ roadmap_url }}).",
-  "p_acknowledgements": "感謝 [Eclipse Angus Mail]({{ angus_mail_url }}), Jakarta Mail/Activation 和 GreenMail, 以及為實作和工程慣例提供參考的 AutoJs6, OpenCC, 3-Stone AI, MCP Server 與 Pinyin4j. [來源與授權條款]({{ references_url }}). 本專案獨立開發, 不代表上述開發者的認可或背書, 相關名稱和權利歸原權利人所有. [權利異議與配合處理]({{ rights_url }})."
+  "p_acknowledgements": "感謝 [Eclipse Angus Mail]({{ angus_mail_url }}), Jakarta Mail/Activation 和 GreenMail, 以及為實作和工程慣例提供參考的 AutoJs6, OpenCC, 3-Stone AI, MCP Server 與 Pinyin4j. [來源與授權條款]({{ references_url }}). 本專案獨立開發, 不代表上述開發者的認可或背書, 相關名稱和權利歸原權利人所有. [權利異議與配合處理]({{ rights_url }}).",
+  "instruction_p_what": "3-Stamp Mail 為 AutoJs6 指令碼提供全域物件 `mail`, 透過 IMAP, POP3 與 SMTP 傳送郵件, 搜尋和讀取郵件, 下載附件, 管理標記與資料夾, 以及監聽新郵件. 帳戶可以儲存在外掛內, 指令碼依別名連線.",
+  "instruction_h3_start": "開始使用",
+  "instruction_start_steps": [
+    "在服務商的網頁設定中開啟 IMAP 或 POP3 與 SMTP, 並取得授權碼 (QQ, 163, 126, 新浪) 或應用程式專用密碼 (Gmail, iCloud, Yahoo); 登入密碼本身通常不被接受.",
+    "從啟動器開啟 3-Stamp Mail, 在 \"已儲存帳戶\" 頁點按 \"新增帳戶\", 選擇 \"服務商\", 填寫電子郵件地址, \"別名\" 與授權碼, 然後儲存.",
+    "點按帳戶右側的選單按鈕, 選擇 \"測試連線\", 確認伺服器可以連通.",
+    "在 AutoJs6 指令碼中用 `mail.connect('別名')` 連線帳戶, 用法見下文."
+  ],
+  "instruction_h3_features": "主要功能",
+  "instruction_features": [
+    "**收發與管理**: 傳送帶附件的郵件, 依主旨, 日期等條件搜尋郵件, 讀取內文, 下載附件, 標示已讀, 管理資料夾.",
+    "**瀏覽器登入**: Gmail, Outlook.com 與 Microsoft 365 帳戶可以把 \"驗證方式\" 設為 \"使用 Google 帳號登入 (瀏覽器)\" 或 \"使用 Microsoft 帳號登入 (瀏覽器)\", 在瀏覽器中登入後儲存, 不需要授權碼.",
+    "**背景守望**: 在 \"設定\" > \"背景守望\" 中點按 \"新增守望\" 並選擇帳戶與資料夾, 外掛會在沒有指令碼執行時保持連線; 再在 AutoJs6 中長按指令碼, 選擇 \"定時任務\", 在 \"廣播觸發任務\" 中選擇 \"郵件到達時 (郵件外掛程式背景守望)\", 之後每封新郵件到達時都會執行該指令碼.",
+    "**帳戶安全**: 密碼與權杖加密儲存在外掛內, 指令碼只依別名連線, 讀不到它們."
+  ],
+  "instruction_h3_script": "在指令碼中使用",
+  "instruction_p_script": "在 AutoJs6 指令碼中直接使用全域物件 `mail`, 不需要匯入. 下例以別名連線已儲存的帳戶, 傳送郵件, 讀取未讀郵件並監聽收件匣:",
+  "instruction_script_notes": [
+    "也可以不儲存帳戶, 直接傳入帳戶資料, 例如 `mail.connect({ provider: 'qq', address: 'me@qq.com', password: '授權碼' })`. 每個連網方法都有傳回 Promise 的 Async 版本.",
+    "Node.js 指令碼用 `require('autojs6:mail')` 載入, Bun 指令碼透過 `host.mail` 使用並需另行授權 `mail.control`, 呼叫皆傳回 Promise.",
+    "由背景守望執行的指令碼透過 `engines.myEngine().execArgv.mail` 讀取到達的郵件."
+  ],
+  "instruction_h3_requirements": "執行需求",
+  "instruction_requirements": [
+    "Android {{ min_android_version }} 或更高版本, AutoJs6 {{ required_host_version_name }} 或更高版本, 且本外掛在 \"外掛中心\" 中處於啟用狀態.",
+    "郵件到達時執行指令碼需要支援背景守望的 AutoJs6 版本; 不支援時 \"背景守望\" 頁會給出提示.",
+    "網路權限只用於連線你設定的郵件伺服器, 以及瀏覽器登入時向 Google 或 Microsoft 換取和更新權杖.",
+    "獨立簽署的封裝應用程式只能使用指令碼自行傳入的帳戶資料; 已儲存帳戶與背景守望只對 AutoJs6 開放."
+  ],
+  "instruction_h3_faq": "常見問題",
+  "instruction_faq": [
+    {
+      "q": "連線時提示驗證失敗",
+      "a": "多數服務商不接受登入密碼. 確認已在服務商的網頁設定中開啟 IMAP 或 POP3 與 SMTP, 改用授權碼或應用程式專用密碼, 再用 \"測試連線\" 檢查."
+    },
+    {
+      "q": "螢幕關閉後監聽或守望中斷",
+      "a": "Android 會在螢幕關閉一段時間後凍結背景應用程式的網路. 在 \"設定\" > \"電池最佳化\" 中為外掛申請排除即可保持連線; 這一步是選用的."
+    },
+    {
+      "q": "指令碼提示缺少外掛時的處理",
+      "a": "確認本外掛已安裝, 並在 AutoJs6 的 \"外掛中心\" 中處於啟用狀態, 然後重新執行指令碼, 不需要重新啟動 AutoJs6."
+    }
+  ],
+  "instruction_p_more": "全部方法與選項見 [AutoJs6 文件 > 郵件]({{ docs_mail_url }}), 各服務商的設定方法與其他資訊見 [專案首頁]({{ repo_url }})."
 }

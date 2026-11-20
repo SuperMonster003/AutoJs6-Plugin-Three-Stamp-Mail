@@ -231,6 +231,17 @@ Los planes y el progreso del plugin se mantienen como una lista verificable en R
 
 ******
 
+#### v2.1.1
+
+_2026/11/20_
+
+- `Corrección` Los nombres dentro de las entradas del historial de versiones ya no muestran acentos graves sobrantes
+- `Corrección` Se añadieron los acentos que faltaban en algunos textos de la interfaz en francés y español
+- `Mejora` La página Historial de versiones se expande y contrae por versión: una versión contraída muestra su fecha y el número de entradas por categoría, una expandida nombra cada categoría una sola vez; todas las versiones se pueden expandir o contraer a la vez, la más reciente se abre expandida y el subtítulo muestra el nombre del plugin
+- `Mejora` Se reescribieron las instrucciones del Centro de plugins en cinco partes: primeros pasos, funciones principales, uso en scripts, requisitos y preguntas frecuentes
+- `Dependencia` Se añadió Jetpack Compose BOM 2026.09.00 (página Historial de versiones)
+- `Dependencia` Se actualizaron los plugins de compilación compartidos versión 1.9.0 -> 1.9.7
+
 #### v2.1.0
 
 _2026/10/21_
@@ -244,20 +255,6 @@ _2026/10/16_
 - `Corrección` En la interfaz en árabe, 3-Stamp Mail ya no aparece invertido como Stamp Mail-3
 - `Mejora` Los iconos del centro de plugins usan los tamaños, posiciones, imágenes claras y oscuras y fondos circulares ajustados en Icon Studio, conservando fuentes y parámetros reproducibles
 - `Mejora` Los iconos de información de la aplicación de Android comparten las imágenes y los fondos claros y oscuros de Icon Studio, conservando las imágenes transparentes del centro de plugins y las opciones del lanzador
-
-#### v2.0.0
-
-_2026/10/03_
-
-- `Aviso` El nuevo paquete io.github.supermonster003.autojs6.plugin.three.stamp.mail se instala por separado de Angus Mail. Las cuentas, ajustes y vigilancias no se migran; vuelve a configurarlos e inicia sesión. La aplicación anterior puede permanecer instalada. Se requiere AutoJs6 6.8.0 build 5316 o posterior
-- `Aviso` Activa 3-Stamp Mail en el Centro de plugins. Si ambas aplicaciones están activadas, elige 3-Stamp Mail como plugin de correo preferido
-- `Función` Elige iconos de inicio adaptables claros, oscuros, automáticos (predeterminados) o transparentes en Ajustes. Los colores automáticos y la transparencia dependen del lanzador.
-- `Corrección` Las actualizaciones mantienen una sola entrada y conservan el icono elegido expresamente. La apariencia del anfitrión se lee en segundo plano sin interrumpir los cambios pendientes.
-- `Corrección` Android 7 mantiene una barra de navegación oscura en el modo claro para que los botones del sistema sigan siendo visibles
-- `Mejora` La aplicación pasa a llamarse 3-Stamp Mail, con un nuevo paquete, identidad de plugin, repositorio y nombres de archivos de distribución
-- `Mejora` Nuevas imágenes claras y oscuras de un sobre para la aplicación y el lanzador, conservando las cuatro opciones de icono
-- `Mejora` Ajustes uniformes de idioma, modo oscuro, color e icono, con fondos neutros, controles temáticos y confirmación. Previsualiza colores predefinidos o HEX/RGB antes de aplicarlos. Cancelar conserva los ajustes guardados.
-- `Mejora` Tamaño visual uniforme de los iconos del lanzador y del Centro de complementos, con fondos transparentes y diseños en blanco, negro o grises neutros
 
 ##### Para más historial de versiones
 

@@ -231,6 +231,17 @@ Les plans et l'avancement du plugin sont tenus sous forme de liste cochable dans
 
 ******
 
+#### v2.1.1
+
+_2026/11/20_
+
+- `Correctif` Les noms dans les entrées de l'historique des versions ne sont plus entourés d'accents graves superflus
+- `Correctif` Ajout des accents manquants dans certains textes de l'interface en français et en espagnol
+- `Amélioration` La page Historique des versions se développe et se réduit par version: une version réduite affiche sa date et le nombre d'entrées par catégorie, une version développée ne nomme chaque catégorie qu'une fois; toutes les versions peuvent être développées ou réduites d'un coup, la plus récente s'ouvre développée et le sous-titre affiche le nom du plugin
+- `Amélioration` Réécriture des instructions affichées dans le Centre des plugins en cinq parties: prise en main, fonctionnalités principales, utilisation dans les scripts, prérequis et questions fréquentes
+- `Dépendance` Ajout de Jetpack Compose BOM 2026.09.00 (page Historique des versions)
+- `Dépendance` Mise à niveau des plugins de compilation partagés version 1.9.0 -> 1.9.7
+
 #### v2.1.0
 
 _2026/10/21_
@@ -244,20 +255,6 @@ _2026/10/16_
 - `Correctif` Dans l'interface en arabe, 3-Stamp Mail ne s'affiche plus à l'envers sous la forme Stamp Mail-3
 - `Amélioration` Les icônes du centre de plugins utilisent les tailles, positions, images claires et sombres et fonds circulaires réglés dans Icon Studio, avec les sources et paramètres permettant de les reproduire
 - `Amélioration` Les icônes des informations d'application Android utilisent les illustrations et les fonds clairs et sombres d'Icon Studio, en conservant les images transparentes du centre de plugins et les choix du lanceur
-
-#### v2.0.0
-
-_2026/10/03_
-
-- `Note` Le nouveau paquet io.github.supermonster003.autojs6.plugin.three.stamp.mail s'installe séparément de Angus Mail. Les comptes, réglages et surveillances ne sont pas transférés; configurez-les et reconnectez-vous. L'ancienne application peut rester installée. AutoJs6 6.8.0 build 5316 ou ultérieur est requis
-- `Note` Activez 3-Stamp Mail dans le Centre de plugins. Si les deux applications sont activées, choisissez 3-Stamp Mail comme plugin de courrier prioritaire
-- `Fonctionnalité` Choisissez une icône de lanceur adaptative claire, sombre, automatique (par défaut) ou transparente dans les paramètres. Les couleurs automatiques et la transparence dépendent du lanceur.
-- `Correctif` Les mises à jour conservent une seule entrée de lanceur et un choix d'icône antérieur explicite. L'apparence de l'hôte est lue en arrière-plan sans interrompre une sélection en cours.
-- `Correctif` Android 7 conserve une barre de navigation sombre en mode clair pour que les boutons système restent lisibles
-- `Amélioration` L'application devient 3-Stamp Mail, avec un nouveau paquet, une nouvelle identité de plugin, un dépôt et des noms de fichiers de distribution actualisés
-- `Amélioration` Nouvelles images claires et sombres d'enveloppe dans l'application et le lanceur, avec les quatre choix d'icône conservés
-- `Amélioration` Paramètres de langue, de mode sombre, de couleur et d'icône harmonisés, avec surfaces neutres, contrôles thématiques et dialogues de confirmation. Prévisualisez les couleurs prédéfinies ou HEX/RGB avant de valider. Annuler conserve les paramètres enregistrés.
-- `Amélioration` Taille visuelle harmonisée des icônes du lanceur et du Centre de plugins, avec des fonds transparents et des motifs noirs, blancs ou gris neutres
 
 ##### Pour plus d'historique des versions
 
