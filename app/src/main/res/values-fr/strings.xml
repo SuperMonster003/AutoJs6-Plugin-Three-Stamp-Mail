@@ -159,6 +159,10 @@
     <string name="oauth_waiting_hint">Seul le code d\'autorisation revient au plugin; votre mot de passe reste chez le fournisseur. Les jetons sont stockes chiffres dans le plugin et n\'atteignent jamais AutoJs6 ni les scripts.</string>
     <string name="open_link_failed">Impossible d\'ouvrir le lien</string>
     <string name="plugin_description">Envoie, reçoit, recherche et surveille le courrier via IMAP, POP3 et SMTP</string>
+    <string name="release_history_collapse_all">Tout réduire</string>
+    <string name="release_history_collapsed">Réduit</string>
+    <string name="release_history_expand_all">Tout développer</string>
+    <string name="release_history_expanded">Développé</string>
     <string name="release_history_load_failed">Impossible de charger l\'historique des versions</string>
     <string name="release_history_summary">Consulter l\'historique des versions inclus dans l\'application</string>
     <string name="release_history_title">Historique des versions</string>
@@ -216,7 +220,7 @@
     <string name="watches_boot_summary">Relance les veilles activees au demarrage de l\'appareil; desactive par defaut</string>
     <string name="watches_boot_title">Demarrer apres le demarrage</string>
     <string name="watches_empty_description">Une veille en arriere-plan garde un dossier d\'un compte enregistre connecte quand aucun script ne tourne; a l\'arrivee d\'un courriel, AutoJs6 peut lancer un script avec l\'enveloppe en argument. Ajoutez une veille ici, puis creez une tache \"courriel recu\" dans AutoJs6.</string>
-    <string name="watches_empty_title">Aucune veille en arriere-plan</string>
+    <string name="watches_empty_title">Aucune veille en arrière-plan</string>
     <string name="watches_host_missing">L\'AutoJs6 installe ne recoit pas les declencheurs courriel (version 2 du contrat requise); les veilles gardent leurs enregistrements</string>
     <string name="watches_last_mail">Dernier courriel %1$s</string>
     <string name="watches_mode_auto">automatique</string>
@@ -224,7 +228,7 @@
     <string name="watches_mode_poll">sondage</string>
     <string name="watches_more_options">Plus d\'options</string>
     <string name="watches_no_mail_yet">Aucun courriel signale pour l\'instant</string>
-    <string name="watches_notification_channel">Veilles en arriere-plan</string>
+    <string name="watches_notification_channel">Veilles en arrière-plan</string>
     <string name="watches_notification_channel_description">Etat des veilles en arriere-plan qui gardent les dossiers connectes</string>
     <string name="watches_notification_text">%1$d veilles connectees sur %2$d</string>
     <string name="watches_notification_title">3-Stamp Mail veille sur le courriel</string>
@@ -250,5 +254,5 @@
     <string name="watches_state_stopped">Arretee</string>
     <string name="watches_store_unavailable">Stockage des veilles indisponible</string>
     <string name="watches_summary_counts">%1$d configurees, %2$d connectees</string>
-    <string name="watches_title">Veilles en arriere-plan</string>
+    <string name="watches_title">Veilles en arrière-plan</string>
 </resources>

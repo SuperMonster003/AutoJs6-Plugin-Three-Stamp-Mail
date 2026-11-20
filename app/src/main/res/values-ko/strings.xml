@@ -159,9 +159,13 @@
     <string name="oauth_waiting_hint">플러그인으로 돌아오는 것은 인증 코드뿐입니다. 비밀번호는 제공업체에 남습니다. 토큰은 플러그인 안에 암호화되어 저장되며 AutoJs6 나 스크립트에 전달되지 않습니다.</string>
     <string name="open_link_failed">링크를 열 수 없습니다</string>
     <string name="plugin_description">IMAP, POP3, SMTP로 메일을 보내고 받고 검색하고 감시합니다</string>
-    <string name="release_history_load_failed">버전 기록을 불러올 수 없습니다</string>
-    <string name="release_history_summary">앱에 포함된 버전 기록을 확인합니다</string>
-    <string name="release_history_title">버전 기록</string>
+    <string name="release_history_collapse_all">모두 접기</string>
+    <string name="release_history_collapsed">접힘</string>
+    <string name="release_history_expand_all">모두 펼치기</string>
+    <string name="release_history_expanded">펼쳐짐</string>
+    <string name="release_history_load_failed">릴리스 기록을 불러올 수 없습니다</string>
+    <string name="release_history_summary">앱에 포함된 릴리스 기록을 확인합니다</string>
+    <string name="release_history_title">릴리스 기록</string>
     <string name="settings_dark_mode">다크 모드</string>
     <string name="settings_language">언어</string>
     <string name="settings_saved">앱 설정이 저장되었습니다</string>

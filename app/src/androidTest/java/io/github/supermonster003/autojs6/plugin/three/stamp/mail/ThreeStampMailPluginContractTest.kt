@@ -68,7 +68,7 @@ class ThreeStampMailPluginContractTest {
         val wakeActivity = applicationInfo.metaData?.getString(WAKE_ACTIVITY_META_DATA)
         assertEquals(".WakeActivity", wakeActivity)
         assertEquals(context.getString(R.string.plugin_author), applicationInfo.metaData?.getString(AUTHOR_META_DATA))
-        assertEquals(0, applicationInfo.metaData?.getInt(NATIVE_PAGE_ALIGNMENT_META_DATA, -1))
+        assertEquals(16384, applicationInfo.metaData?.getInt(NATIVE_PAGE_ALIGNMENT_META_DATA, -1))
 
         val component = ComponentName(packageName, packageName + wakeActivity)
         val activityInfo = context.packageManager.getActivityInfo(component, 0)

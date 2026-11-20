@@ -159,9 +159,13 @@
     <string name="oauth_waiting_hint">Only the authorization code returns to the plugin; your password stays with the provider. The tokens are stored encrypted inside the plugin and never reach AutoJs6 or scripts.</string>
     <string name="open_link_failed">Could not open the link</string>
     <string name="plugin_description">Sends, receives, searches, and watches mail over IMAP, POP3, and SMTP</string>
-    <string name="release_history_load_failed">Unable to load the version history</string>
-    <string name="release_history_summary">Read the version history included with this app</string>
-    <string name="release_history_title">Version history</string>
+    <string name="release_history_collapse_all">Collapse all</string>
+    <string name="release_history_collapsed">Collapsed</string>
+    <string name="release_history_expand_all">Expand all</string>
+    <string name="release_history_expanded">Expanded</string>
+    <string name="release_history_load_failed">Unable to load the release history</string>
+    <string name="release_history_summary">Read the release history included with this app</string>
+    <string name="release_history_title">Release history</string>
     <string name="settings_dark_mode">Dark mode</string>
     <string name="settings_language">Language</string>
     <string name="settings_saved">Application settings saved</string>

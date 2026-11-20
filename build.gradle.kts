@@ -12,6 +12,8 @@ plugins {
     // Kotlin JVM plugin and the serialization compiler plugin are declared at the platform version.
     id("org.jetbrains.kotlin.jvm") version System.getProperty("gradle.kotlin.version") apply false
     id("org.jetbrains.kotlin.plugin.serialization") version System.getProperty("gradle.kotlin.version") apply false
+    // Compose compiler for the release history page; the version follows the platform Kotlin version.
+    id("org.jetbrains.kotlin.plugin.compose") version System.getProperty("gradle.kotlin.version") apply false
 }
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.

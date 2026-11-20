@@ -159,9 +159,13 @@
     <string name="oauth_waiting_hint">В плагин возвращается только код авторизации; пароль остается у провайдера. Токены хранятся в плагине в зашифрованном виде и не попадают в AutoJs6 или скрипты.</string>
     <string name="open_link_failed">Не удалось открыть ссылку</string>
     <string name="plugin_description">Отправляет, получает, ищет и отслеживает почту по IMAP, POP3 и SMTP</string>
-    <string name="release_history_load_failed">Не удалось загрузить историю версий</string>
-    <string name="release_history_summary">Открыть встроенную историю версий приложения</string>
-    <string name="release_history_title">История версий</string>
+    <string name="release_history_collapse_all">Свернуть всё</string>
+    <string name="release_history_collapsed">Свёрнуто</string>
+    <string name="release_history_expand_all">Развернуть всё</string>
+    <string name="release_history_expanded">Развёрнуто</string>
+    <string name="release_history_load_failed">Не удалось загрузить историю выпусков</string>
+    <string name="release_history_summary">Открыть встроенную историю выпусков приложения</string>
+    <string name="release_history_title">История выпусков</string>
     <string name="settings_dark_mode">Темная тема</string>
     <string name="settings_language">Язык</string>
     <string name="settings_saved">Настройки приложения сохранены</string>

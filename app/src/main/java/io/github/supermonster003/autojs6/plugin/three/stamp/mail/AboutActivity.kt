@@ -73,7 +73,7 @@ class AboutActivity : ConfiguredActivity() {
                 title = getString(R.string.release_history_title),
                 summary = getString(R.string.release_history_summary),
                 iconResource = R.drawable.ic_article_24,
-                onClick = { startActivity(Intent(this, ReleaseHistoryActivity::class.java)) },
+                onClick = { openReleaseHistory() },
             ).view,
         )
     }

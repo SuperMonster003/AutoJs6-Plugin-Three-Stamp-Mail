@@ -52,8 +52,8 @@
     <string name="dark_mode_dark">Oscuro</string>
     <string name="dark_mode_light">Claro</string>
     <string name="editor_action_test">Probar la conexión</string>
-    <string name="editor_auth_oauth_google">Iniciar sesion con Google (navegador)</string>
-    <string name="editor_auth_oauth_microsoft">Iniciar sesion con Microsoft (navegador)</string>
+    <string name="editor_auth_oauth_google">Iniciar sesión con Google (navegador)</string>
+    <string name="editor_auth_oauth_microsoft">Iniciar sesión con Microsoft (navegador)</string>
     <string name="editor_auth_token">Token de acceso OAuth 2.0 (XOAUTH2)</string>
     <string name="editor_endpoint_enabled">Usar %1$s</string>
     <string name="editor_error_address_invalid">Introduzca una dirección de correo válida</string>
@@ -90,7 +90,7 @@
     <string name="editor_oauth_provider_google">Google</string>
     <string name="editor_oauth_provider_microsoft">Microsoft</string>
     <string name="editor_oauth_required">Primero inicia sesion con %1$s</string>
-    <string name="editor_oauth_row_title">Inicio de sesion en el navegador</string>
+    <string name="editor_oauth_row_title">Inicio de sesión en el navegador</string>
     <string name="editor_oauth_saved_summary">Autorizado el %1$s; el token de acceso se renueva solo. Toca para volver a iniciar sesion</string>
     <string name="editor_oauth_signed_in">Sesion iniciada como %1$s; guarda la cuenta para conservarla. Toca para volver a iniciar sesion</string>
     <string name="editor_oauth_signed_in_unknown">Sesion iniciada; guarda la cuenta para conservarla. Toca para volver a iniciar sesion</string>
@@ -159,6 +159,10 @@
     <string name="oauth_waiting_hint">Solo el codigo de autorizacion vuelve al plugin; tu contrasena se queda en el proveedor. Los tokens se guardan cifrados dentro del plugin y nunca llegan a AutoJs6 ni a los scripts.</string>
     <string name="open_link_failed">No se pudo abrir el enlace</string>
     <string name="plugin_description">Envía, recibe, busca y vigila el correo mediante IMAP, POP3 y SMTP</string>
+    <string name="release_history_collapse_all">Contraer todo</string>
+    <string name="release_history_collapsed">Contraído</string>
+    <string name="release_history_expand_all">Expandir todo</string>
+    <string name="release_history_expanded">Expandido</string>
     <string name="release_history_load_failed">No se pudo cargar el historial de versiones</string>
     <string name="release_history_summary">Consultar el historial de versiones incluido en la aplicación</string>
     <string name="release_history_title">Historial de versiones</string>
@@ -212,7 +216,7 @@
     <string name="watches_action_records">Registros</string>
     <string name="watches_action_remove">Eliminar</string>
     <string name="watches_action_retry">Reconectar ahora</string>
-    <string name="watches_add">Anadir vigilancia</string>
+    <string name="watches_add">Añadir vigilancia</string>
     <string name="watches_boot_summary">Reinicia las vigilancias activadas al arrancar el dispositivo; desactivado por defecto</string>
     <string name="watches_boot_title">Iniciar tras el arranque</string>
     <string name="watches_empty_description">Una vigilancia en segundo plano mantiene conectada una carpeta de una cuenta guardada mientras no se ejecuta ningun script; cuando llega correo, AutoJs6 puede iniciar un script con el sobre como argumento. Anade una vigilancia aqui y luego crea una tarea \"correo recibido\" en AutoJs6.</string>

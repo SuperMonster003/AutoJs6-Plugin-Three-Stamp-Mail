@@ -59,7 +59,8 @@ class ManifestContractTest {
         val metaData = application.children("meta-data").associate { it.androidAttribute("name") to it.androidAttribute("value") }
         assertEquals(".WakeActivity", metaData["org.autojs.plugin.WAKE_ACTIVITY"])
         assertEquals("@string/plugin_author", metaData["org.autojs.plugin.info.AUTHOR"])
-        assertEquals("0", metaData["org.autojs.plugin.contract.NATIVE_PAGE_ALIGNMENT"])
+        // The only native code is the Compose graphics-path library, stored uncompressed and 16 KB aligned.
+        assertEquals("16384", metaData["org.autojs.plugin.contract.NATIVE_PAGE_ALIGNMENT"])
 
         val activities = application.children("activity").associateBy { it.androidAttribute("name") }
         assertEquals(
